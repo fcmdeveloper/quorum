@@ -284,7 +284,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
   const allDone = plan.length > 0 && plan.every((p) => p.state === 'ok');
 
   return (
-    <Screen title={editing ? 'Firmantes de la bóveda' : 'Nueva bóveda'} onBack={nav.pop}>
+    <Screen title={editing ? 'Firmantes de la bóveda' : 'Nueva bóveda'} onBack={nav.pop} scrollKey={step}>
       <BusySheet visible={!!app.busy} text={app.busy ?? ''} />
       {!editing && (
         <View style={{ flexDirection: 'row', gap: 6, marginBottom: SP.xl }}>

@@ -106,7 +106,10 @@ export function Screen({
   scroll = true,
   padded = true,
   top,
+  scrollKey,
 }: {
+  /** Al cambiar (p. ej. el paso de un asistente), la pantalla vuelve arriba. */
+  scrollKey?: string | number;
   /** Encabezado propio fijo (reemplaza al título); el indicador de recarga aparece debajo. */
   top?: React.ReactNode;
   title?: string;
@@ -119,6 +122,10 @@ export function Screen({
   padded?: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (scrollKey !== undefined) scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [scrollKey]);
   const header = top ? (
     <View style={{ paddingTop: insets.top + 6, paddingHorizontal: SP.lg, paddingBottom: SP.sm, backgroundColor: C.bg }}>{top}</View>
   ) : title || onBack || right ? (
@@ -143,6 +150,7 @@ export function Screen({
       {header}
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={{ padding: padded ? SP.lg : 0, paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"

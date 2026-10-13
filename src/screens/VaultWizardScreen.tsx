@@ -40,7 +40,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
   const [network, setNetwork] = useState<NetworkId>('testnet');
   const [masterId, setMasterId] = useState<string | null>(null);
   const [vault, setVault] = useState<Account | undefined>(found);
-  // 'new': cuenta nueva creada en Quorum (recomendado); 'device': una cuenta de mis dispositivos
+  // 'new': cuenta nueva creada en Quorum; 'device': una cuenta de mis dispositivos
   const [mode, setMode] = useState<'new' | 'device'>('new');
   const [secret, setSecret] = useState<string[] | null>(null);
   const [ackWritten, setAckWritten] = useState(false);
@@ -327,7 +327,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
           />
           {mode === 'new' ? (
             <Card>
-              <Txt v="h3">Cuenta nueva creada en Quorum (recomendado)</Txt>
+              <Txt v="h3">Cuenta nueva creada en Quorum</Txt>
               <Txt v="small" style={{ marginTop: 6 }}>
                 Quorum crea una cuenta nueva y te muestra sus números secretos para que los anotes. No los guarda: te los pedirá para configurar la bóveda y para desactivar su clave original. Sirve con cualquier firmante, incluido Xaman.
               </Txt>
@@ -564,8 +564,8 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
           <Txt v="h1">Protección extra</Txt>
           <Txt v="body" color={C.dim} style={{ marginTop: 6, marginBottom: SP.xl }}>
             {created
-              ? 'Recomendado. Cada opción es una transacción más, firmada con tus números secretos junto con la multifirma.'
-              : t('Recomendado. Cada opción es una transacción que firmará {d}.', { d: masterDevice?.label ?? t('el dispositivo creador') })}
+              ? 'Opcional. Cada opción es una transacción más, firmada con tus números secretos junto con la multifirma.'
+              : t('Opcional. Cada opción es una transacción que firmará {d}.', { d: masterDevice?.label ?? t('el dispositivo creador') })}
           </Txt>
           <Card>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>

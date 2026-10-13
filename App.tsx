@@ -44,6 +44,8 @@ import ReorderScreen from './src/screens/ReorderScreen';
 import ChartsScreen from './src/screens/ChartsScreen';
 import { LockScreen, Onboarding, TermsScreen, useAppLock } from './src/screens/GateScreens';
 import { TERMS_VERSION } from './src/legal';
+import { ReminderScreen, TermsReviewScreen } from './src/screens/ReviewScreens';
+import { needsReview } from './src/core/reminder';
 
 function RouteView({ r }: { r: Route }) {
   switch (r.name) {
@@ -85,6 +87,8 @@ function RouteView({ r }: { r: Route }) {
       return <UnvaultScreen id={r.params.id} />;
     case 'finishVault':
       return <FinishVaultScreen id={r.params.id} />;
+    case 'terms':
+      return <TermsReviewScreen />;
     case 'backup':
       return <BackupScreen />;
     case 'reorder':
@@ -187,6 +191,9 @@ function Shell() {
   const uiKey = `${theme}-${uiLang}`;
   const bar = <StatusBar style={theme === 'light' ? 'dark' : 'light'} />;
 
+  const reviewDue = React.useRef<boolean | null>(null);
+  if (app.ready && reviewDue.current === null) reviewDue.current = needsReview(app.settings, Date.now());
+
   if (!app.ready) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -198,6 +205,8 @@ function Shell() {
   if (!app.settings.onboarded) return <View key={uiKey} style={{ flex: 1 }}>{bar}<Onboarding /></View>;
   if (lock.locked) return <View key={uiKey} style={{ flex: 1 }}>{bar}<LockScreen onUnlock={lock.unlock} /></View>;
   if ((app.settings.termsAccepted ?? 0) < TERMS_VERSION) return <View key={uiKey} style={{ flex: 1 }}>{bar}<TermsScreen /></View>;
+  // recordatorio mensual: se decide al abrir la app (no interrumpe una operación en curso)
+  if (reviewDue.current && needsReview(app.settings, Date.now())) return <View key={uiKey} style={{ flex: 1 }}>{bar}<ReminderScreen /></View>;
 
   const top = nav.stack[nav.stack.length - 1];
   return (

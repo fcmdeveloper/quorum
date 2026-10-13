@@ -7,6 +7,8 @@ import { useMoney } from '../ui/money';
 import { Badge, Card, Empty, Screen, Segmented, Txt } from '../ui/components';
 import { C, F, SP } from '../ui/theme';
 import { ActivityItem, NETWORKS, NetworkId, fetchActivity } from '../core/network';
+import { lookalikeOf, trustedAddresses } from '../core/lookalike';
+import { t } from '../i18n';
 
 type Filter = 'all' | 'in' | 'out' | 'config';
 
@@ -29,6 +31,8 @@ export function ActivityRow({ it, network, accountLabel }: { it: ActivityItem; n
       `${it.counterparty.slice(0, 6)}…${it.counterparty.slice(-4)}`
     : undefined;
   const sign = it.kind === 'in' ? '+' : it.kind === 'out' ? '−' : '';
+  // movimiento con una dirección que imita a una de confianza: posible estafa
+  const twin = it.counterparty ? lookalikeOf(it.counterparty, trustedAddresses(app)) : null;
   return (
     <Pressable
       onPress={() => Linking.openURL(`${NETWORKS[network].explorer}/transactions/${it.hash}`)}
@@ -53,6 +57,11 @@ export function ActivityRow({ it, network, accountLabel }: { it: ActivityItem; n
           </Txt>
           {it.multisig && <Feather name="users" size={12} color={C.green} />}
         </View>
+        {twin ? (
+          <View style={{ alignSelf: 'flex-start', marginVertical: 2 }}>
+            <Badge text={t('Imita a «{l}»: no la copies', { l: twin.label })} color={C.bad} icon="alert-triangle" />
+          </View>
+        ) : null}
         <Txt v="small" numberOfLines={1}>
           {[accountLabel, other, new Date(it.date).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })]
             .filter(Boolean)

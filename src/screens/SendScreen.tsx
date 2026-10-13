@@ -3,6 +3,7 @@ import { t } from '../i18n';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { isValidClassicAddress } from 'ripple-address-codec';
+import { lookalikeOf, trustedAddresses } from '../core/lookalike';
 import { useApp } from '../state';
 import { useNav } from '../nav';
 import { proposalFailed } from '../ui/proposalError';
@@ -53,6 +54,8 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: s
   const destOk = isValidClassicAddress(dest.trim()) && dest.trim() !== a.address;
   const known =
     app.contacts.find((c) => c.address === dest.trim()) ?? app.accounts.find((x) => x.address === dest.trim() && x.network === a.network);
+  // ¿se parece a una dirección de confianza sin serlo? (estafa de direcciones parecidas)
+  const twin = destOk ? lookalikeOf(dest.trim(), trustedAddresses(app)) : null;
   const allowed = a.kind !== 'vault' || !!app.accounts.find((x) => x.address === dest.trim()) || (a.allowed ?? []).includes(dest.trim());
   const available = token ? Number(token.balance) : Number(st?.spendableXrp ?? 0);
   const over = xrpAmount && st ? Number(xrpAmount) > available : false;
@@ -77,7 +80,7 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: s
         setBusy(false);
       }
     };
-    if (!allowed) {
+    const confirmNew = () => {
       warnBuzz();
       Alert.alert(
         'Destino nuevo para esta bóveda',
@@ -87,9 +90,26 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: s
           { text: 'Es correcta, continuar', style: 'destructive', onPress: go },
         ],
       );
-    } else go();
+    };
+    if (twin) {
+      warnBuzz();
+      return Alert.alert(
+        'Dirección parecida, no igual',
+        t('Este destino se parece a «{l}», pero NO es la misma dirección:\n\nDestino:\n{d}\n\n«{l}»:\n{k}\n\nAsí funciona una estafa común: te envían montos mínimos desde una dirección parecida para que la copies por error desde tu actividad.', {
+          l: twin.label,
+          d: dest.trim(),
+          k: twin.address,
+        }),
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: t('Usar «{l}»', { l: twin.label }), onPress: () => setDest(twin.address) },
+          { text: 'Sé que es otra, continuar', style: 'destructive', onPress: () => (allowed ? go() : confirmNew()) },
+        ],
+      );
+    }
+    if (!allowed) return confirmNew();
+    go();
   };
-
   return (
     <Screen title={t('Enviar desde {x}', { x: a.label })} onBack={nav.pop}>
       <Field
@@ -143,6 +163,11 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: s
         </Card>
       )}
 
+      {twin && (
+        <Notice kind="bad">
+          {t('Cuidado: se parece a «{l}» ({k}), pero no es la misma dirección. Revísala completa.', { l: twin.label, k: `${twin.address.slice(0, 6)}…${twin.address.slice(-6)}` })}
+        </Notice>
+      )}
       <Field label="Destination tag (opcional)" keyboardType="number-pad" value={tag} onChangeText={setTag} hint={KNOWN_EXCHANGE_HINT} />
 
       {tokenOpts.length > 0 && (

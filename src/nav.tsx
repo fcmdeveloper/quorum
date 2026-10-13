@@ -24,6 +24,7 @@ export type Route =
   | { name: 'unvault'; params: { id: string } }
   | { name: 'finishVault'; params: { id: string } }
   | { name: 'backup'; params: {} }
+  | { name: 'terms'; params: {} }
   | { name: 'reorder'; params: { kind: 'vault' | 'wallet' } }
   | { name: 'charts'; params: { view: 'portfolio' | 'market' } };
 

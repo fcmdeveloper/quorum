@@ -13,6 +13,8 @@ import { FIATS, Fiat } from '../core/market';
 import { sessionValid } from '../signers/xaman';
 import { tangemNativeLoaded, isNfcAvailable, clearSavedTangemCodes } from '../../modules/tangem-nfc';
 import { newId } from '../store';
+import { lookalikeOf, trustedAddresses } from '../core/lookalike';
+import { useBackupState } from './ReviewScreens';
 
 export default function SettingsScreen() {
   const app = useApp();
@@ -192,12 +194,14 @@ export default function SettingsScreen() {
       <Section title="Respaldo">
         <Card style={{ paddingVertical: 4 }}>
           <ListItem icon="save" title="Exportar o importar" subtitle="Pasa tus cuentas y bóvedas a otro teléfono" onPress={() => nav.push('backup', {})} />
+          <BackupHint />
         </Card>
       </Section>
 
       <Section title="Ayuda">
         <Card style={{ paddingVertical: 4 }}>
           <ListItem icon="book-open" title="Guía de ensayo en testnet" subtitle="Recorrido, Xaman en testnet y XRP de prueba" onPress={() => nav.push('guide', {})} />
+          <ListItem icon="shield" title="Volver a leer el aviso de inicio" subtitle="Responsabilidad y lo que Quorum nunca te pedirá" onPress={() => nav.push('terms', {})} />
         </Card>
       </Section>
 
@@ -285,12 +289,28 @@ export function ContactsScreen() {
         <Button
           title="Guardar contacto"
           disabled={!label.trim() || !isValidClassicAddress(addr.trim())}
-          onPress={async () => {
-            await app.saveContact({ id: newId(), label: label.trim(), address: addr.trim(), tag: tag.trim() || undefined });
-            setLabel('');
-            setAddr('');
-            setTag('');
-            toast('Contacto guardado');
+          onPress={() => {
+            const save = async () => {
+              await app.saveContact({ id: newId(), label: label.trim(), address: addr.trim(), tag: tag.trim() || undefined });
+              setLabel('');
+              setAddr('');
+              setTag('');
+              toast('Contacto guardado');
+            };
+            // ¿se parece a una dirección de confianza sin serlo? (estafa de direcciones parecidas)
+            const twin = lookalikeOf(addr.trim(), trustedAddresses(app));
+            if (!twin) return save();
+            Alert.alert(
+              'Dirección parecida, no igual',
+              t('Esta dirección se parece a «{l}» ({k}), pero no es la misma. Si la copiaste desde tu actividad, puede ser una estafa de direcciones parecidas.', {
+                l: twin.label,
+                k: `${twin.address.slice(0, 6)}…${twin.address.slice(-6)}`,
+              }),
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Guardar igual', style: 'destructive', onPress: save },
+              ],
+            );
           }}
         />
       </Card>
@@ -310,5 +330,25 @@ export function ContactsScreen() {
       ))}
       {app.contacts.length === 0 && <Notice kind="info">Guarda direcciones frecuentes para no copiarlas a mano.</Notice>}
     </Screen>
+  );
+}
+
+/** Estado del respaldo bajo "Exportar o importar" (solo si falta o está desactualizado). */
+function BackupHint() {
+  const b = useBackupState();
+  if (b.kind === 'empty' || b.kind === 'ok') return null;
+  const text =
+    b.kind === 'never'
+      ? t('Aún no tienes un respaldo')
+      : b.kind === 'changed'
+        ? t('Tienes cambios sin respaldar')
+        : t('Tu respaldo tiene {n} días', { n: b.days });
+  return (
+    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', paddingHorizontal: SP.md, paddingBottom: SP.md }}>
+      <Feather name="alert-circle" size={14} color={C.warn} />
+      <Txt v="small" color={C.warn}>
+        {text}
+      </Txt>
+    </View>
   );
 }

@@ -58,6 +58,11 @@ export interface Settings {
   hideBalances: boolean;
   /** Cómo se muestran los saldos en Inicio: en la divisa (XRP + stablecoins) o en XRP. */
   balanceUnit: 'fiat' | 'xrp';
+  /** Última vez que se confirmó el recordatorio de seguridad (ms). */
+  reviewedAt?: number;
+  /** Último respaldo exportado (ms) y huella de la configuración en ese momento. */
+  backupAt?: number;
+  backupHash?: string;
 }
 
 export type ProposalStatus = 'collecting' | 'ready' | 'submitted' | 'failed' | 'expired';

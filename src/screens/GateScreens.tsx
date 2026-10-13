@@ -271,7 +271,7 @@ export function TermsScreen() {
             Entiendo que soy responsable de mis dispositivos, respaldos y de lo que firmo.
           </Txt>
         </Pressable>
-        <Button title="Aceptar y continuar" disabled={!ok} onPress={() => app.updateSettings({ termsAccepted: TERMS_VERSION })} />
+        <Button title="Aceptar y continuar" disabled={!ok} onPress={() => app.updateSettings({ termsAccepted: TERMS_VERSION, reviewedAt: Date.now() })} />
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: SP.xl }}>
           <Feather name="heart" size={14} color={C.bad} />
           <Txt v="small" style={{ textAlign: 'center' }}>

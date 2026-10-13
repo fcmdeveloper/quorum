@@ -122,6 +122,7 @@ export default function AboutScreen() {
 
       <Section title="Seguridad">
         <NeverAskCard />
+        <Button title="Volver a leer el aviso de inicio" icon="book-open" kind="secondary" onPress={() => nav.push('terms', {})} />
       </Section>
 
       <Section title="Enlaces">

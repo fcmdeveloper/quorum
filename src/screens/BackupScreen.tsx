@@ -7,6 +7,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Clipboard from 'expo-clipboard';
 import { File, Paths } from 'expo-file-system';
 import { Feather } from '@expo/vector-icons';
+import { useConfigFingerprint } from './ReviewScreens';
 import { useApp } from '../state';
 import { useNav } from '../nav';
 import { BusySheet, Button, Card, Field, Notice, Screen, Section, Txt, success, toast } from '../ui/components';
@@ -51,6 +52,11 @@ export default function BackupScreen() {
   // respaldo ya cifrado, listo para compartir o copiar (solo en memoria mientras estás en esta pantalla)
   const [exported, setExported] = useState<{ text: string; uri: string; protected: boolean } | null>(null);
 
+  // para el recordatorio: cuándo se respaldó y qué configuración había
+  const fingerprint = useConfigFingerprint();
+  const [exportedHash, setExportedHash] = useState('');
+  const markBackedUp = () => app.updateSettings({ backupAt: Date.now(), backupHash: exportedHash || fingerprint() });
+
   const doExport = async () => {
     setBusy(protect ? 'Cifrando respaldo…' : 'Preparando respaldo…');
     try {
@@ -60,6 +66,7 @@ export default function BackupScreen() {
       f.create({ overwrite: true });
       f.write(text);
       setExported({ text, uri: f.uri, protected: protect });
+      setExportedHash(fingerprint());
       setPw('');
       setPw2('');
       success();
@@ -77,6 +84,7 @@ export default function BackupScreen() {
     try {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(exported.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Guardar respaldo de Quorum' });
+        await markBackedUp();
       } else {
         await copyExported();
       }
@@ -88,6 +96,7 @@ export default function BackupScreen() {
   const copyExported = async () => {
     if (!exported) return;
     await Clipboard.setStringAsync(exported.text);
+    await markBackedUp();
     success();
     toast(t('Respaldo copiado al portapapeles'));
   };

@@ -208,7 +208,7 @@ export default function BackupScreen() {
               <Button title="Compartir archivo" icon="share" onPress={shareExported} />
               <Button title="Copiar al portapapeles" kind="ghost" icon="copy" onPress={copyExported} />
               <Txt v="small" style={{ marginTop: 6 }}>
-                Compartir: AirDrop, Archivos, iCloud o correo. Copiar: lo pegas en el otro teléfono o en quorumxrpl.com/ver (con el portapapeles compartido de Apple, se copia directo al Mac).
+                Compartir: AirDrop, Archivos, iCloud o correo. Copiar: lo pegas en el otro teléfono o en quorumxrpl.com/view (con el portapapeles compartido de Apple, se copia directo al Mac).
               </Txt>
               <Button title="Hacer otro respaldo" kind="ghost" onPress={() => setExported(null)} />
             </View>
@@ -230,7 +230,7 @@ export default function BackupScreen() {
             <View style={{ flex: 1 }}>
               <Txt v="body">Solo lectura, en el navegador</Txt>
               <Txt v="small">
-                Exporta un respaldo con contraseña, envíatelo al computador y ábrelo en quorumxrpl.com/ver. Verás tus bóvedas, cuentas, firmantes y actividad, sin poder firmar ni cambiar nada. El archivo se abre en el navegador: no pasa por ningún servidor.
+                Exporta un respaldo con contraseña, envíatelo al computador y ábrelo en quorumxrpl.com/view. Verás tus bóvedas, cuentas, firmantes y actividad, sin poder firmar ni cambiar nada. El archivo se abre en el navegador: no pasa por ningún servidor.
               </Txt>
             </View>
           </View>
@@ -239,7 +239,7 @@ export default function BackupScreen() {
             kind="ghost"
             icon="link"
             onPress={async () => {
-              await Clipboard.setStringAsync(`${QUORUM.website}/ver`);
+              await Clipboard.setStringAsync(`${QUORUM.website}/view`);
               toast(t('Enlace copiado'));
             }}
           />

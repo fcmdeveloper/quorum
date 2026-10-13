@@ -41,9 +41,13 @@ export default function HomeScreen() {
     let main = 0;
     let test = 0;
     let stableFiat = 0;
+    const seen = new Set<string>(); // la misma dirección agregada dos veces se cuenta una vez
     for (const a of app.accounts) {
       const st = app.stateOf(a);
       if (!st) continue;
+      const k = `${a.network}:${a.address}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
       if (a.network === 'mainnet') {
         main += Number(st.balanceXrp);
         for (const t of st.tokens) {

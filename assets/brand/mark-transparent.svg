@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="200" y1="180" x2="840" y2="860">
+      <stop offset="0" stop-color="#5CF7B0"/>
+      <stop offset="1" stop-color="#10B26A"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#0C1913"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- cuerpo de la bóveda -->
+  <rect x="222" y="212" width="600" height="600" rx="112" fill="none" stroke="url(#g)" stroke-width="44"/>
+  <!-- bisagras -->
+  <g fill="url(#g)">
+    <rect x="176" y="318" width="62" height="96" rx="20"/>
+    <rect x="176" y="610" width="62" height="96" rx="20"/>
+  </g>
+  <!-- puerta -->
+  <circle cx="522" cy="512" r="196" fill="none" stroke="url(#g)" stroke-width="30" opacity="0.55"/>
+  <!-- volante: tres brazos (los firmantes) unidos en el centro (el quórum) -->
+  <g stroke="url(#g)" stroke-width="38" stroke-linecap="round">
+    <line x1="522" y1="512" x2="522" y2="356"/>
+    <line x1="522" y1="512" x2="387" y2="590"/>
+    <line x1="522" y1="512" x2="657" y2="590"/>
+  </g>
+  <g fill="url(#g)">
+    <circle cx="522" cy="356" r="34"/>
+    <circle cx="387" cy="590" r="34"/>
+    <circle cx="657" cy="590" r="34"/>
+  </g>
+  <circle cx="522" cy="512" r="58" fill="#000"/>
+  <circle cx="522" cy="512" r="58" fill="none" stroke="url(#g)" stroke-width="30"/>
+</svg>

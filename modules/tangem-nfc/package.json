@@ -1,0 +1,9 @@
+{
+  "name": "tangem-nfc",
+  "version": "1.0.0",
+  "description": "Puente mínimo JSON-RPC hacia Tangem SDK (iOS/Android)",
+  "main": "index.ts",
+  "license": "MIT",
+  "author": "Felipe",
+  "homepage": "https://github.com/tangem/tangem-sdk-ios"
+}

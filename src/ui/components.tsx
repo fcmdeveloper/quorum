@@ -20,7 +20,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import { t, tr } from '../i18n';
-import { C, F, R, SP, T, ACCOUNT_COLORS, accountColor, alpha, onThemeChange } from './theme';
+import { C, F, R, SP, T, ACCOUNT_COLORS, ACCOUNT_ICONS, accountColor, alpha, onThemeChange } from './theme';
 
 export type IconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -214,6 +214,7 @@ export function Row({ k, v, mono }: { k: string; v: React.ReactNode; mono?: bool
 
 export function ListItem({
   icon,
+  glyph,
   iconColor = C.green,
   title,
   subtitle,
@@ -221,6 +222,8 @@ export function ListItem({
   onPress,
 }: {
   icon?: IconName;
+  /** Dibujo propio en lugar del ícono Feather (p. ej. el símbolo de XRP). */
+  glyph?: React.ReactNode;
   iconColor?: string;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -229,9 +232,9 @@ export function ListItem({
 }) {
   const content = (
     <View style={st.listItem}>
-      {icon ? (
+      {icon || glyph ? (
         <View style={[st.listIcon, { backgroundColor: iconColor + '1F' }]}>
-          <Feather name={icon} size={18} color={iconColor} />
+          {glyph ?? <Feather name={icon!} size={18} color={iconColor} />}
         </View>
       ) : null}
       <View style={{ flex: 1 }}>
@@ -693,11 +696,14 @@ export function QuorumRing({
   segments,
   center,
   sub,
+  children,
 }: {
   size?: number;
   segments: { weight: number; on: boolean }[];
-  center: string;
+  center?: string;
   sub?: string;
+  /** Contenido propio en el centro (reemplaza a `center`/`sub`). */
+  children?: React.ReactNode;
 }) {
   const stroke = Math.max(6, size * 0.085);
   const r = (size - stroke) / 2;
@@ -726,8 +732,8 @@ export function QuorumRing({
           ),
         )}
       </Svg>
-      <Text style={{ fontFamily: F.bold, fontSize: size * 0.24, color: C.text, letterSpacing: -0.5 }}>{center}</Text>
-      {sub ? <Text style={{ fontFamily: F.medium, fontSize: Math.max(10, size * 0.11), color: C.dim }}>{tr(sub)}</Text> : null}
+      {children ?? <Text style={{ fontFamily: F.bold, fontSize: size * 0.24, color: C.text, letterSpacing: -0.5 }}>{center}</Text>}
+      {!children && sub ? <Text style={{ fontFamily: F.medium, fontSize: Math.max(10, size * 0.11), color: C.dim }}>{tr(sub)}</Text> : null}
     </View>
   );
 }
@@ -827,16 +833,32 @@ export const st = buildSt();
 onThemeChange(() => Object.assign(st, buildSt()));
 
 
-/** Ícono de una cuenta con su color: candado para bóvedas, el dispositivo para cuentas normales. */
-export function AccountAvatar({
-  color,
-  icon,
-  size = 40,
-}: {
-  color?: string;
-  icon: React.ComponentProps<typeof Feather>['name'];
-  size?: number;
-}) {
+/** Símbolo de XRP (de uso libre, sin dueño). */
+export function XrpMark({ size = 18, color = C.text }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size * 0.83} viewBox="0 0 512 424" accessibilityLabel="XRP">
+      <Path fill={color} d="M437 0h74L357 152.48c-55.77 55.19-146.19 55.19-202 0L0 0h74l117 115.83a91.11 91.11 0 0 0 127.91 0Z" />
+      <Path fill={color} d="M74 424H0l155-153.42c55.77-55.19 146.19-55.19 202 0L512 424h-74L321 308.17a91.11 91.11 0 0 0-127.91 0Z" />
+    </Svg>
+  );
+}
+
+/** Dibuja el ícono de una cuenta: el símbolo de XRP o un ícono Feather. */
+export function AccountGlyph({ icon, size, color }: { icon: string; size: number; color: string }) {
+  if (icon === 'xrp') return <XrpMark size={size * 1.05} color={color} />;
+  return <Feather name={icon as React.ComponentProps<typeof Feather>['name']} size={size} color={color} />;
+}
+
+/** Ícono de la cuenta: el que eligió el usuario o, si no, el de su tipo (bóveda o dispositivo). */
+export function accountIcon(a: { icon?: string; kind: string }, dev?: { kind: string } | null): string {
+  if (a.icon) return a.icon;
+  if (a.kind === 'vault') return 'lock';
+  if (!dev) return 'eye';
+  return dev.kind === 'ledger' ? 'cpu' : dev.kind === 'tangem' ? 'credit-card' : 'smartphone';
+}
+
+/** Ícono de una cuenta con su color. */
+export function AccountAvatar({ color, icon, size = 40 }: { color?: string; icon: string; size?: number }) {
   const c = accountColor(color);
   return (
     <View
@@ -851,31 +873,36 @@ export function AccountAvatar({
         justifyContent: 'center',
       }}
     >
-      <Feather name={icon} size={size * 0.45} color={c} />
+      <AccountGlyph icon={icon} size={size * 0.45} color={c} />
     </View>
   );
 }
+
+/** Grilla pareja de 5 columnas (2 filas para 10 opciones). */
+const PICK = 38;
+const PICK_GAP = 14;
+const PICK_W = PICK * 5 + PICK_GAP * 4;
 
 /** Selector de color de cuenta. */
 export function ColorPicker({ value, onChange }: { value?: string; onChange: (key: string) => void }) {
   const current = value ?? ACCOUNT_COLORS[0].key;
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+    <View style={{ width: PICK_W, flexDirection: 'row', flexWrap: 'wrap', gap: PICK_GAP, alignSelf: 'center' }}>
       {ACCOUNT_COLORS.map((c) => {
         const on = c.key === current;
         return (
           <Pressable
             key={c.key}
-            accessibilityLabel={c.name}
+            accessibilityLabel={t(c.name)}
             onPress={() => {
               tap();
               onChange(c.key);
             }}
             hitSlop={4}
             style={{
-              width: 34,
-              height: 34,
-              borderRadius: 17,
+              width: PICK,
+              height: PICK,
+              borderRadius: PICK / 2,
               backgroundColor: c.color,
               alignItems: 'center',
               justifyContent: 'center',
@@ -883,7 +910,42 @@ export function ColorPicker({ value, onChange }: { value?: string; onChange: (ke
               borderColor: C.text,
             }}
           >
-            {on ? <Feather name="check" size={16} color={C.greenInk} /> : null}
+            {on ? <Feather name="check" size={17} color="#00140A" /> : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Selector de ícono de cuenta (se dibuja con el color elegido). */
+export function IconPicker({ value, color, onChange }: { value?: string; color?: string; onChange: (key: string) => void }) {
+  const c = accountColor(color);
+  return (
+    <View style={{ width: PICK_W, flexDirection: 'row', flexWrap: 'wrap', gap: PICK_GAP, alignSelf: 'center' }}>
+      {ACCOUNT_ICONS.map((ic) => {
+        const on = ic.key === value;
+        return (
+          <Pressable
+            key={ic.key}
+            accessibilityLabel={t(ic.name)}
+            onPress={() => {
+              tap();
+              onChange(ic.key);
+            }}
+            hitSlop={4}
+            style={{
+              width: PICK,
+              height: PICK,
+              borderRadius: PICK * 0.3,
+              backgroundColor: on ? alpha(c, 0.22) : C.surface2,
+              borderWidth: on ? 2 : 1,
+              borderColor: on ? c : C.line,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <AccountGlyph icon={ic.key} size={18} color={on ? c : C.dim} />
           </Pressable>
         );
       })}

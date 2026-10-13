@@ -85,7 +85,25 @@ export const ACCOUNT_COLORS: { key: string; color: string; name: string }[] = [
   { key: 'red', color: '#FF6E6E', name: 'Rojo' },
   { key: 'orange', color: '#FF9F4A', name: 'Naranja' },
   { key: 'yellow', color: '#F5D547', name: 'Amarillo' },
+  { key: 'lime', color: '#B6E45A', name: 'Lima' },
   { key: 'gray', color: '#A6B3AD', name: 'Gris' },
+];
+
+/**
+ * Íconos que el usuario puede asignar a una cuenta o bóveda. 'xrp' es el símbolo de XRP
+ * (de uso libre); el resto son íconos Feather.
+ */
+export const ACCOUNT_ICONS: { key: string; name: string }[] = [
+  { key: 'xrp', name: 'XRP' },
+  { key: 'lock', name: 'Candado' },
+  { key: 'shield', name: 'Escudo' },
+  { key: 'home', name: 'Casa' },
+  { key: 'briefcase', name: 'Trabajo' },
+  { key: 'heart', name: 'Corazón' },
+  { key: 'star', name: 'Estrella' },
+  { key: 'users', name: 'Familia' },
+  { key: 'gift', name: 'Regalo' },
+  { key: 'zap', name: 'Rayo' },
 ];
 
 export function accountColor(key?: string): string {

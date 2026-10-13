@@ -28,6 +28,16 @@ export function useMoney() {
       if (!k?.usdPeg || !price?.price.usd || !p) return null;
       return amount * (p / price.price.usd);
     },
+    /** Valor total de una cuenta en la divisa: XRP + stablecoins conocidas (null en testnet o sin precio). */
+    accountFiatValue: (st: { balanceXrp: string | number; tokens: { balance: string; currency: string; issuer: string }[] }, net: NetworkId): number | null => {
+      if (net === 'testnet' || !p) return null;
+      let v = Number(st.balanceXrp) * p;
+      for (const tk of st.tokens) {
+        const k = knownToken(net, { currency: tk.currency, issuer: tk.issuer });
+        if (k?.usdPeg && price?.price.usd) v += Number(tk.balance) * (p / price.price.usd);
+      }
+      return v;
+    },
     tokenFiat: (amount: number, asset: Asset, net: NetworkId) => {
       if (hidden) return '••••';
       if (net === 'testnet') return 'de prueba';

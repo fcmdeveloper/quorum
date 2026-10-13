@@ -5,7 +5,7 @@ import { useApp } from '../state';
 import { useNav } from '../nav';
 import { proposalFailed } from '../ui/proposalError';
 import { useMoney } from '../ui/money';
-import { Action, Address, Badge, Card, IconButton, ListItem, QuorumRing, Screen, Section, Txt, Button, AccountAvatar, ColorPicker } from '../ui/components';
+import { Action, Address, Badge, Card, IconButton, ListItem, QuorumRing, Screen, Section, Txt, Button, AccountAvatar, ColorPicker, IconPicker, XrpMark, accountIcon } from '../ui/components';
 import { C, F, SP } from '../ui/theme';
 import { minSigners, lossTolerance, vaultHealth } from '../core/health';
 import { ActivityItem, NETWORKS, fetchActivity, fundTestnet } from '../core/network';
@@ -93,18 +93,18 @@ export default function AccountScreen({ id }: { id: string }) {
       }}
     >
       <View style={{ alignItems: 'center', paddingVertical: SP.md }}>
-        <Pressable onPress={() => setPicking((v) => !v)} accessibilityLabel="Cambiar color" style={{ marginBottom: SP.md }}>
-          <AccountAvatar color={a.color} size={56} icon={isVault ? 'lock' : dev ? (dev.kind === 'ledger' ? 'cpu' : dev.kind === 'tangem' ? 'credit-card' : 'smartphone') : 'eye'} />
+        <Pressable onPress={() => setPicking((v) => !v)} accessibilityLabel={t('Cambiar color e ícono')} style={{ marginBottom: SP.md }}>
+          <AccountAvatar color={a.color} size={56} icon={accountIcon(a, dev)} />
         </Pressable>
         {picking && (
-          <View style={{ marginBottom: SP.lg }}>
-            <ColorPicker
-              value={a.color}
-              onChange={async (c) => {
-                await app.updateAccount(a.id, { color: c });
-                setPicking(false);
-              }}
-            />
+          <View style={{ marginBottom: SP.lg, gap: SP.md, alignItems: 'center' }}>
+            <Txt v="label">Color</Txt>
+            <ColorPicker value={a.color} onChange={(c) => app.updateAccount(a.id, { color: c })} />
+            <Txt v="label" style={{ marginTop: SP.sm }}>Ícono</Txt>
+            <IconPicker value={accountIcon(a, dev)} color={a.color} onChange={(ic) => app.updateAccount(a.id, { icon: ic })} />
+            <Pressable onPress={() => setPicking(false)} hitSlop={10} style={{ marginTop: SP.sm }}>
+              <Txt v="label" color={C.green}>Listo</Txt>
+            </Pressable>
           </View>
         )}
         {editing ? (
@@ -129,10 +129,10 @@ export default function AccountScreen({ id }: { id: string }) {
         <View style={{ marginTop: 6 }}>
           <Address value={a.address} short />
         </View>
-        <Text style={{ fontFamily: F.bold, fontSize: 42, color: C.text, letterSpacing: -1.4, marginTop: SP.lg }}>
-          {st ? m.xrp(st.balanceXrp) : '…'}
-          <Text style={{ fontSize: 20, color: C.dim }}> XRP</Text>
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: SP.lg }}>
+          <XrpMark size={30} color={C.text} />
+          <Text style={{ fontFamily: F.bold, fontSize: 42, color: C.text, letterSpacing: -1.4 }}>{st ? m.xrp(st.balanceXrp) : '…'}</Text>
+        </View>
         <Txt v="body" color={C.dim}>
           {st ? m.fiatOf(st.balanceXrp, a.network) : ''}
         </Txt>
@@ -252,7 +252,7 @@ export default function AccountScreen({ id }: { id: string }) {
         <Section title="Activos">
           <Card style={{ paddingVertical: 4 }}>
             <ListItem
-              icon="hexagon"
+              glyph={<XrpMark size={17} color={C.green} />}
               title="XRP"
               subtitle={m.fiatOf(st.balanceXrp, a.network)}
               right={<Txt v="h3">{m.xrp(st.balanceXrp)}</Txt>}

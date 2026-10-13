@@ -5,8 +5,8 @@ import { Feather } from '@expo/vector-icons';
 import { useApp, signedWeight } from '../state';
 import { useNav } from '../nav';
 import { useMoney } from '../ui/money';
-import { AccountAvatar, Badge, Button, Card, Empty, IconButton, Logo, QuorumRing, Screen, Section, Txt } from '../ui/components';
-import { C, F, SP, accountColor } from '../ui/theme';
+import { AccountAvatar, AccountGlyph, Badge, Button, Card, Empty, IconButton, Logo, QuorumRing, Screen, Section, Txt, XrpMark, accountIcon, tap } from '../ui/components';
+import { C, F, SP, accountColor, alpha as alphaC } from '../ui/theme';
 import { minSigners, vaultHealth } from '../core/health';
 import { Account } from '../store';
 import { formatFiat } from '../core/market';
@@ -61,6 +61,8 @@ export default function HomeScreen() {
 
   const onlyTest = totals.main === 0 && totals.test > 0;
   const heroXrp = onlyTest ? totals.test : totals.main;
+  // en XRP: saldo real de XRP; en divisa: XRP + stablecoins
+  const inXrp = onlyTest || !m.price || app.settings.balanceUnit === 'xrp';
 
   return (
     <Screen
@@ -89,24 +91,41 @@ export default function HomeScreen() {
         setRefreshing(false);
       }}
     >
-      {/* Patrimonio: al tocarlo se abre su gráfico */}
+      {/* Patrimonio: al tocarlo se abre su gráfico; el selector cambia entre la divisa y XRP */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Pressable
+          onPress={() => nav.push('charts', { view: 'portfolio' })}
+          accessibilityLabel={t('Ver gráfico del patrimonio')}
+          hitSlop={6}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, flexDirection: 'row', alignItems: 'center', gap: 4 })}
+        >
+          <Txt v="label">{onlyTest ? 'Saldo en testnet' : 'Patrimonio total'}</Txt>
+          <Feather name="chevron-right" size={14} color={C.dim} />
+        </Pressable>
+        {!onlyTest && m.price ? <UnitToggle /> : null}
+      </View>
       <Pressable
         onPress={() => nav.push('charts', { view: 'portfolio' })}
         accessibilityLabel={t('Ver gráfico del patrimonio')}
         style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, alignSelf: 'flex-start' })}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Txt v="label">{onlyTest ? 'Saldo en testnet' : 'Patrimonio total'}</Txt>
-          <Feather name="chevron-right" size={14} color={C.dim} />
-        </View>
-        <Text style={{ fontFamily: F.bold, fontSize: 44, color: C.text, letterSpacing: -1.5, marginTop: 2 }}>
-          {onlyTest ? `${m.xrp(heroXrp)} XRP` : m.price ? m.fiatRaw(heroXrp * m.price + totals.stableFiat) : `${m.xrp(heroXrp)} XRP`}
-        </Text>
+        {inXrp ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 }}>
+            <XrpMark size={34} color={C.text} />
+            <Text style={{ fontFamily: F.bold, fontSize: 44, color: C.text, letterSpacing: -1.5 }}>{m.xrp(heroXrp)}</Text>
+          </View>
+        ) : (
+          <Text style={{ fontFamily: F.bold, fontSize: 44, color: C.text, letterSpacing: -1.5, marginTop: 2 }}>
+            {m.fiatRaw(heroXrp * m.price! + totals.stableFiat)}
+          </Text>
+        )}
       </Pressable>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
         {!onlyTest && m.price ? (
           <Txt v="body" color={C.dim}>
-            {m.xrp(heroXrp)} XRP{totals.stableFiat > 0 ? ` + ${m.fiatRaw(totals.stableFiat)} en stablecoins` : ''}
+            {inXrp
+              ? `≈ ${m.fiatRaw(heroXrp * m.price)}`
+              : totals.stableFiat > 0 ? t('{a} XRP + {b} en stablecoins', { a: m.xrp(heroXrp), b: m.fiatRaw(totals.stableFiat) }) : `${m.xrp(heroXrp)} XRP`}
           </Txt>
         ) : null}
         {m.price ? (
@@ -217,34 +236,83 @@ export default function HomeScreen() {
   );
 }
 
+/** Selector XRP / divisa para los saldos de Inicio. */
+function UnitToggle() {
+  const app = useApp();
+  const m = useMoney();
+  const unit = app.settings.balanceUnit;
+  const opt = (k: 'xrp' | 'fiat', label: React.ReactNode, a11y: string) => {
+    const on = unit === k;
+    return (
+      <Pressable
+        accessibilityLabel={a11y}
+        accessibilityState={{ selected: on }}
+        hitSlop={6}
+        onPress={() => {
+          if (on) return;
+          tap();
+          app.updateSettings({ balanceUnit: k });
+        }}
+        style={{ paddingHorizontal: 10, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.green : 'transparent' }}
+      >
+        {label}
+      </Pressable>
+    );
+  };
+  const ink = (on: boolean) => (on ? C.greenInk : C.dim);
+  return (
+    <View style={{ flexDirection: 'row', padding: 2, borderRadius: 15, borderWidth: 1, borderColor: C.lineStrong, backgroundColor: C.surface }}>
+      {opt('xrp', <XrpMark size={13} color={ink(unit === 'xrp')} />, t('Saldos en XRP'))}
+      {opt('fiat', <Text style={{ fontFamily: F.semibold, fontSize: 12, color: ink(unit === 'fiat') }}>{m.fiat.toUpperCase()}</Text>, t('Saldos en {x}', { x: m.fiat.toUpperCase() }))}
+    </View>
+  );
+}
+
+/** Saldo de una cuenta según la unidad elegida: el grande y el secundario. */
+function useBalance(a: Account) {
+  const app = useApp();
+  const m = useMoney();
+  const st = app.stateOf(a);
+  if (!st) return { main: '…', sub: '', xrp: false };
+  const fiatV = m.accountFiatValue(st, a.network);
+  if (app.settings.balanceUnit === 'xrp' || fiatV == null) {
+    return { main: m.xrp(st.balanceXrp), sub: a.network === 'testnet' ? t('XRP de prueba') : m.fiatOf(st.balanceXrp, a.network), xrp: true };
+  }
+  return { main: m.fiatRaw(fiatV), sub: `${m.xrp(st.balanceXrp)} XRP`, xrp: false };
+}
+
 function VaultCard({ a }: { a: Account }) {
   const app = useApp();
   const nav = useNav();
-  const m = useMoney();
   const st = app.stateOf(a);
   const h = vaultHealth(st);
   const lv = LEVEL[h.level];
   const list = st?.signerList;
+  const c = accountColor(a.color);
+  const bal = useBalance(a);
   const pend = app.proposals.filter((p) => p.account === a.address && p.network === a.network && p.status === 'collecting');
   return (
-    <Card onPress={() => nav.push('account', { id: a.id })} style={{ padding: SP.lg, borderLeftWidth: 3, borderLeftColor: accountColor(a.color) }}>
+    <Card onPress={() => nav.push('account', { id: a.id })} style={{ padding: SP.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
-        <QuorumRing
-          size={68}
-          segments={list ? list.entries.map((e) => ({ weight: e.weight, on: h.level === 'secure' })) : [{ weight: 1, on: false }]}
-          center={list ? `${minSigners(list)}/${list.entries.length}` : '—'}
-        />
+        <QuorumRing size={68} segments={list ? list.entries.map((e) => ({ weight: e.weight, on: h.level === 'secure' })) : [{ weight: 1, on: false }]}>
+          <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: alphaC(c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
+            <AccountGlyph icon={accountIcon(a)} size={20} color={c} />
+          </View>
+        </QuorumRing>
         <View style={{ flex: 1, gap: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: accountColor(a.color) }} />
             <Txt v="h3" numberOfLines={1} style={{ flexShrink: 1 }}>
               {a.label}
             </Txt>
             {a.network === 'testnet' && <Badge text="Testnet" color={C.test} />}
           </View>
-          <Text style={{ fontFamily: F.bold, fontSize: 22, color: C.text }}>{st ? `${m.xrp(st.balanceXrp)} XRP` : '…'}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {bal.xrp && <XrpMark size={17} color={C.text} />}
+            <Text style={{ fontFamily: F.bold, fontSize: 22, color: C.text }}>{bal.main}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <Badge text={lv.text} color={lv.color} icon={lv.icon} />
+            {list ? <Txt v="small">{t('{n} de {m} firmas', { n: minSigners(list), m: list.entries.length })}</Txt> : null}
             {pend.length ? <Badge text={t('{n} por firmar', { n: pend.length })} color={C.warn} icon="edit-3" /> : null}
           </View>
         </View>
@@ -256,13 +324,12 @@ function VaultCard({ a }: { a: Account }) {
 function WalletRow({ a }: { a: Account }) {
   const app = useApp();
   const nav = useNav();
-  const m = useMoney();
-  const st = app.stateOf(a);
   const dev = app.deviceFor(a.address);
+  const bal = useBalance(a);
   return (
     <Card onPress={() => nav.push('account', { id: a.id })} style={{ paddingVertical: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <AccountAvatar color={a.color} icon={dev ? (dev.kind === 'ledger' ? 'cpu' : dev.kind === 'tangem' ? 'credit-card' : 'smartphone') : 'eye'} />
+        <AccountAvatar color={a.color} icon={accountIcon(a, dev)} />
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <Txt v="body" numberOfLines={1} style={{ flexShrink: 1 }}>
@@ -273,8 +340,11 @@ function WalletRow({ a }: { a: Account }) {
           <Txt v="small">{dev ? dev.label : 'Solo lectura'}</Txt>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Txt v="h3">{st ? `${m.xrp(st.balanceXrp)} XRP` : '…'}</Txt>
-          <Txt v="small">{st ? m.fiatOf(st.balanceXrp, a.network) : ''}</Txt>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            {bal.xrp && <XrpMark size={14} color={C.text} />}
+            <Txt v="h3">{bal.main}</Txt>
+          </View>
+          <Txt v="small">{bal.sub}</Txt>
         </View>
       </View>
     </Card>

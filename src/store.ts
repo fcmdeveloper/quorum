@@ -22,6 +22,8 @@ export interface Account {
   createdAt: number;
   /** Color elegido para reconocerla (clave de ACCOUNT_COLORS). */
   color?: string;
+  /** Ícono elegido (clave de ACCOUNT_ICONS); sin él se usa el del tipo de cuenta. */
+  icon?: string;
   /** Solo bóvedas: destinos permitidos (fuera de esta lista la app exige confirmación reforzada). */
   allowed?: string[];
   /**
@@ -54,6 +56,8 @@ export interface Settings {
   /** Versión del aviso de responsabilidad aceptada (0 = ninguna). */
   termsAccepted: number;
   hideBalances: boolean;
+  /** Cómo se muestran los saldos en Inicio: en la divisa (XRP + stablecoins) o en XRP. */
+  balanceUnit: 'fiat' | 'xrp';
 }
 
 export type ProposalStatus = 'collecting' | 'ready' | 'submitted' | 'failed' | 'expired';
@@ -95,6 +99,7 @@ export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   termsAccepted: 0,
   hideBalances: false,
+  balanceUnit: 'fiat',
 };
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {

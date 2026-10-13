@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state';
 import { useNav } from '../nav';
-import { AccountAvatar, Badge, Card, Screen, Txt, tap } from '../ui/components';
+import { AccountAvatar, accountIcon, Badge, Card, Screen, Txt, tap } from '../ui/components';
 import { C, SP } from '../ui/theme';
 import { AccountKind } from '../store';
 
@@ -43,11 +43,7 @@ export default function ReorderScreen({ kind }: { kind: AccountKind }) {
         return (
           <Card key={a.id} style={{ paddingVertical: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <AccountAvatar
-                color={a.color}
-                size={36}
-                icon={kind === 'vault' ? 'lock' : dev ? (dev.kind === 'ledger' ? 'cpu' : dev.kind === 'tangem' ? 'credit-card' : 'smartphone') : 'eye'}
-              />
+              <AccountAvatar color={a.color} size={36} icon={accountIcon(a, dev)} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Txt v="body" numberOfLines={1}>
                   {a.label}

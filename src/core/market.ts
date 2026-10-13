@@ -69,36 +69,69 @@ export interface PricePoint {
   p: number;
 }
 
-const histCache = new Map<string, { at: number; pts: PricePoint[] }>();
+const histCache = new Map<string, { at: number; pts: PricePoint[]; limited: boolean }>();
+
+/** fetch con tiempo límite (las APIs gratuitas a veces no responden). */
+async function getJson(url: string, ms = 12_000): Promise<any> {
+  const ctl = new AbortController();
+  const to = setTimeout(() => ctl.abort(), ms);
+  try {
+    const res = await fetch(url, { headers: { accept: 'application/json' }, signal: ctl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(to);
+  }
+}
+
+/** CoinGecko: buena cobertura (desde 2013), pero con límite de consultas bajo en su plan gratuito. */
+async function fromCoinGecko(fiat: Fiat, days: string): Promise<PricePoint[]> {
+  const j = await getJson(`https://api.coingecko.com/api/v3/coins/ripple/market_chart?vs_currency=${fiat}&days=${days}`);
+  return (j?.prices ?? [])
+    .filter((x: any) => Array.isArray(x) && x[1] > 0)
+    .map((x: any) => ({ t: Number(x[0]), p: Number(x[1]) }));
+}
+
+/** Kraken: velas públicas (máx. 720 por consulta). Respaldo cuando CoinGecko limita o falla. */
+const KRAKEN_INTERVAL: Record<Range, number> = { day: 5, week: 15, month: 60, year: 1440, all: 10080 };
+const RANGE_MS: Record<Range, number> = { day: 864e5, week: 7 * 864e5, month: 30 * 864e5, year: 365 * 864e5, all: 0 };
+async function fromKraken(fiat: Fiat, range: Range): Promise<PricePoint[]> {
+  const interval = KRAKEN_INTERVAL[range];
+  const since = range === 'all' ? 0 : Math.floor((Date.now() - RANGE_MS[range]) / 1000);
+  const j = await getJson(`https://api.kraken.com/0/public/OHLC?pair=XRP${fiat.toUpperCase()}&interval=${interval}${since ? `&since=${since}` : ''}`);
+  if (j?.error?.length) throw new Error(String(j.error[0]));
+  const key = Object.keys(j?.result ?? {}).find((k) => k !== 'last');
+  const rows: any[] = key ? j.result[key] : [];
+  return rows.map((r) => ({ t: Number(r[0]) * 1000, p: Number(r[4]) })).filter((x) => x.p > 0);
+}
 
 /**
- * Precio de XRP en el tiempo (CoinGecko). `all` pide todo el historial; si la API gratuita
- * no lo permite, cae a 1 año y lo indica con `limited`.
+ * Precio de XRP en el tiempo. Primero CoinGecko; si falla o limita, Kraken.
+ * `limited`: en "Todo", el historial disponible no llega al inicio de XRP.
  */
 export async function fetchXrpHistory(fiat: Fiat, range: Range): Promise<{ points: PricePoint[]; limited: boolean }> {
   const key = `${fiat}:${range}`;
   const hit = histCache.get(key);
-  if (hit && Date.now() - hit.at < (range === 'day' ? 2 : 10) * 60_000) return { points: hit.pts, limited: false };
-  const get = async (days: string) => {
-    const url = `https://api.coingecko.com/api/v3/coins/ripple/market_chart?vs_currency=${fiat}&days=${days}`;
-    const res = await fetch(url, { headers: { accept: 'application/json' } });
-    if (!res.ok) throw new Error(`Historial de precio no disponible (${res.status})`);
-    const j: any = await res.json();
-    const pts: PricePoint[] = (j?.prices ?? [])
-      .filter((x: any) => Array.isArray(x) && x[1] > 0)
-      .map((x: any) => ({ t: Number(x[0]), p: Number(x[1]) }));
-    if (pts.length < 2) throw new Error('Historial de precio vacío');
-    return pts;
-  };
-  let limited = false;
-  let pts: PricePoint[];
-  try {
-    pts = await get(RANGE_DAYS[range]);
-  } catch (e) {
-    if (range !== 'all') throw e;
-    pts = await get('365');
-    limited = true;
+  if (hit && Date.now() - hit.at < (range === 'day' ? 2 : 10) * 60_000) return { points: hit.pts, limited: hit.limited };
+  const tries: (() => Promise<{ pts: PricePoint[]; limited: boolean }>)[] = [
+    async () => ({ pts: await fromCoinGecko(fiat, RANGE_DAYS[range]), limited: false }),
+    async () => ({ pts: await fromKraken(fiat, range), limited: range === 'all' }),
+  ];
+  if (range === 'all') tries.splice(1, 0, async () => ({ pts: await fromCoinGecko(fiat, '365'), limited: true }));
+  let lastErr: unknown;
+  for (const run of tries) {
+    try {
+      const r = await run();
+      if (r.pts.length >= 2) {
+        r.pts.sort((a, b) => a.t - b.t);
+        histCache.set(key, { at: Date.now(), ...r });
+        return { points: r.pts, limited: r.limited };
+      }
+    } catch (e) {
+      lastErr = e;
+    }
   }
-  histCache.set(key, { at: Date.now(), pts });
-  return { points: pts, limited };
+  // sin red: mejor mostrar lo último que se tuvo que nada
+  if (hit) return { points: hit.pts, limited: hit.limited };
+  throw new Error(`Historial de precio no disponible${lastErr ? ` (${(lastErr as any)?.message ?? lastErr})` : ''}`);
 }

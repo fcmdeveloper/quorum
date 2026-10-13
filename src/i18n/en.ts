@@ -803,4 +803,6 @@ export const EN: Record<string, string> = {
   "No escribas datos personales: los memos son públicos y quedan para siempre en la red.": "Don't write personal data: memos are public and stay on the network forever.",
   "Memo": "Memo",
   "Donación a Quorum": "Donation to Quorum",
+  "El historial gratuito de precios no llega al inicio de XRP.": "The free price history doesn't go back to XRP's beginning.",
+  "Precios: CoinGecko o Kraken. Solo informativo.": "Prices: CoinGecko or Kraken. For information only.",
 };

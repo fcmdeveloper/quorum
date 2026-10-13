@@ -52,8 +52,11 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
   const fiat = app.settings.fiat;
   const [view, setView] = useState<ChartView>(initial);
   const [range, setRange] = useState<Range>('week');
-  const [prices, setPrices] = useState<PricePoint[] | null>(null);
-  const [limited, setLimited] = useState(false);
+  // precios por divisa y rango: al cambiar de rango nunca se muestran los datos del anterior
+  const [byKey, setByKey] = useState<Record<string, { points: PricePoint[]; limited: boolean } | undefined>>({});
+  const priceKey = `${fiat}:${range}`;
+  const prices = byKey[priceKey]?.points ?? null;
+  const limited = byKey[priceKey]?.limited ?? false;
   const [hist, setHist] = useState<BalanceHistory[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,11 +86,7 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
     setLoading(true);
     setSel(null);
     fetchXrpHistory(fiat, range)
-      .then((r) => {
-        if (!alive) return;
-        setPrices(r.points);
-        setLimited(r.limited);
-      })
+      .then((r) => alive && setByKey((m) => ({ ...m, [`${fiat}:${range}`]: r })))
       .catch((e) => alive && setErr(e.message ?? String(e)))
       .finally(() => alive && setLoading(false));
     return () => {
@@ -187,7 +186,6 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
       </View>
 
       <Segmented<Range> value={range} onChange={setRange} options={RANGES} />
-      {loading && series ? <ActivityIndicator color={C.green} style={{ marginTop: -SP.sm, marginBottom: SP.sm }} /> : null}
 
       {series && series.length > 1 ? (
         <Card>
@@ -219,8 +217,8 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
             {partial ? <Txt v="small">Alguna cuenta tiene muchas transacciones: el historial más antiguo es aproximado.</Txt> : null}
           </>
         ) : null}
-        {limited && range === 'all' ? <Txt v="small">El historial gratuito de precios llega hasta un año atrás.</Txt> : null}
-        <Txt v="small">Precios: CoinGecko. Solo informativo.</Txt>
+        {limited && range === 'all' ? <Txt v="small">El historial gratuito de precios no llega al inicio de XRP.</Txt> : null}
+        <Txt v="small">Precios: CoinGecko o Kraken. Solo informativo.</Txt>
       </View>
     </Screen>
   );

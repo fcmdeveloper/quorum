@@ -12,6 +12,7 @@ import { ActivityItem, NETWORKS, fetchActivity, fundTestnet } from '../core/netw
 import { KIND_LABEL } from '../signers/types';
 import { KNOWN_TOKENS } from '../core/assets';
 import { buildTrustSet } from '../core/tx';
+import { isPreparing } from '../core/seedVault';
 import { ActivityRow } from './ActivityScreen';
 
 export default function AccountScreen({ id }: { id: string }) {
@@ -51,7 +52,9 @@ export default function AccountScreen({ id }: { id: string }) {
   const h = vaultHealth(st);
   const list = st?.signerList;
   const pend = app.proposals.filter((p) => p.account === a.address && p.network === a.network && (p.status === 'collecting' || p.status === 'ready'));
-  const canSign = isVault ? !!list || (!!dev && !st?.masterDisabled) : !!dev;
+  // Bóveda creada en Quorum sin terminar: solo se permiten los pasos de configuración.
+  const preparing = isPreparing(a, st);
+  const canSign = preparing ? false : isVault ? !!list || (!!dev && !st?.masterDisabled) : !!dev;
 
   const menu = () =>
     Alert.alert(a.label, undefined, [
@@ -150,8 +153,22 @@ export default function AccountScreen({ id }: { id: string }) {
         <Action icon="arrow-up-right" label="Enviar" disabled={!canSign || !st?.exists} onPress={() => nav.push('send', { id: a.id })} />
         <Action icon="arrow-down-left" label="Recibir" onPress={() => nav.push('receive', { id: a.id })} />
         <Action icon="repeat" label="Swap" disabled={!canSign || !st?.exists} onPress={() => nav.push('swap', { id: a.id })} />
-        <Action icon="bar-chart-2" label="DEX" disabled={!st?.exists} onPress={() => nav.push('trade', { id: a.id })} />
+        <Action icon="bar-chart-2" label="DEX" disabled={!st?.exists || preparing} onPress={() => nav.push('trade', { id: a.id })} />
       </View>
+
+      {preparing && (
+        <Card style={{ borderColor: C.warn + '88' }}>
+          <Txt v="h3">Bóveda en preparación</Txt>
+          <Txt v="small" style={{ marginVertical: 6 }}>
+            {!st?.exists
+              ? 'Envíale solo lo mínimo para activarla y sigue con la configuración.'
+              : list
+                ? 'Falta probar la multifirma y desactivar la master key. Hasta entonces, mantén solo lo mínimo en esta cuenta.'
+                : 'Falta elegir los firmantes. Mantén solo lo mínimo en esta cuenta hasta terminar.'}
+          </Txt>
+          <Button title="Continuar configuración" icon="arrow-right" onPress={() => nav.push(list ? 'finishVault' : 'vaultWizard', { id: a.id })} />
+        </Card>
+      )}
 
       {a.network === 'testnet' && st && Number(st.balanceXrp) < 20 && (
         <Button
@@ -303,7 +320,20 @@ export default function AccountScreen({ id }: { id: string }) {
       <Card style={{ marginTop: SP.lg, paddingVertical: 4 }}>
         <ListItem icon="image" title="NFTs" onPress={() => nav.push('nfts', { id: a.id })} />
         {isVault && <ListItem icon="shield" title="Seguridad de la bóveda" onPress={() => nav.push('security', { id: a.id })} />}
-        {!isVault && app.deviceFor(a.address) && (
+        {!isVault && app.deviceFor(a.address)?.kind === 'xaman' && (
+          <ListItem
+            icon="lock"
+            title="Convertir en bóveda"
+            subtitle="No disponible para cuentas Xaman"
+            onPress={() =>
+              Alert.alert(
+                'Convertir en bóveda',
+                'Xaman no permite que otras apps configuren la multifirma de sus cuentas, así que esta cuenta no se puede convertir desde Quorum. Crea una bóveda nueva (Nueva bóveda → Cuenta nueva) y mueve los fondos a ella cuando esté lista. Tu Xaman puede ser uno de sus firmantes.',
+              )
+            }
+          />
+        )}
+        {!isVault && app.deviceFor(a.address) && app.deviceFor(a.address)!.kind !== 'xaman' && (
           <ListItem
             icon="lock"
             title="Convertir en bóveda"

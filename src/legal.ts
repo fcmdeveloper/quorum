@@ -5,11 +5,11 @@
 import type { IconName } from './ui/components';
 
 /** Subir este número obliga a volver a aceptar el aviso (p. ej. si cambia el texto). */
-export const TERMS_VERSION = 1;
+export const TERMS_VERSION = 2;
 
 /** Lo que Quorum nunca hará: para reconocer estafas que se hacen pasar por Quorum. */
 export const NEVER_ASK: string[] = [
-  'Pedirte tu frase semilla, claves privadas o el código de tus tarjetas.',
+  'Pedirte la frase semilla o las claves de otra billetera, ni el código de tus tarjetas. Lo único que Quorum te pide escribir son los números secretos de una bóveda que tú creaste en Quorum, y solo dentro del asistente de esa bóveda.',
   'Escribirte por mensaje, correo, redes o teléfono para que firmes, autorices o envíes algo.',
   'Pedirte que hagas clic en un enlace para "verificar", "actualizar" o "recuperar" tu cuenta.',
   'Crear operaciones por su cuenta: solo existe lo que tú o tus cofirmantes proponen.',
@@ -20,7 +20,12 @@ export const RESPONSIBILITY: { icon: IconName; title: string; text: string }[] =
   {
     icon: 'key',
     title: 'Tú tienes el control, y la responsabilidad',
-    text: 'Quorum es una app de autocustodia: no guarda ni puede ver tus claves. Si pierdes tus dispositivos o respaldos por debajo del quórum, nadie —tampoco Quorum— puede recuperar tus fondos.',
+    text: 'Quorum es una app de autocustodia: no guarda tus claves. Si creas una bóveda en Quorum, sus números secretos se generan en tu teléfono, se muestran una vez y no se guardan. Si pierdes tus dispositivos o respaldos por debajo del quórum, nadie —tampoco Quorum— puede recuperar tus fondos.',
+  },
+  {
+    icon: 'lock',
+    title: 'Bóvedas creadas en Quorum',
+    text: 'Una bóveda creada en Quorum no puede volver a cuenta normal dentro de la app: es una regla de Quorum, y tú asumes esa decisión al crearla. Para salir, se mueven los fondos con multifirma a otra cuenta.',
   },
   {
     icon: 'eye',

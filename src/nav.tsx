@@ -22,6 +22,7 @@ export type Route =
   | { name: 'donate'; params: {} }
   | { name: 'guide'; params: {} }
   | { name: 'unvault'; params: { id: string } }
+  | { name: 'finishVault'; params: { id: string } }
   | { name: 'backup'; params: {} }
   | { name: 'reorder'; params: { kind: 'vault' | 'wallet' } }
   | { name: 'charts'; params: { view: 'portfolio' | 'market' } };

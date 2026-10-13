@@ -24,6 +24,11 @@ export interface Account {
   color?: string;
   /** Solo bóvedas: destinos permitidos (fuera de esta lista la app exige confirmación reforzada). */
   allowed?: string[];
+  /**
+   * 'quorum': bóveda creada desde cero en Quorum con números secretos que la app no guarda.
+   * Regla de Quorum: no puede volver a cuenta normal ni ser firmante de otra bóveda.
+   */
+  origin?: 'quorum';
 }
 
 export interface Contact {

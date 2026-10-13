@@ -38,6 +38,7 @@ import SettingsScreen, { ContactsScreen } from './src/screens/SettingsScreen';
 import AboutScreen, { DonateScreen } from './src/screens/AboutScreen';
 import GuideScreen from './src/screens/GuideScreen';
 import UnvaultScreen from './src/screens/UnvaultScreen';
+import FinishVaultScreen from './src/screens/FinishVaultScreen';
 import BackupScreen from './src/screens/BackupScreen';
 import ReorderScreen from './src/screens/ReorderScreen';
 import ChartsScreen from './src/screens/ChartsScreen';
@@ -82,6 +83,8 @@ function RouteView({ r }: { r: Route }) {
       return <GuideScreen />;
     case 'unvault':
       return <UnvaultScreen id={r.params.id} />;
+    case 'finishVault':
+      return <FinishVaultScreen id={r.params.id} />;
     case 'backup':
       return <BackupScreen />;
     case 'reorder':

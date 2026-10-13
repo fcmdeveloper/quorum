@@ -33,7 +33,7 @@ const PRINCIPLES: { icon: React.ComponentProps<typeof Feather>['name']; title: s
   {
     icon: 'key',
     title: 'Autocustodia',
-    text: 'Quorum nunca ve ni guarda claves privadas. Cada firma ocurre dentro de tu Tangem, Ledger o Xaman.',
+    text: 'Quorum no guarda claves privadas. Las firmas del día a día ocurren dentro de tu Tangem, Ledger o Xaman. Si creas una bóveda en Quorum, sus números secretos se generan en el teléfono, se muestran una vez y nunca se guardan.',
   },
 ];
 

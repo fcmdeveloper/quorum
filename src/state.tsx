@@ -6,6 +6,7 @@ import { PriceQuote, fetchXrpPrice } from './core/market';
 import { combineSignatures, SignerSig, TxJson } from './core/tx';
 import { decodeProposalQr, mergeSigs, proposalIdFor } from './core/qr';
 import { signAsMaster, signAsMultisigner } from './signers/sign';
+import { signWithSecret } from './core/seedVault';
 import { SignerDevice } from './signers/types';
 import { PendingProposalError } from './core/errors';
 import { setHapticsEnabled } from './ui/components';
@@ -69,6 +70,8 @@ interface AppCtx {
   createProposal: (a: Account, tx: TxJson, opts?: { mode?: 'multi' | 'single'; note?: string }) => Promise<Proposal>;
   importQr: (text: string) => Promise<{ proposal: Proposal; added: number; isNew: boolean }>;
   signProposal: (id: string, device: SignerDevice) => Promise<void>;
+  /** Firma simple con los números secretos de una bóveda creada en Quorum (no se guardan). */
+  signProposalWithSecret: (id: string, rows: string[]) => Promise<void>;
   submitProposal: (id: string) => Promise<Proposal>;
   deleteProposal: (id: string) => Promise<void>;
   resetApp: () => Promise<void>;
@@ -174,11 +177,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addDevice = useCallback(
     async (d: SignerDevice) => {
       if (devices.some((x) => x.address === d.address)) throw new Error('Ya tienes un dispositivo con esa dirección');
+      if (accounts.some((a) => a.origin === 'quorum' && a.address === d.address)) {
+        throw new Error('Esa dirección es una bóveda creada en Quorum: no puede usarse como dispositivo firmante.');
+      }
       const next = [...devices, d];
       setDevices(next);
       await saveDevices(next);
     },
-    [devices],
+    [devices, accounts],
   );
   const updateDevice = useCallback(
     async (id: string, p: Partial<SignerDevice>) => {
@@ -323,6 +329,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const mode = opts.mode ?? (st.signerList ? 'multi' : 'single');
       if (mode === 'single' && st.masterDisabled && !st.regularKey) throw new Error('La master key está desactivada: usa multifirma');
       if (mode === 'multi' && !st.signerList) throw new Error('Esta cuenta no tiene lista de firmantes');
+      // Bóveda creada en Quorum en preparación: solo los pasos de configuración.
+      const acc = accounts.find((x) => x.network === a.network && x.address === a.address) ?? a;
+      if (acc.origin === 'quorum' && !st.masterDisabled && !['SignerListSet', 'AccountSet', 'TicketCreate'].includes(tx.TransactionType)) {
+        throw new Error('Esta bóveda todavía está en preparación: termina su configuración (prueba con multifirma y desactivar la master key) antes de usarla.');
+      }
+      if (acc.origin === 'quorum' && tx.TransactionType === 'AccountSet' && tx.ClearFlag === 4) {
+        throw new Error('Regla de Quorum: esta bóveda se creó en Quorum y su master key no se puede reactivar.');
+      }
 
       // Tickets libres → propuestas en paralelo sin conflicto
       let ticket: number | undefined;
@@ -365,7 +379,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await persistProposals([p, ...pRef.current]);
       return p;
     },
-    [refreshAccount, settings.validityMinutes, persistProposals],
+    [accounts, refreshAccount, settings.validityMinutes, persistProposals],
   );
 
   const statusFor = (p: Proposal, sigs: SignerSig[]): Proposal['status'] => {
@@ -456,6 +470,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [ensureXaman, setXaman, persistProposals, signOnce],
+  );
+
+  const signProposalWithSecret = useCallback(
+    async (id: string, rows: string[]) => {
+      const p = pRef.current.find((x) => x.id === id);
+      if (!p) throw new Error('Propuesta no encontrada');
+      if (p.mode !== 'single') throw new Error('Los números secretos solo firman operaciones simples de la bóveda');
+      const ledger = await currentLedger(p.network);
+      if (p.tx.LastLedgerSequence && ledger > p.tx.LastLedgerSequence) {
+        await persistProposals(pRef.current.map((x) => (x.id === p.id ? { ...x, status: 'expired' } : x)));
+        throw new Error('La propuesta venció. Crea una nueva.');
+      }
+      const signed = signWithSecret(p.tx, rows);
+      await persistProposals(pRef.current.map((x) => (x.id === p.id ? { ...x, status: 'ready', hash: signed.hash, tx: signed.tx } : x)));
+    },
+    [persistProposals],
   );
 
   const submitProposal = useCallback(
@@ -598,6 +628,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     createProposal,
     importQr,
     signProposal,
+    signProposalWithSecret,
     submitProposal,
     deleteProposal,
     resetApp,

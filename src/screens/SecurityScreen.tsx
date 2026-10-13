@@ -49,6 +49,8 @@ export default function SecurityScreen({ id }: { id: string }) {
       case 'signers':
         return nav.push('vaultWizard', { id: a.id });
       case 'disableMaster':
+        // Bóveda creada en Quorum: se termina con sus números secretos, después de probar la multifirma.
+        if (a.origin === 'quorum') return nav.push('finishVault', { id: a.id });
         if (!list) return Alert.alert('Primero la multifirma', 'Configura la lista de firmantes antes de desactivar la master key.');
         // El XRP Ledger exige que desactivar la master key lo firme la propia master key
         // (con multifirma da tecNEED_MASTER_KEY).
@@ -173,19 +175,29 @@ export default function SecurityScreen({ id }: { id: string }) {
         </Card>
       </Section>
 
-      <Section title="Avanzado">
-        <Card style={{ paddingVertical: 4 }}>
-          <ListItem
-            icon="rotate-ccw"
-            title="Volver a cuenta normal"
-            subtitle="Reactiva la master key y quita la multifirma, paso a paso"
-            onPress={() => nav.push('unvault', { id: a.id })}
-          />
-        </Card>
-      </Section>
+      {a.origin === 'quorum' ? (
+        <Section title="Avanzado">
+          <Notice kind="info">
+            Bóveda creada en Quorum: por regla de Quorum no puede volver a cuenta normal. Para salir, mueve los fondos con multifirma a otra cuenta.
+          </Notice>
+        </Section>
+      ) : (
+        <Section title="Avanzado">
+          <Card style={{ paddingVertical: 4 }}>
+            <ListItem
+              icon="rotate-ccw"
+              title="Volver a cuenta normal"
+              subtitle="Reactiva la master key y quita la multifirma, paso a paso"
+              onPress={() => nav.push('unvault', { id: a.id })}
+            />
+          </Card>
+        </Section>
+      )}
 
       <Notice kind="info">
-        Quorum nunca tiene tus claves: arma cada operación, la verifica y la envía. Las firmas ocurren dentro de tus Tangem, Ledger o Xaman.
+        {a.origin === 'quorum'
+          ? 'Quorum no guarda claves: arma cada operación, la verifica y la envía. Los números secretos de esta bóveda solo se usaron para configurarla; las firmas del día a día ocurren en tus Tangem, Ledger o Xaman.'
+          : 'Quorum nunca tiene tus claves: arma cada operación, la verifica y la envía. Las firmas ocurren dentro de tus Tangem, Ledger o Xaman.'}
       </Notice>
     </Screen>
   );

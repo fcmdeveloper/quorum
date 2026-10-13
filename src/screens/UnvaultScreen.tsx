@@ -11,7 +11,7 @@ import { TxJson, buildClearFlag, buildEnableMaster, buildRemoveSignerList } from
 
 type StepState = 'done' | 'next' | 'locked' | 'optional';
 
-function Step({
+export function Step({
   n,
   title,
   text,
@@ -110,6 +110,17 @@ export default function UnvaultScreen({ id }: { id: string }) {
       ],
     );
 
+  if (a.origin === 'quorum') {
+    return (
+      <Screen title="Volver a cuenta normal" onBack={nav.pop}>
+        <Notice kind="info">
+          Esta bóveda se creó en Quorum y, por regla de Quorum, no puede volver a cuenta normal: reactivar su master key haría valer de nuevo sus números secretos. Para salir, mueve los fondos con multifirma a otra cuenta.
+        </Notice>
+        <Button title="Enviar fondos" icon="arrow-up-right" onPress={() => nav.replace('send', { id: a.id })} />
+      </Screen>
+    );
+  }
+
   if (!st) {
     return (
       <Screen title="Volver a cuenta normal" onBack={nav.pop}>
@@ -156,7 +167,13 @@ export default function UnvaultScreen({ id }: { id: string }) {
         text={
           listGone
             ? 'La cuenta ya no tiene firmantes.'
-            : `${t('Libera 0,2 XRP de reserva.')} ${master && masterOn ? t('Lo firma {x} (master key).', { x: master.label }) : t('Lo firma el quórum.')}`
+            : `${t('Libera 0,2 XRP de reserva.')} ${
+                master && masterOn
+                  ? t('Lo firma {x} (master key).', { x: master.label })
+                  : master
+                    ? t('Lo firmará {x} cuando la master key esté activa (o el quórum).', { x: master.label })
+                    : t('Lo firma el quórum.')
+              }`
         }
         state={listGone ? 'done' : masterOn ? 'next' : 'locked'}
         action={

@@ -188,7 +188,7 @@ export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<vo
 
 const POINTS: { icon: React.ComponentProps<typeof Feather>['name']; title: string; text: string }[] = [
   { icon: 'users', title: 'Varias firmas', text: 'Tus fondos solo se mueven cuando firman los dispositivos que elijas: Tangem, Ledger o Xaman.' },
-  { icon: 'key', title: 'Tus claves, en tus dispositivos', text: 'Quorum nunca ve ni guarda claves privadas. Solo coordina las firmas.' },
+  { icon: 'key', title: 'Tus claves, en tus dispositivos', text: 'Quorum no guarda claves privadas. Solo coordina las firmas.' },
   { icon: 'maximize', title: 'Sin servidores', text: 'Para firmar desde otro teléfono, se intercambian códigos QR. Nada pasa por internet salvo la red XRPL.' },
 ];
 

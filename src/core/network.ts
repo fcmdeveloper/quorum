@@ -400,6 +400,14 @@ export async function prepareForSigning(
   return prepared;
 }
 
+/** Reservas vigentes de la red, en XRP (base por cuenta e incremento por objeto). */
+export async function fetchReserves(net: NetworkId): Promise<{ base: number; inc: number }> {
+  const client = await getClient(net);
+  const server: any = await client.request({ command: 'server_state' } as any);
+  const vl = server.result.state.validated_ledger;
+  return { base: Number(vl.reserve_base) / 1_000_000, inc: Number(vl.reserve_inc) / 1_000_000 };
+}
+
 export async function currentLedger(net: NetworkId): Promise<number> {
   const client = await getClient(net);
   return client.getLedgerIndex();

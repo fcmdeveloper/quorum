@@ -697,8 +697,11 @@ export function QuorumRing({
   center,
   sub,
   children,
+  color,
 }: {
   size?: number;
+  /** Color de los segmentos encendidos (por defecto, el verde de Quorum). */
+  color?: string;
   segments: { weight: number; on: boolean }[];
   center?: string;
   sub?: string;
@@ -726,9 +729,9 @@ export function QuorumRing({
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         {arcs.map((a) =>
           a.d ? (
-            <Path key={a.key} d={a.d} stroke={a.on ? C.green : C.lineStrong} strokeWidth={stroke} strokeLinecap="round" fill="none" />
+            <Path key={a.key} d={a.d} stroke={a.on ? color ?? C.green : C.lineStrong} strokeWidth={stroke} strokeLinecap="round" fill="none" />
           ) : (
-            <Circle key={a.key} cx={cx} cy={cx} r={r} stroke={a.on ? C.green : C.lineStrong} strokeWidth={stroke} fill="none" />
+            <Circle key={a.key} cx={cx} cy={cx} r={r} stroke={a.on ? color ?? C.green : C.lineStrong} strokeWidth={stroke} fill="none" />
           ),
         )}
       </Svg>

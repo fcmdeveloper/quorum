@@ -294,7 +294,7 @@ function VaultCard({ a }: { a: Account }) {
   return (
     <Card onPress={() => nav.push('account', { id: a.id })} style={{ padding: SP.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
-        <QuorumRing size={68} segments={list ? list.entries.map((e) => ({ weight: e.weight, on: h.level === 'secure' })) : [{ weight: 1, on: false }]}>
+        <QuorumRing size={68} color={c} segments={list ? list.entries.map((e) => ({ weight: e.weight, on: h.level === 'secure' })) : [{ weight: 1, on: false }]}>
           <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: alphaC(c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
             <AccountGlyph icon={accountIcon(a)} size={20} color={c} />
           </View>

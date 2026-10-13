@@ -907,4 +907,5 @@ export const EN: Record<string, string> = {
   "Saldos en {x}": "Balances in {x}",
   "{n} de {m} firmas": "{n} of {m} signatures",
   "{a} XRP + {b} en stablecoins": "{a} XRP + {b} in stablecoins",
+  "Volver al original": "Back to original",
 };

@@ -59,7 +59,7 @@ export default function AccountScreen({ id }: { id: string }) {
   const menu = () =>
     Alert.alert(a.label, undefined, [
       { text: 'Cambiar nombre', onPress: () => setEditing(true) },
-      { text: 'Cambiar color', onPress: () => setPicking(true) },
+      { text: 'Cambiar color e ícono', onPress: () => setPicking(true) },
       { text: 'Ver en el explorador', onPress: () => Linking.openURL(`${NETWORKS[a.network].explorer}/accounts/${a.address}`) },
       {
         text: 'Quitar de Quorum',
@@ -101,10 +101,17 @@ export default function AccountScreen({ id }: { id: string }) {
             <Txt v="label">Color</Txt>
             <ColorPicker value={a.color} onChange={(c) => app.updateAccount(a.id, { color: c })} />
             <Txt v="label" style={{ marginTop: SP.sm }}>Ícono</Txt>
-            <IconPicker value={accountIcon(a, dev)} color={a.color} onChange={(ic) => app.updateAccount(a.id, { icon: ic })} />
-            <Pressable onPress={() => setPicking(false)} hitSlop={10} style={{ marginTop: SP.sm }}>
-              <Txt v="label" color={C.green}>Listo</Txt>
-            </Pressable>
+            <IconPicker value={a.icon} color={a.color} onChange={(ic) => app.updateAccount(a.id, { icon: ic })} />
+            <View style={{ flexDirection: 'row', gap: SP.xl, marginTop: SP.sm }}>
+              {a.icon || a.color ? (
+                <Pressable onPress={() => app.updateAccount(a.id, { icon: undefined, color: undefined })} hitSlop={10}>
+                  <Txt v="label" color={C.dim}>Volver al original</Txt>
+                </Pressable>
+              ) : null}
+              <Pressable onPress={() => setPicking(false)} hitSlop={10}>
+                <Txt v="label" color={C.green}>Listo</Txt>
+              </Pressable>
+            </View>
           </View>
         )}
         {editing ? (

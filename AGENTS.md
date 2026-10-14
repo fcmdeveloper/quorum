@@ -1,41 +1,24 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+# Notas para agentes y colaboradores
 
-## Expo has changed — do not trust your training data
+App Expo / React Native (ver la versión de `expo` en `package.json`). Expo cambia entre versiones: antes de tocar una API de Expo o React Native, revisa la documentación de esa versión en https://docs.expo.dev.
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
-
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
-
-## Commands
-
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
+## Comandos
 
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+npm install
+npm test             # pruebas (tsx --test tests/*.test.ts)
+npm run typecheck    # tsc --noEmit
+npx expo install <paquete>   # agrega dependencias con versiones compatibles con el SDK
+npx expo prebuild --clean    # regenera ios/ y android/
+npx expo run:ios --device --configuration Release
 ```
 
-Run lint and typecheck before declaring any task done.
+Corre las pruebas y el typecheck antes de dar algo por terminado.
 
-## Navigation & Routing
+## Cómo está armada
 
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
-
-## Rules
-
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+- **Navegación propia** (no Expo Router): `src/nav.tsx` y las rutas en `App.tsx`.
+- **Textos:** el español es la clave de traducción. Usa `t('Texto con {x}', { x })` para textos con variables; el inglés va en `src/i18n/en.ts` y `tests/i18n.test.ts` revisa que no falte ninguno. `node scripts/i18n-extract.js --templates` lista textos que conviene pasar a `t()`.
+- **Nativo:** `ios/` y `android/` se generan; los cambios nativos van en `app.json` y en `plugins/`. Tangem va en `modules/tangem-nfc/`.
+- **Sin servidores ni base de datos:** los datos viven en el teléfono (AsyncStorage / SecureStore) y la app habla directo con el XRP Ledger. No agregues analítica ni servicios que reciban datos de los usuarios.
+- **Llaves:** la app nunca guarda llaves privadas. Toda firma se verifica contra la transacción exacta antes de enviarla (`src/core/tx.ts`).

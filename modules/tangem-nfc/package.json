@@ -4,6 +4,6 @@
   "description": "Puente mínimo JSON-RPC hacia Tangem SDK (iOS/Android)",
   "main": "index.ts",
   "license": "MIT",
-  "author": "Felipe",
+  "author": "Minify SpA",
   "homepage": "https://github.com/tangem/tangem-sdk-ios"
 }

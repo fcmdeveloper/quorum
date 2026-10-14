@@ -1,0 +1,45 @@
+<!doctype html>
+<!--
+  Página de retorno del inicio de sesión con Xaman (ejemplo).
+
+  Xaman solo acepta redirecciones https, así que esta página estática recibe el resultado
+  (?code=…&state=…) y lo reenvía tal cual a la app por su esquema propio.
+  No guarda nada ni lo envía a ningún servidor.
+
+  1. Cambia APP_CALLBACK por el valor de `xamanAppCallback` de src/config.ts.
+  2. Publícala en tu sitio (por ejemplo https://tusitio.com/xaman-auth).
+  3. Registra esa URL como "redirect URI" en apps.xumm.dev y ponla en `xamanRedirect`.
+
+  Xaman sign-in return page (example). Xaman only accepts https redirects, so this static page
+  forwards the result unchanged to the app through its own scheme. It stores and sends nothing.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Volviendo a la app…</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         text-align: center; padding: 24px; font: 16px/1.5 -apple-system, system-ui, sans-serif; }
+  a { display: inline-block; margin-top: 16px; padding: 14px 28px; border-radius: 14px;
+      background: #10B26A; color: #fff; font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+<div>
+  <p>Volviendo a la app… / Returning to the app…</p>
+  <a id="go" href="#">Abrir la app / Open the app</a>
+</div>
+<script>
+  (function () {
+    var APP_CALLBACK = 'miboveda://xaman-auth'; // ← tu esquema / your scheme
+    var target = APP_CALLBACK + (location.search || '') + (location.hash || '');
+    document.getElementById('go').setAttribute('href', target);
+    location.replace(target);
+  })();
+</script>
+</body>
+</html>

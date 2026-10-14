@@ -5,13 +5,14 @@ import { Feather } from '@expo/vector-icons';
 import { useApp, signedWeight } from '../state';
 import { useNav } from '../nav';
 import { useMoney } from '../ui/money';
-import { AccountAvatar, AccountGlyph, Badge, Button, Card, Empty, IconButton, Logo, QuorumRing, Screen, Section, Txt, XrpMark, accountIcon, tap } from '../ui/components';
+import { AccountAvatar, AccountGlyph, Badge, Button, Card, Empty, IconButton, Logo, QuorumRing, Screen, Section, Txt, XrpMark, accountIcon, tap, NativeSeg } from '../ui/components';
 import { C, F, SP, accountColor, alpha as alphaC } from '../ui/theme';
 import { minSigners, vaultHealth } from '../core/health';
 import { Account } from '../store';
 import { formatFiat } from '../core/market';
 import { NftImage } from '../ui/NftImage';
 import { useNftAvatarCheck } from '../ui/nftAvatars';
+import { useNativeSelectors } from '../ui/Glass';
 
 const LEVEL = {
   // getters: el color se lee al dibujar (cambia con el tema)
@@ -251,6 +252,7 @@ function UnitToggle() {
   const app = useApp();
   const m = useMoney();
   const unit = app.settings.balanceUnit;
+  const nativeSel = useNativeSelectors();
   const opt = (k: 'xrp' | 'fiat', label: React.ReactNode, a11y: string) => {
     const on = unit === k;
     return (
@@ -270,6 +272,20 @@ function UnitToggle() {
     );
   };
   const ink = (on: boolean) => (on ? C.greenInk : C.dim);
+  // iOS 26 con selectores nativos: el mismo selector de vidrio que en el resto de la app
+  if (nativeSel) {
+    return (
+      <NativeSeg
+        value={unit}
+        options={[
+          { value: 'xrp', label: 'XRP' },
+          { value: 'fiat', label: m.fiat.toUpperCase() },
+        ]}
+        onChange={(k) => app.updateSettings({ balanceUnit: k })}
+        style={{ width: 124, height: 30 }}
+      />
+    );
+  }
   return (
     <View style={{ flexDirection: 'row', padding: 2, borderRadius: 15, borderWidth: 1, borderColor: C.lineStrong, backgroundColor: C.surface }}>
       {opt('xrp', <XrpMark size={13} color={ink(unit === 'xrp')} />, t('Saldos en XRP'))}

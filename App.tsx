@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ import {
 import { JetBrainsMono_400Regular, JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono';
 import { AppProvider, useApp } from './src/state';
 import { NavProvider, Route, SlideIn, Tab, useNav } from './src/nav';
-import { C, F, ThemeName, applyTheme } from './src/ui/theme';
+import { C, F, ThemeName, applyTheme, themeName } from './src/ui/theme';
 import { Lang, setLang, systemLang, t as tt } from './src/i18n';
 import { patchAlert } from './src/i18n/alert';
 patchAlert();
@@ -119,6 +119,28 @@ function TabBar() {
   const insets = useSafeAreaInsets();
   const pending = app.proposals.filter((p) => p.status === 'collecting' || p.status === 'ready').length;
   const glass = hasGlass();
+  // lente que se desliza a la pestaña elegida (solo en la barra de vidrio)
+  const tabIdx = Math.max(0, TABS.findIndex((x) => x.key === nav.tab));
+  const [barW, setBarW] = React.useState(0);
+  const itemW = barW > 0 ? (barW - 8) / TABS.length : 0;
+  const lensX = React.useRef(new Animated.Value(0)).current;
+  const lensS = React.useRef(new Animated.Value(1)).current;
+  const first = React.useRef(true);
+  React.useEffect(() => {
+    if (!itemW) return;
+    if (first.current) {
+      first.current = false;
+      lensX.setValue(tabIdx * itemW);
+      return;
+    }
+    Animated.parallel([
+      Animated.spring(lensX, { toValue: tabIdx * itemW, useNativeDriver: true, friction: 8, tension: 90 }),
+      Animated.sequence([
+        Animated.timing(lensS, { toValue: 1.18, duration: 120, useNativeDriver: true }),
+        Animated.spring(lensS, { toValue: 1, useNativeDriver: true, friction: 5, tension: 120 }),
+      ]),
+    ]).start();
+  }, [tabIdx, itemW]);
   const scan = () => {
     tap();
     nav.push('scan', { purpose: 'any' });
@@ -156,6 +178,22 @@ function TabBar() {
         style={{ position: 'absolute', left: 0, right: 0, bottom: Math.max(insets.bottom - 8, 12), paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}
       >
         <Glass style={{ flex: 1, height: 64, borderRadius: 32, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}>
+          <View style={StyleSheet.absoluteFill} onLayout={(e) => setBarW(e.nativeEvent.layout.width)} pointerEvents="none">
+            {itemW > 0 && (
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  top: 6,
+                  bottom: 6,
+                  left: 4,
+                  width: itemW,
+                  borderRadius: 26,
+                  backgroundColor: themeName() === 'light' ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.13)',
+                  transform: [{ translateX: lensX }, { scaleX: lensS }],
+                }}
+              />
+            )}
+          </View>
           {item(TABS[0])}
           {item(TABS[1])}
           {item(TABS[2])}

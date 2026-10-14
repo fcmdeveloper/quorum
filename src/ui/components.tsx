@@ -386,33 +386,49 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  defer,
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
+  /** Aplica el cambio después de la animación (para cambios que redibujan toda la app). */
+  defer?: boolean;
 }) {
-  // iOS 26 con la opción activada: selector nativo con Liquid Glass, con Space Grotesk si iOS la encuentra
-  if (useNativeSelectors()) {
-    const idx = Math.max(0, options.findIndex((o) => o.value === value));
-    return (
-      <NativeSegmented
-        values={options.map((o) => t(o.label))}
-        selectedIndex={idx}
-        onChange={(e) => {
-          const o = options[e.nativeEvent.selectedSegmentIndex];
-          if (o && o.value !== value) {
-            tap();
-            onChange(o.value);
-          }
-        }}
-        tintColor={C.green}
-        appearance={themeName()}
-        fontStyle={{ fontFamily: 'SpaceGrotesk-SemiBold', fontSize: 14, color: C.dim }}
-        activeFontStyle={{ fontFamily: 'SpaceGrotesk-Bold', fontSize: 14, color: C.greenInk }}
-        style={{ height: 40, marginBottom: SP.lg }}
-      />
-    );
-  }
+  return useNativeSelectors() ? (
+    <NativeSeg value={value} options={options} onChange={onChange} defer={defer} />
+  ) : (
+    <QuorumSeg value={value} options={options} onChange={onChange} />
+  );
+}
+
+function NativeSeg<T extends string>({ value, options, onChange, defer, style }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; defer?: boolean; style?: ViewStyle }) {
+  const idx = Math.max(0, options.findIndex((o) => o.value === value));
+  const [local, setLocal] = useState(idx);
+  useEffect(() => setLocal(idx), [idx]);
+  return (
+    <NativeSegmented
+      values={options.map((o) => t(o.label))}
+      selectedIndex={local}
+      onChange={(e) => {
+        const i = e.nativeEvent.selectedSegmentIndex;
+        const o = options[i];
+        if (!o || o.value === value) return;
+        setLocal(i);
+        tap();
+        if (defer) setTimeout(() => onChange(o.value), 320);
+        else onChange(o.value);
+      }}
+      tintColor={C.green}
+      appearance={themeName()}
+      fontStyle={{ fontFamily: 'SpaceGrotesk-SemiBold', fontSize: 14, color: C.dim }}
+      activeFontStyle={{ fontFamily: 'SpaceGrotesk-Bold', fontSize: 14, color: C.greenInk }}
+      style={style ?? { height: 40, marginBottom: SP.lg }}
+    />
+  );
+}
+export { NativeSeg };
+
+function QuorumSeg<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
   return (
     <View style={st.seg}>
       {options.map((o) => {

@@ -54,6 +54,7 @@ export default function SettingsScreen() {
         </Txt>
         <Segmented
           value={app.settings.appearance ?? 'system'}
+          defer
           onChange={(v) => app.updateSettings({ appearance: v })}
           options={[
             { value: 'system', label: 'Sistema' },
@@ -66,6 +67,7 @@ export default function SettingsScreen() {
         </Txt>
         <Segmented
           value={app.settings.language ?? 'system'}
+          defer
           onChange={(v) => app.updateSettings({ language: v })}
           options={[
             { value: 'system', label: 'Sistema' },

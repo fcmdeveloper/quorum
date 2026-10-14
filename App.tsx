@@ -19,6 +19,7 @@ import { patchAlert } from './src/i18n/alert';
 patchAlert();
 import { ToastHost, tap } from './src/ui/components';
 import { OfflineBanner } from './src/ui/OfflineBanner';
+import { Glass, hasGlass } from './src/ui/Glass';
 import HomeScreen from './src/screens/HomeScreen';
 import AccountScreen from './src/screens/AccountScreen';
 import ActivityScreen from './src/screens/ActivityScreen';
@@ -117,6 +118,11 @@ function TabBar() {
   const app = useApp();
   const insets = useSafeAreaInsets();
   const pending = app.proposals.filter((p) => p.status === 'collecting' || p.status === 'ready').length;
+  const glass = hasGlass();
+  const scan = () => {
+    tap();
+    nav.push('scan', { purpose: 'any' });
+  };
   const item = (t: (typeof TABS)[number]) => {
     const on = nav.tab === t.key;
     return (
@@ -128,7 +134,7 @@ function TabBar() {
           tap();
           nav.setTab(t.key);
         }}
-        style={{ flex: 1, alignItems: 'center', paddingTop: 10 }}
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: glass ? 0 : 10 }}
       >
         <View>
           <Feather name={t.icon} size={22} color={on ? C.green : C.faint} />
@@ -142,6 +148,27 @@ function TabBar() {
       </Pressable>
     );
   };
+  // iOS 26: barra flotante de vidrio (el contenido pasa por detrás) y botón de escanear aparte
+  if (glass) {
+    return (
+      <View
+        pointerEvents="box-none"
+        style={{ position: 'absolute', left: 0, right: 0, bottom: Math.max(insets.bottom - 8, 12), paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+      >
+        <Glass style={{ flex: 1, height: 64, borderRadius: 32, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}>
+          {item(TABS[0])}
+          {item(TABS[1])}
+          {item(TABS[2])}
+          {item(TABS[3])}
+        </Glass>
+        <Glass interactive tint={C.green} style={{ width: 64, height: 64, borderRadius: 32 }}>
+          <Pressable accessibilityLabel={tt('Escanear')} onPress={scan} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Feather name="maximize" size={24} color={C.greenInk} />
+          </Pressable>
+        </Glass>
+      </View>
+    );
+  }
   return (
     <View style={{ flexDirection: 'row', backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, paddingBottom: insets.bottom || 10 }}>
       {item(TABS[0])}
@@ -149,10 +176,7 @@ function TabBar() {
       <View style={{ flex: 1, alignItems: 'center' }}>
         <Pressable
           accessibilityLabel="Escanear"
-          onPress={() => {
-            tap();
-            nav.push('scan', { purpose: 'any' });
-          }}
+          onPress={scan}
           style={({ pressed }) => ({
             marginTop: -18,
             width: 58,

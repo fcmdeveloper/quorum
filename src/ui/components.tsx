@@ -21,6 +21,7 @@ import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import { t, tr } from '../i18n';
 import { NftImage } from './NftImage';
+import { Glass } from './Glass';
 import { C, F, R, SP, T, ACCOUNT_COLORS, ACCOUNT_ICONS, accountColor, alpha, onThemeChange } from './theme';
 
 export type IconName = React.ComponentProps<typeof Feather>['name'];
@@ -83,14 +84,14 @@ export function ToastHost() {
   if (!msg) return null;
   const color = msg.kind === 'ok' ? C.green : msg.kind === 'warn' ? C.warn : C.bad;
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[st.toast, { top: insets.top + 8, transform: [{ translateY: y }], borderColor: color }]}
-    >
-      <Feather name={msg.kind === 'ok' ? 'check-circle' : 'alert-triangle'} size={16} color={color} />
-      <Txt v="body" style={{ flex: 1 }}>
-        {msg.text}
-      </Txt>
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 16, right: 16, zIndex: 100, top: insets.top + 8, transform: [{ translateY: y }] }}>
+      {/* iOS 26: vidrio; antes, la tarjeta de siempre con borde de color */}
+      <Glass style={st.toastBody} fallback={{ backgroundColor: C.raised, borderWidth: 1, borderColor: color }}>
+        <Feather name={msg.kind === 'ok' ? 'check-circle' : 'alert-triangle'} size={16} color={color} />
+        <Txt v="body" style={{ flex: 1 }}>
+          {msg.text}
+        </Txt>
+      </Glass>
     </Animated.View>
   );
 }
@@ -815,16 +816,10 @@ const buildSt = () =>
   stepBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: C.raised },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: R.pill, paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start' },
   notice: { flexDirection: 'row', gap: 10, borderRadius: R.sm + 2, borderWidth: 1, padding: SP.md, marginVertical: SP.sm },
-  toast: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    zIndex: 100,
+  toastBody: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: C.raised,
-    borderWidth: 1,
     borderRadius: R.md,
     paddingHorizontal: 14,
     paddingVertical: 12,

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Text } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { Feather } from '@expo/vector-icons';
+import { Glass } from './Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F } from './theme';
 import { toast } from './components';
@@ -44,20 +45,16 @@ export function OfflineBanner({ onBackOnline }: { onBackOnline?: () => void }) {
         top: insets.top + 4,
         alignSelf: 'center',
         transform: [{ translateY: y }],
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 999,
-        backgroundColor: C.surface,
-        borderWidth: 1,
-        borderColor: C.warn,
         opacity: offline ? 1 : 0,
       }}
     >
-      <Feather name="wifi-off" size={14} color={C.warn} />
-      <Text style={{ fontFamily: F.medium, fontSize: 13, color: C.warn }}>{t('Sin conexión · saldos sin actualizar')}</Text>
+      <Glass
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 }}
+        fallback={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.warn }}
+      >
+        <Feather name="wifi-off" size={14} color={C.warn} />
+        <Text style={{ fontFamily: F.medium, fontSize: 13, color: C.warn }}>{t('Sin conexión · saldos sin actualizar')}</Text>
+      </Glass>
     </Animated.View>
   );
 }

@@ -12,7 +12,8 @@ import { useNav } from '../nav';
 import { Badge, Button, Screen, Section, Txt, tap, toast } from '../ui/components';
 import { C, R, SP, accountColor } from '../ui/theme';
 import { NftImage } from '../ui/NftImage';
-import { NftItem, fetchNfts, loadNftMetadata } from '../core/network';
+import { NftItem, fetchNfts } from '../core/network';
+import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
 import { Account } from '../store';
 import { QUORUM } from '../config';
 
@@ -37,18 +38,29 @@ const GALLERY: Account = { id: 'quorum-gallery', label: 'Galería de Quorum', ki
 
 function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account; selectedId?: string; onPick: (n: NftItem, source: Account) => void; hideHead?: boolean }) {
   const [items, setItems] = useState<NftItem[] | null>(null);
+  // NFTs cuya metadata todavía se está leyendo (se muestran con un marcador mientras tanto)
+  const [loading, setLoading] = useState<Set<string>>(new Set());
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         const list = await fetchNfts(source.network, source.address);
+        const { items: cached, pending } = await withCachedMeta(list);
         if (!alive) return;
-        setItems(list);
-        for (let i = 0; i < list.length; i += 6) {
-          const chunk = await Promise.all(list.slice(i, i + 6).map(loadNftMetadata));
-          if (!alive) return;
-          setItems((prev) => (prev ? prev.map((n) => chunk.find((c) => c.id === n.id) ?? n) : prev));
-        }
+        setItems(cached);
+        setLoading(new Set(pending.map((n) => n.id)));
+        await loadMetaParallel(
+          pending,
+          (r) => {
+            setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev));
+            setLoading((prev) => {
+              const s = new Set(prev);
+              s.delete(r.id);
+              return s;
+            });
+          },
+          () => alive,
+        );
       } catch {
         if (alive) setItems([]);
       }
@@ -75,8 +87,8 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
       </View>
     );
   }
-  // solo los que tienen imagen sirven como avatar
-  const withImage = items.filter((n) => n.image);
+  // solo los que tienen imagen sirven como avatar (los que aún cargan se muestran con un marcador)
+  const withImage = items.filter((n) => n.image || loading.has(n.id));
   if (withImage.length === 0) return null;
   return (
     <View style={{ marginBottom: SP.lg }}>
@@ -84,6 +96,9 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
         {withImage.map((n) => {
           const on = n.id === selectedId;
+          if (!n.image) {
+            return <View key={n.id} style={{ width: TILE, height: TILE, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, opacity: 0.6 }} />;
+          }
           return (
             <Pressable
               key={n.id}

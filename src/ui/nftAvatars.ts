@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useApp } from '../state';
-import { fetchNfts } from '../core/network';
+import { Image } from 'expo-image';
+import { NftItem, fetchNfts, ipfsToHttp } from '../core/network';
+import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
 import { QUORUM } from '../config';
 
 /**
@@ -56,4 +58,30 @@ export function useNftAvatarCheck() {
       alive = false;
     };
   }, [key, app.ready]);
+}
+
+/**
+ * Precarga la galería pública de NFTs unos segundos después de abrir la app (metadata a la
+ * caché e imágenes al disco), para que al elegir una imagen ya esté lista. Una vez por sesión.
+ */
+let galleryWarmed = false;
+export function useGalleryPrefetch() {
+  const app = useApp();
+  useEffect(() => {
+    if (!app.ready || galleryWarmed || !QUORUM.nftGalleryAddress) return;
+    galleryWarmed = true;
+    const timer = setTimeout(async () => {
+      try {
+        const list = await fetchNfts('mainnet', QUORUM.nftGalleryAddress);
+        const { items, pending } = await withCachedMeta(list);
+        const done: NftItem[] = items.filter((n) => n.image);
+        await loadMetaParallel(pending, (r) => r.image && done.push(r), () => true, 3);
+        const urls = done.map((n) => ipfsToHttp(n.image)).filter((u): u is string => !!u && /^https?:/.test(u));
+        if (urls.length) await Image.prefetch(urls, 'disk');
+      } catch {
+        // sin red: se cargará al abrir la galería
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [app.ready]);
 }

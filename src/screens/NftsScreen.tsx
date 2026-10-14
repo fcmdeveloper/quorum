@@ -6,7 +6,8 @@ import { useApp } from '../state';
 import { useNav } from '../nav';
 import { Address, Badge, Button, Empty, Row, Screen, Txt } from '../ui/components';
 import { C, R, SP } from '../ui/theme';
-import { NETWORKS, NftItem, fetchNfts, loadNftMetadata } from '../core/network';
+import { NETWORKS, NftItem, fetchNfts } from '../core/network';
+import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
 import { NftImage } from '../ui/NftImage';
 
 const W = Dimensions.get('window').width;
@@ -26,14 +27,16 @@ export default function NftsScreen({ id }: { id: string }) {
     (async () => {
       try {
         const list = await fetchNfts(a.network, a.address);
+        // las imágenes ya conocidas aparecen al instante (caché); luego se completa el detalle
+        const { items: cached, pending } = await withCachedMeta(list);
         if (!alive) return;
-        setItems(list);
-        // carga de metadata de a poco, sin bloquear la grilla
-        for (let i = 0; i < list.length; i += 4) {
-          const chunk = await Promise.all(list.slice(i, i + 4).map(loadNftMetadata));
-          if (!alive) return;
-          setItems((prev) => (prev ? prev.map((n) => chunk.find((c) => c.id === n.id) ?? n) : prev));
-        }
+        setItems(cached);
+        const rest = list.filter((n) => !pending.some((p) => p.id === n.id));
+        await loadMetaParallel(
+          [...pending, ...rest],
+          (r) => setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev)),
+          () => alive,
+        );
       } catch (e: any) {
         setErr(e.message);
         setItems([]);

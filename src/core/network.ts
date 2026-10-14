@@ -345,7 +345,7 @@ export async function loadNftMetadata(n: NftItem): Promise<NftItem> {
     if (!url || !/^https?:\/\//.test(url)) return n;
     if (/\.(png|jpe?g|gif|webp|svg|avif)(\?|$)/i.test(url)) return { ...n, image: n.uri };
     try {
-      const res = await fetchWithTimeout(url, 7000);
+      const res = await fetchWithTimeout(url, 4500);
       if (!res.ok) continue;
       const ct = res.headers.get('content-type') ?? '';
       if (ct.startsWith('image/') || ct.startsWith('video/')) return { ...n, image: n.uri };

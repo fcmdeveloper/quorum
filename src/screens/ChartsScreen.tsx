@@ -3,12 +3,12 @@
  * Se abre desde el inicio (tocando el patrimonio o el precio) y se puede cambiar entre ambos.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Switch, Text, View } from 'react-native';
 import { t, locale } from '../i18n';
 import { useApp } from '../state';
 import { useNav } from '../nav';
 import { useMoney } from '../ui/money';
-import { Badge, Button, Card, Notice, Row, Screen, Segmented, Txt } from '../ui/components';
+import { AccountAvatar, Badge, Button, Card, Notice, Row, Screen, Section, Segmented, Txt, accountIcon, tap } from '../ui/components';
 import { LineChart } from '../ui/LineChart';
 import { C, F, SP } from '../ui/theme';
 import { FIATS, fetchXrpHistory, formatFiat, PricePoint, Range } from '../core/market';
@@ -63,11 +63,17 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
   const [sel, setSel] = useState<number | null>(null);
   const [reload, setReload] = useState(0);
 
-  // Cuentas de mainnet (sin repetir dirección): las de testnet no tienen valor real
-  const mainnet = useMemo(() => {
+  // Cuentas de mainnet (sin repetir dirección): las de testnet no tienen valor real.
+  // `allMain` son todas; `mainnet`, las que suman (no excluidas del patrimonio).
+  const allMain = useMemo(() => {
     const seen = new Set<string>();
     return app.accounts.filter((a) => a.network === 'mainnet' && !seen.has(a.address) && seen.add(a.address));
-  }, [app.accounts]);
+  }, [app.accounts.map((a) => `${a.network}:${a.address}`).join(',')]);
+  const included = useMemo(
+    () => new Set(app.accounts.filter((a) => a.network === 'mainnet' && !a.excluded).map((a) => a.address)),
+    [app.accounts],
+  );
+  const mainnet = useMemo(() => allMain.filter((a) => included.has(a.address)), [allMain, included]);
   const nowXrp = mainnet.reduce((s, a) => s + Number(app.stateOf(a)?.balanceXrp ?? 0), 0);
   const stableFiat = useMemo(() => {
     let v = 0;
@@ -96,22 +102,24 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
 
   // Historial de saldos (una vez; se guarda en caché unos minutos)
   useEffect(() => {
-    if (view !== 'portfolio' || hist || !mainnet.length) return;
+    if (view !== 'portfolio' || hist || !allMain.length) return;
     let alive = true;
-    Promise.all(mainnet.map((a) => fetchBalanceHistory('mainnet', a.address)))
+    Promise.all(allMain.map((a) => fetchBalanceHistory('mainnet', a.address)))
       .then((h) => alive && setHist(h))
       .catch((e) => alive && setErr(e.message ?? String(e)));
     return () => {
       alive = false;
     };
-  }, [view, hist, mainnet, reload]);
+  }, [view, hist, allMain, reload]);
 
   const series = useMemo(() => {
     if (!prices) return null;
     if (view === 'market') return prices.map((p) => ({ t: p.t, v: p.p, xrp: 0 }));
     if (!hist) return null;
-    return portfolioSeries(hist, prices, m.price ? { xrp: nowXrp, price: m.price } : undefined);
-  }, [view, prices, hist, nowXrp, m.price]);
+    const use = hist.filter((_, i) => allMain[i] && included.has(allMain[i].address));
+    if (!use.length) return null;
+    return portfolioSeries(use, prices, m.price ? { xrp: nowXrp, price: m.price } : undefined);
+  }, [view, prices, hist, nowXrp, m.price, included, allMain]);
 
   const first = series?.[0];
   const last = series?.[series.length - 1];
@@ -207,6 +215,8 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
         </Card>
       ) : null}
 
+      {view === 'portfolio' && <IncludedAccounts />}
+
       <View style={{ gap: SP.sm, marginTop: SP.md }}>
         {view === 'portfolio' ? (
           <>
@@ -221,5 +231,52 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
         <Txt v="small">Precios: CoinGecko o Kraken. Solo informativo.</Txt>
       </View>
     </Screen>
+  );
+}
+
+/** Cuentas que suman al patrimonio, con un interruptor para incluirlas o no. */
+function IncludedAccounts() {
+  const app = useApp();
+  const m = useMoney();
+  const main = app.accounts.filter((a) => a.network === 'mainnet');
+  const test = app.accounts.filter((a) => a.network === 'testnet');
+  if (!app.accounts.length) return null;
+  return (
+    <Section title="Cuentas que suman">
+      <Card style={{ paddingVertical: 4 }}>
+        {main.map((a, i) => {
+          const st = app.stateOf(a);
+          const v = st ? m.accountFiatValue(st, a.network) : null;
+          return (
+            <View
+              key={a.id}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderColor: C.line, opacity: a.excluded ? 0.55 : 1 }}
+            >
+              <AccountAvatar color={a.color} icon={accountIcon(a, app.deviceFor(a.address))} nft={a.nft?.image} size={36} />
+              <View style={{ flex: 1 }}>
+                <Txt v="body" numberOfLines={1}>
+                  {a.label}
+                </Txt>
+                <Txt v="small" numberOfLines={1}>
+                  {a.excluded ? t('No suma al total') : v != null ? m.fiatRaw(v) : st ? `${m.xrp(st.balanceXrp)} XRP` : '…'}
+                </Txt>
+              </View>
+              <Switch
+                value={!a.excluded}
+                onValueChange={(on) => {
+                  tap();
+                  app.updateAccount(a.id, { excluded: on ? undefined : true });
+                }}
+                trackColor={{ true: C.greenDeep, false: C.line }}
+                thumbColor={C.text}
+                accessibilityLabel={t('Sumar {x} al patrimonio', { x: a.label })}
+              />
+            </View>
+          );
+        })}
+        {main.length === 0 && <Txt v="small" style={{ paddingVertical: SP.md }}>Todavía no tienes cuentas de mainnet.</Txt>}
+      </Card>
+      {test.length > 0 && <Txt v="small">{t('Las cuentas de testnet ({n}) nunca suman: su XRP no tiene valor.', { n: test.length })}</Txt>}
+    </Section>
   );
 }

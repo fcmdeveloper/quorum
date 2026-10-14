@@ -957,4 +957,11 @@ export const EN: Record<string, string> = {
   "Elige un NFT de cualquiera de tus cuentas para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red. Si el NFT sale de tus cuentas, vuelve el ícono.": "Pick an NFT from any of your accounts to recognize this one at a glance. It's just an image on this phone: nothing changes on the network. If the NFT leaves your accounts, the icon comes back.",
   "Cuentas que agregaste solo para mirar. Quorum no puede comprobar que sean tuyas.": "Accounts you added just to watch. Quorum can't verify they're yours.",
   "Solo aparecen los NFTs con imagen. Si una cuenta no aparece, es porque no tiene NFTs.": "Only NFTs with an image are shown. If an account doesn't appear, it has no NFTs.",
+  "1 cuenta fuera del total": "1 account left out of the total",
+  "{n} cuentas fuera del total": "{n} accounts left out of the total",
+  "No suma al total": "Not counted in the total",
+  "Sumar {x} al patrimonio": "Count {x} in the total balance",
+  "Las cuentas de testnet ({n}) nunca suman: su XRP no tiene valor.": "Testnet accounts ({n}) never count: their XRP has no value.",
+  "Cuentas que suman": "Accounts that count",
+  "Todavía no tienes cuentas de mainnet.": "You don't have mainnet accounts yet.",
 };

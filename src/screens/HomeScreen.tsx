@@ -46,6 +46,7 @@ export default function HomeScreen() {
     let stableFiat = 0;
     const seen = new Set<string>(); // la misma dirección agregada dos veces se cuenta una vez
     for (const a of app.accounts) {
+      if (a.excluded) continue;
       const st = app.stateOf(a);
       if (!st) continue;
       const k = `${a.network}:${a.address}`;
@@ -63,6 +64,7 @@ export default function HomeScreen() {
   }, [app.accounts, app.states, m.price]);
 
   const onlyTest = totals.main === 0 && totals.test > 0;
+  const excludedCount = app.accounts.filter((a) => a.excluded).length;
   const heroXrp = onlyTest ? totals.test : totals.main;
   // en XRP: saldo real de XRP; en divisa: XRP + stablecoins
   const inXrp = onlyTest || !m.price || app.settings.balanceUnit === 'xrp';
@@ -130,6 +132,11 @@ export default function HomeScreen() {
               ? `≈ ${m.fiatRaw(heroXrp * m.price)}`
               : totals.stableFiat > 0 ? t('{a} XRP + {b} en stablecoins', { a: m.xrp(heroXrp), b: m.fiatRaw(totals.stableFiat) }) : `${m.xrp(heroXrp)} XRP`}
           </Txt>
+        ) : null}
+        {excludedCount > 0 ? (
+          <Pressable onPress={() => nav.push('charts', { view: 'portfolio' })} hitSlop={6}>
+            <Badge text={excludedCount === 1 ? t('1 cuenta fuera del total') : t('{n} cuentas fuera del total', { n: excludedCount })} color={C.dim} icon="eye-off" />
+          </Pressable>
         ) : null}
         {m.price ? (
           <Pressable

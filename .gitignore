@@ -49,3 +49,4 @@ yarn-error.*
 
 # material de App Store (local)
 /app-store
+/.verify

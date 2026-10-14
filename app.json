@@ -113,7 +113,8 @@
           "faceIDPermission": "Quorum usa Face ID para proteger el acceso a la app."
         }
       ],
-      "./plugins/withSceneLifecycle"
+      "./plugins/withSceneLifecycle",
+      "./plugins/withReproducibleHermes"
     ]
   }
 }

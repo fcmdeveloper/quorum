@@ -21,8 +21,9 @@ import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import { t, tr } from '../i18n';
 import { NftImage } from './NftImage';
-import { Glass } from './Glass';
-import { C, F, R, SP, T, ACCOUNT_COLORS, ACCOUNT_ICONS, accountColor, alpha, onThemeChange } from './theme';
+import { Glass, useNativeSelectors } from './Glass';
+import NativeSegmented from '@react-native-segmented-control/segmented-control';
+import { C, F, R, SP, T, ACCOUNT_COLORS, ACCOUNT_ICONS, accountColor, alpha, onThemeChange, themeName } from './theme';
 
 export type IconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -390,6 +391,28 @@ export function Segmented<T extends string>({
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
 }) {
+  // iOS 26 con la opción activada: selector nativo con Liquid Glass, con Space Grotesk si iOS la encuentra
+  if (useNativeSelectors()) {
+    const idx = Math.max(0, options.findIndex((o) => o.value === value));
+    return (
+      <NativeSegmented
+        values={options.map((o) => t(o.label))}
+        selectedIndex={idx}
+        onChange={(e) => {
+          const o = options[e.nativeEvent.selectedSegmentIndex];
+          if (o && o.value !== value) {
+            tap();
+            onChange(o.value);
+          }
+        }}
+        tintColor={C.green}
+        appearance={themeName()}
+        fontStyle={{ fontFamily: 'SpaceGrotesk-SemiBold', fontSize: 14, color: C.dim }}
+        activeFontStyle={{ fontFamily: 'SpaceGrotesk-Bold', fontSize: 14, color: C.greenInk }}
+        style={{ height: 40, marginBottom: SP.lg }}
+      />
+    );
+  }
   return (
     <View style={st.seg}>
       {options.map((o) => {

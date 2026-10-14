@@ -65,6 +65,8 @@ export interface Settings {
   hideBalances: boolean;
   /** Cómo se muestran los saldos en Inicio: en la divisa (XRP + stablecoins) o en XRP. */
   balanceUnit: 'fiat' | 'xrp';
+  /** iOS 26: usar los selectores nativos con Liquid Glass en vez de los de Quorum. */
+  nativeSelectors?: boolean;
   /** Última vez que se confirmó el recordatorio de seguridad (ms). */
   reviewedAt?: number;
   /** Último respaldo exportado (ms) y huella de la configuración en ese momento. */

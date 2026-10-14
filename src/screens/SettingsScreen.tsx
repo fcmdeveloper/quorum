@@ -15,6 +15,7 @@ import { tangemNativeLoaded, isNfcAvailable, clearSavedTangemCodes } from '../..
 import { newId } from '../store';
 import { lookalikeOf, trustedAddresses } from '../core/lookalike';
 import { useBackupState } from './ReviewScreens';
+import { hasGlass } from '../ui/Glass';
 
 export default function SettingsScreen() {
   const app = useApp();
@@ -72,6 +73,23 @@ export default function SettingsScreen() {
             { value: 'en', label: 'English' },
           ]}
         />
+        {hasGlass() && (
+          <Card style={{ paddingVertical: 4 }}>
+            <ListItem
+              icon="droplet"
+              title="Selectores con Liquid Glass"
+              subtitle="Usa los selectores de iOS 26 en vez de los de Quorum"
+              right={
+                <Switch
+                  value={!!app.settings.nativeSelectors}
+                  onValueChange={(v) => app.updateSettings({ nativeSelectors: v })}
+                  trackColor={{ true: C.greenDeep, false: C.line }}
+                  thumbColor={C.text}
+                />
+              }
+            />
+          </Card>
+        )}
       </Section>
 
       <Section title="Seguridad">

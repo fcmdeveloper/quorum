@@ -19,7 +19,7 @@ import { patchAlert } from './src/i18n/alert';
 patchAlert();
 import { ToastHost, tap } from './src/ui/components';
 import { OfflineBanner } from './src/ui/OfflineBanner';
-import { Glass, hasGlass } from './src/ui/Glass';
+import { Glass, hasGlass, setNativeSelectors } from './src/ui/Glass';
 import HomeScreen from './src/screens/HomeScreen';
 import AccountScreen from './src/screens/AccountScreen';
 import ActivityScreen from './src/screens/ActivityScreen';
@@ -215,7 +215,8 @@ function Shell() {
   const uiLang: Lang = langPref === 'system' ? systemLang() : langPref;
   applyTheme(theme);
   setLang(uiLang);
-  const uiKey = `${theme}-${uiLang}`;
+  setNativeSelectors(!!app.settings.nativeSelectors);
+  const uiKey = `${theme}-${uiLang}-${app.settings.nativeSelectors ? 'n' : 'q'}`;
   const bar = <StatusBar style={theme === 'light' ? 'dark' : 'light'} />;
 
   const reviewDue = React.useRef<boolean | null>(null);

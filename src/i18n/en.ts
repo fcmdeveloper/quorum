@@ -964,4 +964,6 @@ export const EN: Record<string, string> = {
   "Las cuentas de testnet ({n}) nunca suman: su XRP no tiene valor.": "Testnet accounts ({n}) never count: their XRP has no value.",
   "Cuentas que suman": "Accounts that count",
   "Todavía no tienes cuentas de mainnet.": "You don't have mainnet accounts yet.",
+  "Selectores con Liquid Glass": "Liquid Glass selectors",
+  "Usa los selectores de iOS 26 en vez de los de Quorum": "Use iOS 26 selectors instead of Quorum's",
 };

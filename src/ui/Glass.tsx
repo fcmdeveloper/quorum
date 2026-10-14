@@ -21,6 +21,15 @@ export function hasGlass(): boolean {
   return available;
 }
 
+let nativeSelectors = false;
+/** Lo fija la app según Ajustes; solo tiene efecto si hay Liquid Glass. */
+export function setNativeSelectors(on: boolean) {
+  nativeSelectors = on;
+}
+export function useNativeSelectors(): boolean {
+  return nativeSelectors && hasGlass();
+}
+
 export function Glass({
   style,
   tint,

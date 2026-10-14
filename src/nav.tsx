@@ -19,6 +19,8 @@ export type Route =
   | { name: 'scan'; params: { purpose: 'any' | 'address'; onAddress?: (a: string, tag?: string) => void } }
   | { name: 'contacts'; params: {} }
   | { name: 'about'; params: {} }
+  | { name: 'verify'; params: {} }
+  | { name: 'registerRelease'; params: { id: string } }
   | { name: 'donate'; params: {} }
   | { name: 'guide'; params: {} }
   | { name: 'unvault'; params: { id: string } }

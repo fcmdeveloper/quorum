@@ -40,7 +40,7 @@ Each release is announced in [Discussions › Announcements](https://github.com/
 - the **TestFlight link** to install it;
 - the transaction that registered it on the XRP Ledger.
 
-The registry account is **Quorum Releases**: `RELEASES_ACCOUNT` *(published at the first release)*. Its full history is on any XRP Ledger explorer and at [quorumxrpl.com/verify](https://quorumxrpl.com/verify).
+The registry account is **Quorum Releases**: [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8`](https://livenet.xrpl.org/accounts/rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8). Its full history is on any XRP Ledger explorer and at [quorumxrpl.com/verify](https://quorumxrpl.com/verify).
 
 ### 3. Rebuild it
 
@@ -128,7 +128,8 @@ The GitHub user is optional but helps the community know who you are. You can al
 
 Some validators also co-sign the release itself. The Quorum Releases account is a **multisig vault**: a release is registered only when the Council's quorum signs it. Minify SpA, the developer, is one signer with one vote and **cannot register a release alone**.
 
-- **Today:** 3 signers, quorum 2 (Minify + 2 community validators).
+- **Target:** 3 signers, quorum 2: Minify + 2 community validators.
+- **Genesis (today):** until the first two community validators join, the Council is 4 devices held by Minify (quorum 2 of 4). This is temporary and public: when they join, the Council signs a `SignerListSet` that leaves Minify with one vote, and that change stays on the ledger.
 - **Joining the Council:** validators with **2 consecutive correct attestations** can be proposed. The current Council adds them by signing a `SignerListSet` on the XRP Ledger. That transaction is the public record of the decision.
 - **Growing:** 3 signers (quorum 2) → 5 (quorum 3) → 9 (quorum 5). Minify always keeps a single vote.
 - **Leaving:** members who skip 3 releases in a row, or attest something false, can be removed the same way, by the Council's quorum.

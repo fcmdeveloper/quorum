@@ -4,7 +4,7 @@
 
 Quorum guarda el historial de sus versiones en el XRP Ledger, no en un servidor ni en una base de datos. Este archivo define el formato, para que cualquiera pueda leerlo con cualquier herramienta.
 
-**Cuenta de registro (Quorum Releases):** `RELEASES_ACCOUNT` *(se publica con la primera versión)*. Es una bóveda multifirma cuyos firmantes son el Consejo de validadores ([VALIDATORS.es.md](VALIDATORS.es.md)).
+**Cuenta de registro (Quorum Releases):** [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8`](https://livenet.xrpl.org/accounts/rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8). Es una bóveda multifirma cuyos firmantes son el Consejo de validadores ([VALIDATORS.es.md](VALIDATORS.es.md)). En la fase de génesis sus firmantes son dispositivos de Minify; esto cambia en el ledger cuando entren los 2 primeros validadores de la comunidad.
 
 ## Memos
 

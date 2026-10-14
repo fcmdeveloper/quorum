@@ -102,6 +102,54 @@ export function buildPayment(vault: string, destination: string, amountXrp: stri
 
 const toHex = (s: string) => Buffer.from(s, 'utf8').toString('hex').toUpperCase();
 
+/** Datos de una versión para el registro público (ver RELEASES.md). */
+export interface ReleaseInput {
+  v: string;
+  build?: number;
+  platform?: string;
+  commit: string;
+  app: string;
+  js?: string;
+}
+
+/**
+ * Registro de una versión: un AccountSet sin cambios de la cuenta Quorum Releases que solo
+ * lleva el memo `quorum.release {…}`. Como la cuenta es multifirma, existe solo cuando firma
+ * el quórum del Consejo.
+ */
+export function buildReleaseRecord(account: string, r: ReleaseInput): TxJson {
+  assertAddress(account, 'Cuenta');
+  const v = r.v.trim();
+  const commit = r.commit.trim().toLowerCase();
+  const app = r.app.trim().toLowerCase().replace(/^sha256:/, '');
+  const js = r.js?.trim().toLowerCase().replace(/^sha256:/, '');
+  if (!/^\d+\.\d+\.\d+$/.test(v)) throw new Error(t('Versión inválida: usa el formato 1.2.3'));
+  if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error(t('El commit debe tener 40 caracteres hexadecimales'));
+  if (!/^[0-9a-f]{64}$/.test(app)) throw new Error(t('La huella del código debe tener 64 caracteres hexadecimales'));
+  if (js && !/^[0-9a-f]{64}$/.test(js)) throw new Error(t('La huella del JavaScript debe tener 64 caracteres hexadecimales'));
+  const body: Record<string, unknown> = { v };
+  if (r.build !== undefined && Number.isFinite(r.build)) body.build = r.build;
+  body.platform = r.platform || 'ios';
+  body.commit = commit;
+  body.app = `sha256:${app}`;
+  if (js) body.js = `sha256:${js}`;
+  return { TransactionType: 'AccountSet', Account: account, Memos: [{ Memo: { MemoData: toHex(`quorum.release ${JSON.stringify(body)}`) } }] };
+}
+
+/** Si la transacción es un registro de versión, sus datos (para mostrarlos antes de firmar). */
+export function releaseOf(tx: TxJson): ReleaseInput | null {
+  if (tx.TransactionType !== 'AccountSet' || tx.SetFlag !== undefined || tx.ClearFlag !== undefined) return null;
+  for (const m of memoTexts(tx)) {
+    const x = /^quorum\.release\s+(\{[\s\S]*\})$/.exec(m.text.trim());
+    if (!x) continue;
+    try {
+      const d = JSON.parse(x[1]);
+      if (typeof d.v === 'string' && typeof d.commit === 'string' && typeof d.app === 'string') return d;
+    } catch {}
+  }
+  return null;
+}
+
 /** Textos de los memos de una transacción (para mostrarlos antes de firmar). */
 export function memoTexts(tx: TxJson): { type?: string; text: string }[] {
   const out: { type?: string; text: string }[] = [];
@@ -355,7 +403,16 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
         );
       }
       break;
-    case 'AccountSet':
+    case 'AccountSet': {
+      const rel = releaseOf(tx);
+      if (rel) {
+        title = t('Registrar versión {v}', { v: rel.v });
+        if (rel.build !== undefined) lines.push(['Build', String(rel.build)]);
+        lines.push(['Commit', rel.commit]);
+        lines.push(['Huella del código', rel.app]);
+        if (rel.js) lines.push(['Huella del JavaScript', rel.js]);
+        break;
+      }
       if (tx.SetFlag === ACCOUNT_SET.asfDisableMaster) title = 'Desactivar master key';
       else if (tx.ClearFlag === ACCOUNT_SET.asfDisableMaster) title = 'Reactivar master key';
       else {
@@ -363,6 +420,7 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
         if (h) title = h.label;
       }
       break;
+    }
     case 'TicketCreate':
       title = 'Crear tickets';
       lines.push(['Cantidad', String(tx.TicketCount)]);

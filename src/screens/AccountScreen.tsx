@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { t, tr } from '../i18n';
+import { QUORUM } from '../config';
 import { Feather } from '@expo/vector-icons';
 import { Alert, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { useApp } from '../state';
@@ -338,6 +339,9 @@ export default function AccountScreen({ id }: { id: string }) {
       <Card style={{ marginTop: SP.lg, paddingVertical: 4 }}>
         <ListItem icon="image" title="NFTs" onPress={() => nav.push('nfts', { id: a.id })} />
         {isVault && <ListItem icon="shield" title="Seguridad de la bóveda" onPress={() => nav.push('security', { id: a.id })} />}
+        {isVault && a.network === 'mainnet' && !!QUORUM.releasesAddress && a.address === QUORUM.releasesAddress && (
+          <ListItem icon="check-circle" title="Registrar una versión" subtitle="Registro público de Quorum Releases" onPress={() => nav.push('registerRelease', { id: a.id })} />
+        )}
         {!isVault && app.deviceFor(a.address)?.kind === 'xaman' && (
           <ListItem
             icon="lock"

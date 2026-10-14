@@ -37,6 +37,8 @@ import { AddDeviceScreen, DevicesScreen } from './src/screens/DevicesScreen';
 import AddAccountScreen from './src/screens/AddAccountScreen';
 import SettingsScreen, { ContactsScreen } from './src/screens/SettingsScreen';
 import AboutScreen, { DonateScreen } from './src/screens/AboutScreen';
+import VerifyScreen from './src/screens/VerifyScreen';
+import RegisterReleaseScreen from './src/screens/RegisterReleaseScreen';
 import GuideScreen from './src/screens/GuideScreen';
 import UnvaultScreen from './src/screens/UnvaultScreen';
 import FinishVaultScreen from './src/screens/FinishVaultScreen';
@@ -81,6 +83,10 @@ function RouteView({ r }: { r: Route }) {
       return <ScanScreen {...r.params} />;
     case 'about':
       return <AboutScreen />;
+    case 'verify':
+      return <VerifyScreen />;
+    case 'registerRelease':
+      return <RegisterReleaseScreen id={r.params.id} />;
     case 'donate':
       return <DonateScreen />;
     case 'guide':

@@ -4,7 +4,7 @@
 
 Quorum keeps its release history on the XRP Ledger instead of a server or database. This file defines the format, so anyone can read it with any tool.
 
-**Registry account (Quorum Releases):** `RELEASES_ACCOUNT` *(published at the first release)*. It is a multisig vault whose signers are the Validator Council ([VALIDATORS.md](VALIDATORS.md)).
+**Registry account (Quorum Releases):** [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8`](https://livenet.xrpl.org/accounts/rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8). It is a multisig vault whose signers are the Validator Council ([VALIDATORS.md](VALIDATORS.md)). During the genesis phase its signers are devices held by Minify; this changes on-ledger when the first two community validators join.
 
 ## Memos
 

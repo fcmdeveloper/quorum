@@ -40,7 +40,7 @@ Cada versión se anuncia en [Discussions › Announcements](https://github.com/f
 - el **enlace de TestFlight** para instalarla;
 - la transacción que la registró en el XRP Ledger.
 
-La cuenta de registro es **Quorum Releases**: `RELEASES_ACCOUNT` *(se publica con la primera versión)*. Todo su historial está en cualquier explorador del XRP Ledger y en [quorumxrpl.com/verify](https://quorumxrpl.com/verify).
+La cuenta de registro es **Quorum Releases**: [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8`](https://livenet.xrpl.org/accounts/rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8). Todo su historial está en cualquier explorador del XRP Ledger y en [quorumxrpl.com/verify](https://quorumxrpl.com/verify).
 
 ### 3. Reconstruirla
 
@@ -128,7 +128,8 @@ El usuario de GitHub es opcional, pero ayuda a que la comunidad sepa quién eres
 
 Algunos validadores también firman la versión misma. La cuenta Quorum Releases es una **bóveda multifirma**: una versión solo queda registrada cuando firma el quórum del Consejo. Minify SpA, el desarrollador, es un firmante con un solo voto y **no puede registrar una versión por su cuenta**.
 
-- **Hoy:** 3 firmantes, quórum 2 (Minify y 2 validadores de la comunidad).
+- **Objetivo:** 3 firmantes, quórum 2: Minify y 2 validadores de la comunidad.
+- **Génesis (hoy):** hasta que se sumen los 2 primeros validadores de la comunidad, el Consejo son 4 dispositivos de Minify (quórum 2 de 4). Es temporal y público: cuando entren, el Consejo firma un `SignerListSet` que deja a Minify con un solo voto, y ese cambio queda en el ledger.
 - **Entrar al Consejo:** los validadores con **2 validaciones correctas seguidas** pueden ser propuestos. El Consejo actual los agrega firmando un `SignerListSet` en el XRP Ledger. Esa transacción es el registro público de la decisión.
 - **Crecer:** 3 firmantes (quórum 2) → 5 (quórum 3) → 9 (quórum 5). Minify mantiene siempre un solo voto.
 - **Salir:** quien se salte 3 versiones seguidas, o dé fe de algo falso, puede ser removido de la misma forma, por el quórum del Consejo.

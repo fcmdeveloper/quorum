@@ -23,7 +23,7 @@ const PRINCIPLES: { icon: React.ComponentProps<typeof Feather>['name']; title: s
   {
     icon: 'code',
     title: 'Código abierto',
-    text: 'El código de Quorum será público para que cualquiera pueda revisarlo, auditarlo y compilarlo por su cuenta.',
+    text: 'El código de Quorum es público en GitHub: cualquiera puede revisarlo, compilarlo y comprobar que esta app es la misma.',
   },
   {
     icon: 'eye-off',
@@ -39,7 +39,7 @@ const PRINCIPLES: { icon: React.ComponentProps<typeof Feather>['name']; title: s
 
 const CONNECTIONS = [
   'Nodos públicos del XRP Ledger, para leer saldos y enviar transacciones.',
-  'CoinGecko, solo para el precio de XRP.',
+  'CoinGecko y Kraken, solo para el precio de XRP y su historial.',
   'Gateways IPFS, para mostrar imágenes de NFTs.',
   'Xaman, únicamente si firmas con una cuenta Xaman (inicio de sesión dentro de Xaman, sin secretos en la app).',
 ];
@@ -56,6 +56,8 @@ export default function AboutScreen() {
         </Txt>
         <Txt v="small">Bóvedas multifirma para el XRP Ledger · versión {Constants.expoConfig?.version ?? ''}</Txt>
       </View>
+
+      <ListItem icon="check-circle" title="Verificar esta versión" subtitle="Comprueba que es el código publicado en GitHub" onPress={() => nav.push('verify', {})} />
 
       {hasDonations && (
         <Pressable

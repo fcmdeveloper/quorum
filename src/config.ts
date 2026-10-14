@@ -16,6 +16,14 @@ export const QUORUM = {
    * puede meterle un NFT sin que la cuenta lo acepte).
    */
   nftGalleryAddress: 'rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE',
+  /**
+   * Cuenta "Quorum Releases" (mainnet): registro público de versiones firmado por el Consejo
+   * de validadores (ver RELEASES.md). Mientras esté vacía, la app dice que el registro aún
+   * no está activo.
+   */
+  releasesAddress: 'rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8',
+  /** Guía para validadores (en el repositorio público). */
+  validatorsGuide: { en: 'https://github.com/fcmdeveloper/quorum/blob/main/VALIDATORS.md', es: 'https://github.com/fcmdeveloper/quorum/blob/main/VALIDATORS.es.md' },
   /** Montos sugeridos en USD; se convierten a XRP con el precio actual y se redondean. */
   donationUsd: [5, 10, 25, 50],
   /** Monto especial: el "589" de la comunidad XRP Army. Opcional, aparece aparte. */

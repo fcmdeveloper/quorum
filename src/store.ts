@@ -28,7 +28,7 @@ export interface Account {
    * NFT elegido como imagen (de cualquiera de las cuentas en Quorum). Es solo decorativo:
    * si el NFT ya no está en ninguna de tus cuentas, se quita y vuelve el ícono.
    */
-  nft?: { id: string; image: string; network: NetworkId; name?: string };
+  nft?: { id: string; image: string; network: NetworkId; name?: string; gallery?: boolean };
   /** true: no se suma al patrimonio total de Inicio ni al gráfico. */
   excluded?: boolean;
   /** Solo bóvedas: destinos permitidos (fuera de esta lista la app exige confirmación reforzada). */

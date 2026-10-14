@@ -110,7 +110,7 @@ export default function AccountScreen({ id }: { id: string }) {
             >
               <Feather name="image" size={16} color={a.nft ? C.green : C.dim} />
               <Txt v="label" color={a.nft ? C.green : C.text}>
-                {a.nft ? t('Cambiar NFT') : t('Usar un NFT de tus cuentas')}
+                {a.nft ? t('Cambiar NFT') : t('Elegir un NFT')}
               </Txt>
             </Pressable>
             <View style={{ flexDirection: 'row', gap: SP.xl, marginTop: SP.sm }}>

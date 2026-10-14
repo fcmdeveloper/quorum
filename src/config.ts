@@ -8,8 +8,14 @@ export const QUORUM = {
    * Cuenta de donaciones en el XRP Ledger (mainnet). Mientras esté vacía,
    * la app no muestra la opción de donar.
    */
-  donationAddress: 'rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE',
+  donationAddress: 'rENjjwSdn7svgbFxJ17XrNUJmdGnpmfzFp',
   donationTag: undefined as number | undefined,
+  /**
+   * Galería pública de NFTs de Quorum (mainnet): cualquier usuario puede usar estas imágenes
+   * para sus cuentas y bóvedas. Solo la cuenta decide qué NFTs tiene (en el XRP Ledger nadie
+   * puede meterle un NFT sin que la cuenta lo acepte).
+   */
+  nftGalleryAddress: 'rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE',
   /** Montos sugeridos en USD; se convierten a XRP con el precio actual y se redondean. */
   donationUsd: [5, 10, 25, 50],
   /** Monto especial: el "589" de la comunidad XRP Army. Opcional, aparece aparte. */

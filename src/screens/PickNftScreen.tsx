@@ -14,6 +14,7 @@ import { C, R, SP, accountColor } from '../ui/theme';
 import { NftImage } from '../ui/NftImage';
 import { NftItem, fetchNfts, loadNftMetadata } from '../core/network';
 import { Account } from '../store';
+import { QUORUM } from '../config';
 
 const W = Dimensions.get('window').width;
 const COLS = 3;
@@ -31,7 +32,10 @@ export function useIsReadOnly() {
   };
 }
 
-function AccountNfts({ source, selectedId, onPick }: { source: Account; selectedId?: string; onPick: (n: NftItem, source: Account) => void }) {
+/** La galería pública se lee como si fuera una cuenta más (solo para mirar). */
+const GALLERY: Account = { id: 'quorum-gallery', label: 'Galería de Quorum', kind: 'wallet', network: 'mainnet', address: QUORUM.nftGalleryAddress, createdAt: 0, color: 'green' };
+
+function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account; selectedId?: string; onPick: (n: NftItem, source: Account) => void; hideHead?: boolean }) {
   const [items, setItems] = useState<NftItem[] | null>(null);
   useEffect(() => {
     let alive = true;
@@ -54,7 +58,7 @@ function AccountNfts({ source, selectedId, onPick }: { source: Account; selected
     };
   }, [source.id]);
 
-  const head = (
+  const head = hideHead ? null : (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: SP.sm }}>
       <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: accountColor(source.color) }} />
       <Txt v="body" numberOfLines={1} style={{ flexShrink: 1 }}>
@@ -121,19 +125,29 @@ export default function PickNftScreen({ id }: { id: string }) {
   const readOnly = useIsReadOnly();
   const a = app.accounts.find((x) => x.id === id);
   if (!a) return null;
-  const mine = app.accounts.filter((x) => !readOnly(x));
-  const others = app.accounts.filter((x) => readOnly(x));
+  // la cuenta de la galería ya aparece arriba: no se repite
+  const isGallery = (x: Account) => x.network === 'mainnet' && x.address === QUORUM.nftGalleryAddress;
+  const mine = app.accounts.filter((x) => !readOnly(x) && !isGallery(x));
+  const others = app.accounts.filter((x) => readOnly(x) && !isGallery(x));
   const pick = async (n: NftItem, source: Account) => {
-    await app.updateAccount(a.id, { nft: { id: n.id, image: n.image!, network: source.network, name: n.name } });
+    await app.updateAccount(a.id, { nft: { id: n.id, image: n.image!, network: source.network, name: n.name, gallery: source.id === GALLERY.id || undefined } });
     toast(t('Imagen actualizada'));
     nav.pop();
   };
   return (
     <Screen title={t('NFT para {x}', { x: a.label })} onBack={nav.pop}>
       <Txt v="small" style={{ marginBottom: SP.lg }}>
-        Elige un NFT de cualquiera de tus cuentas para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red. Si el NFT sale de tus cuentas, vuelve el ícono.
+        Elige un NFT de la galería de Quorum o de tus cuentas para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red.
       </Txt>
       {a.nft && <Button title="Quitar el NFT" kind="ghost" icon="x" onPress={async () => { await app.updateAccount(a.id, { nft: undefined }); nav.pop(); }} />}
+      {QUORUM.nftGalleryAddress ? (
+        <Section title="Galería de Quorum">
+          <Txt v="small" style={{ marginBottom: SP.md }}>
+            Imágenes libres para todos los usuarios de Quorum.
+          </Txt>
+          <AccountNfts source={GALLERY} selectedId={a.nft?.id} onPick={pick} hideHead />
+        </Section>
+      ) : null}
       <Section title="Tus cuentas y bóvedas">
         {mine.map((x) => (
           <AccountNfts key={x.id} source={x} selectedId={a.nft?.id} onPick={pick} />

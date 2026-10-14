@@ -966,4 +966,8 @@ export const EN: Record<string, string> = {
   "Todavía no tienes cuentas de mainnet.": "You don't have mainnet accounts yet.",
   "Selectores con Liquid Glass": "Liquid Glass selectors",
   "Usa los selectores de iOS 26 en vez de los de Quorum": "Use iOS 26 selectors instead of Quorum's",
+  "Galería de Quorum": "Quorum gallery",
+  "Imágenes libres para todos los usuarios de Quorum.": "Free images for every Quorum user.",
+  "Elegir un NFT": "Choose an NFT",
+  "Elige un NFT de la galería de Quorum o de tus cuentas para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red.": "Pick an NFT from the Quorum gallery or from your accounts to recognize this one at a glance. It's just an image on this phone: nothing changes on the network.",
 };

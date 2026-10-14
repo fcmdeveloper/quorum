@@ -46,3 +46,6 @@ yarn-error.*
 .env.*
 *.command
 /android
+
+# material de App Store (local)
+/app-store

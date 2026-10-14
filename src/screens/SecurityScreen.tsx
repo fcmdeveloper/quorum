@@ -124,7 +124,7 @@ export default function SecurityScreen({ id }: { id: string }) {
                 icon={d?.kind === 'ledger' ? 'cpu' : d?.kind === 'tangem' ? 'credit-card' : 'smartphone'}
                 iconColor={d ? C.green : C.dim}
                 title={d?.label ?? c?.label ?? 'Firmante externo'}
-                subtitle={`${d ? 'En este teléfono' : 'En otro teléfono'} · ${e.account.slice(0, 6)}…${e.account.slice(-4)}`}
+                subtitle={`${d ? t('En este teléfono') : t('En otro teléfono')} · ${e.account.slice(0, 6)}…${e.account.slice(-4)}`}
                 right={<Badge text={t('peso {n}', { n: e.weight })} color={C.dim} />}
               />
             );

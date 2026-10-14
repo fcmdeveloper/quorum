@@ -248,7 +248,7 @@ export default function BackupScreen() {
             kind="ghost"
             icon="link"
             onPress={async () => {
-              await Clipboard.setStringAsync(`${QUORUM.website}/view`);
+              await Clipboard.setStringAsync(`${QUORUM.website}/view/`);
               toast(t('Enlace copiado'));
             }}
           />

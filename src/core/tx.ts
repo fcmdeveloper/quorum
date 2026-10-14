@@ -329,7 +329,7 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
   const trade = describeTradeTx(tx, net);
   if (trade) {
     const out: [string, string][] = [['Cuenta', tx.Account], ...trade.lines];
-    if (tx.Fee) out.push(['Comisión', `${dropsToXrp(tx.Fee)} XRP`]);
+    if (tx.Fee) out.push(['Comisión', `${Number(dropsToXrp(tx.Fee)).toLocaleString(locale(), { maximumFractionDigits: 6 })} XRP`]);
     if (tx.TicketSequence !== undefined) out.push(['Ticket', String(tx.TicketSequence)]);
     else if (tx.Sequence !== undefined) out.push(['Secuencia', String(tx.Sequence)]);
     return { title: trade.title, lines: out };
@@ -372,7 +372,7 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
       if (tx.RegularKey) lines.push(['Clave regular', tx.RegularKey]);
       break;
   }
-  if (tx.Fee) lines.push(['Comisión', `${dropsToXrp(tx.Fee)} XRP`]);
+  if (tx.Fee) lines.push(['Comisión', `${Number(dropsToXrp(tx.Fee)).toLocaleString(locale(), { maximumFractionDigits: 6 })} XRP`]);
   if (tx.TicketSequence !== undefined) lines.push(['Ticket', String(tx.TicketSequence)]);
   else if (tx.Sequence !== undefined) lines.push(['Secuencia', String(tx.Sequence)]);
   if (tx.LastLedgerSequence !== undefined) lines.push(['Válida hasta ledger', String(tx.LastLedgerSequence)]);

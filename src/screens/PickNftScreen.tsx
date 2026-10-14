@@ -68,25 +68,34 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
     })();
   }, [source.id]);
 
-  // candidatos: los que tienen imagen o aún no sabemos (los que no tienen imagen se omiten)
+  // candidatos: los que tienen imagen o aún no sabemos (los que de verdad no tienen imagen se omiten).
+  // Los que fallaron por la red siguen siendo candidatos: muestran un botón para reintentar.
   const candidates = items ? items.filter((n) => n.image || !done.has(n.id)) : [];
   const visible = candidates.slice(0, limit);
 
-  // pide la metadata solo de lo que se ve
-  useEffect(() => {
-    const need = visible.filter((n) => !done.has(n.id) && !requested.current.has(n.id));
-    if (!need.length) return;
+  const load = (need: NftItem[]) => {
     need.forEach((n) => requested.current.add(n.id));
     loadMetaParallel(
       need,
       (r) => {
         setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev));
-        setDone((prev) => new Set(prev).add(r.id));
+        if (!r.metaFailed) setDone((prev) => new Set(prev).add(r.id));
       },
       () => alive.current,
       STEP,
     );
+  };
+
+  // pide la metadata solo de lo que se ve
+  useEffect(() => {
+    const need = visible.filter((n) => !done.has(n.id) && !requested.current.has(n.id));
+    if (need.length) load(need);
   }, [visible.map((n) => n.id).join(',')]);
+
+  const retry = (n: NftItem) => {
+    setItems((prev) => (prev ? prev.map((x) => (x.id === n.id ? { ...x, metaFailed: undefined } : x)) : prev));
+    load([{ ...n, metaFailed: undefined }]);
+  };
 
   if (items && items.length === 0) return null;
 
@@ -116,6 +125,22 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
         {items === null
           ? [0, 1, 2].map((i) => placeholder(`p${i}`))
           : visible.map((n) => {
+              if (!n.image && n.metaFailed) {
+                return (
+                  <Pressable
+                    key={n.id}
+                    accessibilityLabel={t('Reintentar')}
+                    onPress={() => {
+                      tap();
+                      retry(n);
+                    }}
+                    style={({ pressed }) => ({ width: TILE, height: TILE, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', gap: 6, opacity: pressed ? 0.6 : 1 })}
+                  >
+                    <Feather name="refresh-cw" size={18} color={C.dim} />
+                    <Txt v="small">{t('Reintentar')}</Txt>
+                  </Pressable>
+                );
+              }
               if (!n.image) return placeholder(n.id);
               const on = n.id === selectedId;
               return (

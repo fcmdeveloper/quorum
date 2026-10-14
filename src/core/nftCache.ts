@@ -1,12 +1,14 @@
 /**
  * Caché de la metadata de NFTs (nombre e imagen). La URI de un NFT no cambia, así que una
  * vez leída no hace falta volver a buscarla: la próxima vez la galería aparece al instante.
- * Si un NFT no tenía imagen, se reintenta después de un día.
+ * Si un NFT no tenía imagen, se reintenta después de un día. Si no se pudo leer (red lenta,
+ * gateway caído) no se guarda nada: se vuelve a intentar la próxima vez.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NftItem, loadNftMetadata } from './network';
 
-const KEY = 'q.nftmeta.v1';
+// v2: la v1 guardaba como "sin imagen" los NFTs que solo habían fallado por la red
+const KEY = 'q.nftmeta.v2';
 const MAX = 2000;
 const RETRY_MISSING_MS = 24 * 60 * 60 * 1000;
 
@@ -66,9 +68,15 @@ export async function loadMetaParallel(
   const worker = async () => {
     while (next < pending.length && isAlive()) {
       const n = pending[next++];
-      const r = await loadNftMetadata(n);
-      c[n.id] = { u: n.uri, n: r.name, i: r.image, t: Date.now() };
-      persist();
+      let r = await loadNftMetadata(n);
+      if (r.metaFailed) {
+        // falló la red: se conserva lo que ya sabíamos y no se guarda nada nuevo
+        const m = c[n.id];
+        if (m && m.u === n.uri && m.i) r = { ...n, name: m.n ?? n.name, image: m.i };
+      } else {
+        c[n.id] = { u: n.uri, n: r.name, i: r.image, t: Date.now() };
+        persist();
+      }
       if (isAlive()) onDone(r);
     }
   };

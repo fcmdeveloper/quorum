@@ -273,6 +273,8 @@ export interface NftItem {
   image?: string;
   collection?: string;
   attributes?: { trait_type?: string; value?: any }[];
+  /** No se pudo leer la metadata (red, timeout o gateway caído): hay que reintentar. */
+  metaFailed?: boolean;
 }
 
 /** Gateways IPFS en orden de preferencia; si uno falla se prueba el siguiente. */
@@ -369,7 +371,8 @@ export async function loadNftMetadata(n: NftItem): Promise<NftItem> {
       // timeout o red: siguiente gateway
     }
   }
-  return n;
+  // ningún gateway respondió: no sabemos si tiene imagen, así que se marca para reintentar
+  return { ...n, metaFailed: true };
 }
 
 // ───────────────────────────── Envío ─────────────────────────────

@@ -91,6 +91,16 @@ docs/                   ejemplo de la página de retorno de Xaman
 tests/                  pruebas (npm test)
 ```
 
+## Verificar una versión
+
+Cada versión de Quorum se puede reconstruir desde este repositorio y comparar con la app publicada: el código de la app da la misma huella (SHA-256) en cualquier Mac o Linux.
+
+```bash
+scripts/verify-release.sh v1.0.0
+```
+
+Validadores independientes hacen esta comprobación antes de cada publicación y registran su resultado en el XRP Ledger. Cualquiera puede sumarse: [VALIDATORS.es.md](VALIDATORS.es.md) · formato de los registros: [RELEASES.es.md](RELEASES.es.md).
+
 ## Seguridad
 
 Quorum está en beta y aún no tiene auditoría externa. Pruébalo primero en testnet o con montos chicos.
@@ -136,6 +146,16 @@ npx expo run:ios --device --configuration Release
 The first time, open `ios/` in Xcode, pick your development team under *Signing & Capabilities* and check that **Near Field Communication Tag Reading** is there. `ios/` and `android/` are regenerated on every `prebuild`: native changes go in `app.json` and `plugins/`, not by hand.
 
 **Android:** the Tangem native module for Android is included, but the Android version hasn't been tested yet. Build it with `npx expo run:android --device`.
+
+### Verify a release
+
+Every Quorum release can be rebuilt from this repository and compared with the published app: the app code gives the same fingerprint (SHA-256) on any Mac or Linux machine.
+
+```bash
+scripts/verify-release.sh v1.0.0
+```
+
+Independent validators run this check before every release and record their result on the XRP Ledger. Anyone can join: [VALIDATORS.md](VALIDATORS.md) · record format: [RELEASES.md](RELEASES.md).
 
 ### Security
 

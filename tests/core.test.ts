@@ -278,7 +278,12 @@ test('URIs de NFT: ipfs://, CID, gateway y arweave', () => {
   assert.equal(ipfsPath(`ipfs://ipfs/${cid}`), cid);
   assert.equal(ipfsPath(`${cid}/meta.json`), `${cid}/meta.json`);
   assert.equal(ipfsPath(`https://gateway.pinata.cloud/ipfs/${cid}/a.png`), `${cid}/a.png`);
-  assert.equal(ipfsToHttp(`ipfs://${cid}`, 1), `https://dweb.link/ipfs/${cid}`);
+  assert.equal(ipfsToHttp(`ipfs://${cid}`, 1, [0, 1, 2, 3]), `https://ipfs.aleph.cloud/ipfs/${cid}`);
+  // forma subdominio (nft.storage, dweb.link): se reescribe a nuestros gateways
+  assert.equal(ipfsPath(`https://${'b' + 'a'.repeat(58)}.ipfs.nftstorage.link/meta.json`), `${'b' + 'a'.repeat(58)}/meta.json`);
+  assert.equal(ipfsPath(`https://${'b' + 'a'.repeat(58)}.ipfs.dweb.link/`), 'b' + 'a'.repeat(58));
+  // ya no se usan los gateways retirados
+  assert.ok(!ipfsToHttp(`ipfs://${cid}`)!.includes('ipfs.io'));
   assert.equal(ipfsToHttp('ar://abc'), 'https://arweave.net/abc');
   assert.equal(ipfsPath('https://example.com/x.json'), null);
 });

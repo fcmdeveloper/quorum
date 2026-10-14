@@ -36,6 +36,7 @@ export default function NftsScreen({ id }: { id: string }) {
           [...pending, ...rest],
           (r) => setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev)),
           () => alive,
+          4,
         );
       } catch (e: any) {
         setErr(e.message);

@@ -73,11 +73,18 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
   const candidates = items ? items.filter((n) => n.image || !done.has(n.id)) : [];
   const visible = candidates.slice(0, limit);
 
+  // si un NFT falla, se reintenta solo una vez (a los segundos) antes de pedirle al usuario
+  const autoRetried = useRef<Set<string>>(new Set());
   const load = (need: NftItem[]) => {
     need.forEach((n) => requested.current.add(n.id));
     loadMetaParallel(
       need,
       (r) => {
+        if (r.metaFailed && !autoRetried.current.has(r.id)) {
+          autoRetried.current.add(r.id);
+          setTimeout(() => alive.current && load([{ ...r, metaFailed: undefined }]), 2500);
+          return;
+        }
         setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev));
         if (!r.metaFailed) setDone((prev) => new Set(prev).add(r.id));
       },

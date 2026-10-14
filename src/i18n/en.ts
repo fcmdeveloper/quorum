@@ -969,5 +969,8 @@ export const EN: Record<string, string> = {
   "Galería de Quorum": "Quorum gallery",
   "Imágenes libres para todos los usuarios de Quorum.": "Free images for every Quorum user.",
   "Elegir un NFT": "Choose an NFT",
-  "Elige un NFT de la galería de Quorum o de tus cuentas para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red.": "Pick an NFT from the Quorum gallery or from your accounts to recognize this one at a glance. It's just an image on this phone: nothing changes on the network.",
+  "1 NFT": "1 NFT",
+  "{n} NFTs": "{n} NFTs",
+  "Ver más ({n})": "Show more ({n})",
+  "Elige un NFT de tus cuentas o de la galería de Quorum para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red.": "Pick an NFT from your accounts or the Quorum gallery to recognize this one at a glance. It's just an image on this phone: nothing changes on the network.",
 };

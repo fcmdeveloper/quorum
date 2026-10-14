@@ -3,8 +3,8 @@
  * cuentas que tienes en Quorum (también las de solo lectura, en un grupo aparte).
  * Es solo decorativo: vive en este teléfono y no da permisos de nada.
  */
-import React, { useEffect, useState } from 'react';
-import { Dimensions, Pressable, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { t } from '../i18n';
 import { useApp } from '../state';
@@ -36,40 +36,62 @@ export function useIsReadOnly() {
 /** La galería pública se lee como si fuera una cuenta más (solo para mirar). */
 const GALLERY: Account = { id: 'quorum-gallery', label: 'Galería de Quorum', kind: 'wallet', network: 'mainnet', address: QUORUM.nftGalleryAddress, createdAt: 0, color: 'green' };
 
+const STEP = 3;
+
+/**
+ * NFTs de una cuenta: muestra cuántos tiene y los carga de a 3 (una fila), con un indicador
+ * mientras llega cada imagen. "Ver más" carga los siguientes, solo cuando el usuario lo pide.
+ */
 function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account; selectedId?: string; onPick: (n: NftItem, source: Account) => void; hideHead?: boolean }) {
   const [items, setItems] = useState<NftItem[] | null>(null);
-  // NFTs cuya metadata todavía se está leyendo (se muestran con un marcador mientras tanto)
-  const [loading, setLoading] = useState<Set<string>>(new Set());
+  // metadata ya consultada (con o sin imagen) y la que está en camino
+  const [done, setDone] = useState<Set<string>>(new Set());
+  const [limit, setLimit] = useState(STEP);
+  const requested = useRef<Set<string>>(new Set());
+  const alive = useRef(true);
+  useEffect(() => () => {
+    alive.current = false;
+  }, []);
+
   useEffect(() => {
-    let alive = true;
     (async () => {
       try {
         const list = await fetchNfts(source.network, source.address);
         const { items: cached, pending } = await withCachedMeta(list);
-        if (!alive) return;
+        if (!alive.current) return;
+        const pend = new Set(pending.map((n) => n.id));
         setItems(cached);
-        setLoading(new Set(pending.map((n) => n.id)));
-        await loadMetaParallel(
-          pending,
-          (r) => {
-            setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev));
-            setLoading((prev) => {
-              const s = new Set(prev);
-              s.delete(r.id);
-              return s;
-            });
-          },
-          () => alive,
-        );
+        setDone(new Set(cached.filter((n) => !pend.has(n.id)).map((n) => n.id)));
       } catch {
-        if (alive) setItems([]);
+        if (alive.current) setItems([]);
       }
     })();
-    return () => {
-      alive = false;
-    };
   }, [source.id]);
 
+  // candidatos: los que tienen imagen o aún no sabemos (los que no tienen imagen se omiten)
+  const candidates = items ? items.filter((n) => n.image || !done.has(n.id)) : [];
+  const visible = candidates.slice(0, limit);
+
+  // pide la metadata solo de lo que se ve
+  useEffect(() => {
+    const need = visible.filter((n) => !done.has(n.id) && !requested.current.has(n.id));
+    if (!need.length) return;
+    need.forEach((n) => requested.current.add(n.id));
+    loadMetaParallel(
+      need,
+      (r) => {
+        setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev));
+        setDone((prev) => new Set(prev).add(r.id));
+      },
+      () => alive.current,
+      STEP,
+    );
+  }, [visible.map((n) => n.id).join(',')]);
+
+  if (items && items.length === 0) return null;
+
+  const total = items?.length ?? 0;
+  const remaining = Math.max(0, candidates.length - visible.length);
   const head = hideHead ? null : (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: SP.sm }}>
       <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: accountColor(source.color) }} />
@@ -77,59 +99,71 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
         {source.label}
       </Txt>
       {source.network === 'testnet' && <Badge text="Testnet" color={C.test} />}
+      {items ? <Txt v="small">{total === 1 ? t('1 NFT') : t('{n} NFTs', { n: total })}</Txt> : null}
     </View>
   );
-  if (items === null) {
-    return (
-      <View style={{ marginBottom: SP.lg }}>
-        {head}
-        <Txt v="small">Buscando NFTs…</Txt>
-      </View>
-    );
-  }
-  // solo los que tienen imagen sirven como avatar (los que aún cargan se muestran con un marcador)
-  const withImage = items.filter((n) => n.image || loading.has(n.id));
-  if (withImage.length === 0) return null;
+  const placeholder = (key: string) => (
+    <View key={key} style={{ width: TILE, height: TILE, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+      <ActivityIndicator color={C.green} />
+    </View>
+  );
+
   return (
     <View style={{ marginBottom: SP.lg }}>
       {head}
+      {hideHead && items ? <Txt v="small" style={{ marginBottom: SP.sm }}>{total === 1 ? t('1 NFT') : t('{n} NFTs', { n: total })}</Txt> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
-        {withImage.map((n) => {
-          const on = n.id === selectedId;
-          if (!n.image) {
-            return <View key={n.id} style={{ width: TILE, height: TILE, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, opacity: 0.6 }} />;
-          }
-          return (
-            <Pressable
-              key={n.id}
-              accessibilityLabel={n.name ?? 'NFT'}
-              onPress={() => {
-                tap();
-                onPick(n, source);
-              }}
-              style={({ pressed }) => ({
-                width: TILE,
-                height: TILE,
-                borderRadius: R.md,
-                overflow: 'hidden',
-                backgroundColor: C.surface2,
-                borderWidth: on ? 3 : 1,
-                borderColor: on ? C.green : C.line,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.7 : 1,
-              })}
-            >
-              <NftImage src={n.image} />
-              {on && (
-                <View style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
-                  <Feather name="check" size={14} color={C.greenInk} />
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
+        {items === null
+          ? [0, 1, 2].map((i) => placeholder(`p${i}`))
+          : visible.map((n) => {
+              if (!n.image) return placeholder(n.id);
+              const on = n.id === selectedId;
+              return (
+                <Pressable
+                  key={n.id}
+                  accessibilityLabel={n.name ?? 'NFT'}
+                  onPress={() => {
+                    tap();
+                    onPick(n, source);
+                  }}
+                  style={({ pressed }) => ({
+                    width: TILE,
+                    height: TILE,
+                    borderRadius: R.md,
+                    overflow: 'hidden',
+                    backgroundColor: C.surface2,
+                    borderWidth: on ? 3 : 1,
+                    borderColor: on ? C.green : C.line,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <NftImage src={n.image} />
+                  {on && (
+                    <View style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
+                      <Feather name="check" size={14} color={C.greenInk} />
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
       </View>
+      {remaining > 0 && (
+        <Pressable
+          onPress={() => {
+            tap();
+            setLimit((l) => l + STEP);
+          }}
+          hitSlop={8}
+          style={({ pressed }) => ({ alignSelf: 'center', marginTop: SP.md, paddingHorizontal: SP.lg, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.lineStrong, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.6 : 1 })}
+        >
+          <Feather name="chevron-down" size={16} color={C.green} />
+          <Txt v="label" color={C.green}>
+            {t('Ver más ({n})', { n: remaining })}
+          </Txt>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -152,9 +186,14 @@ export default function PickNftScreen({ id }: { id: string }) {
   return (
     <Screen title={t('NFT para {x}', { x: a.label })} onBack={nav.pop}>
       <Txt v="small" style={{ marginBottom: SP.lg }}>
-        Elige un NFT de la galería de Quorum o de tus cuentas para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red.
+        Elige un NFT de tus cuentas o de la galería de Quorum para reconocer esta de un vistazo. Es solo una imagen en este teléfono: no cambia nada en la red.
       </Txt>
       {a.nft && <Button title="Quitar el NFT" kind="ghost" icon="x" onPress={async () => { await app.updateAccount(a.id, { nft: undefined }); nav.pop(); }} />}
+      <Section title="Tus cuentas y bóvedas">
+        {mine.map((x) => (
+          <AccountNfts key={x.id} source={x} selectedId={a.nft?.id} onPick={pick} />
+        ))}
+      </Section>
       {QUORUM.nftGalleryAddress ? (
         <Section title="Galería de Quorum">
           <Txt v="small" style={{ marginBottom: SP.md }}>
@@ -163,11 +202,6 @@ export default function PickNftScreen({ id }: { id: string }) {
           <AccountNfts source={GALLERY} selectedId={a.nft?.id} onPick={pick} hideHead />
         </Section>
       ) : null}
-      <Section title="Tus cuentas y bóvedas">
-        {mine.map((x) => (
-          <AccountNfts key={x.id} source={x} selectedId={a.nft?.id} onPick={pick} />
-        ))}
-      </Section>
       {others.length > 0 && (
         <Section title="Solo lectura">
           <Txt v="small" style={{ marginBottom: SP.md }}>

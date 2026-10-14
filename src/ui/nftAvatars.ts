@@ -72,7 +72,8 @@ export function useGalleryPrefetch() {
     galleryWarmed = true;
     const timer = setTimeout(async () => {
       try {
-        const list = await fetchNfts('mainnet', QUORUM.nftGalleryAddress);
+        // solo lo primero que se ve (una fila); el resto se carga al pedir "Ver más"
+        const list = (await fetchNfts('mainnet', QUORUM.nftGalleryAddress)).slice(0, 3);
         const { items, pending } = await withCachedMeta(list);
         const done: NftItem[] = items.filter((n) => n.image);
         await loadMetaParallel(pending, (r) => r.image && done.push(r), () => true, 3);

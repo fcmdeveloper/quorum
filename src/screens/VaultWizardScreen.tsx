@@ -199,7 +199,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
   // ── Paso final: ejecutar
   const buildPlan = () => {
     const items: { tx: TxJson; label: string; state: 'wait' }[] = [];
-    items.push({ tx: buildSignerListSet(vault!.address, quorum, list.entries), label: `Multifirma ${need} de ${picks.length}`, state: 'wait' });
+    items.push({ tx: buildSignerListSet(vault!.address, quorum, list.entries), label: t('Multifirma {a} de {b}', { a: need, b: picks.length }), state: 'wait' });
     if (harden) {
       for (const h of HARDENING) {
         if (!st?.hardening.find((x) => x.asf === h.asf)?.on) items.push({ tx: buildSetFlag(vault!.address, h.asf), label: h.label, state: 'wait' });
@@ -265,7 +265,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
         if (r.status !== 'submitted') {
           items[i] = { ...items[i], state: 'err', msg: r.result };
           setPlan([...items]);
-          throw new Error(`Falló: ${items[i].label} (${r.result})`);
+          throw new Error(t('Falló: {x} ({r})', { x: items[i].label, r: r.result ?? '' }));
         }
         items[i] = { ...items[i], state: 'ok' };
         setPlan([...items]);
@@ -355,7 +355,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
               ? 'Ya es una bóveda en Quorum'
               : existing
                 ? t('Tu cuenta “{x}” se convertirá en bóveda (mismos fondos)', { x: existing.label })
-                : `${KIND_LABEL[d.kind]} · ${d.address.slice(0, 6)}…${d.address.slice(-4)}${signer ? ' · ya es firmante de otra bóveda' : ''}`;
+                : `${KIND_LABEL[d.kind]} · ${d.address.slice(0, 6)}…${d.address.slice(-4)}${signer ? ' · ' + t('ya es firmante de otra bóveda') : ''}`;
             return (
               <Card key={d.id} onPress={used ? undefined : () => setMasterId(d.id)} style={{ borderColor: on ? C.green : C.line, opacity: used ? 0.4 : 1, paddingVertical: 6 }}>
                 <ListItem
@@ -620,11 +620,11 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
             {picks.map((p) => (
               <View key={p.address} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
                 <Txt v="body">{p.label}</Txt>
-                <Badge text={`peso ${p.weight}`} color={C.dim} />
+                <Badge text={t('peso {n}', { n: p.weight })} color={C.dim} />
               </View>
             ))}
             <Txt v="small" style={{ marginTop: 6 }}>
-              Quórum {quorum} · se necesitan {need} de {picks.length}
+              {t('Quórum {q} · se necesitan {a} de {b}', { q: quorum, a: need, b: picks.length })}
             </Txt>
           </Card>
 

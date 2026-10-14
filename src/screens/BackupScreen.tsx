@@ -62,7 +62,7 @@ export default function BackupScreen() {
     try {
       const text = await serializeBackup(app.backupData(), { password: protect ? pw : undefined, random: (n) => Crypto.getRandomBytes(n) });
       const day = new Date().toISOString().slice(0, 10);
-      const f = new File(Paths.cache, `quorum-respaldo-${day}.json`);
+      const f = new File(Paths.cache, `${t('quorum-respaldo')}-${day}.json`);
       f.create({ overwrite: true });
       f.write(text);
       setExported({ text, uri: f.uri, protected: protect });

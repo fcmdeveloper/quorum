@@ -30,7 +30,7 @@ export function DevicesScreen() {
     const roles: string[] = [];
     for (const a of app.accounts) {
       const st = app.stateOf(a);
-      if (a.address === d.address) roles.push(a.kind === 'vault' ? `Crea ${a.label}` : `Firma ${a.label}`);
+      if (a.address === d.address) roles.push(a.kind === 'vault' ? t('Crea {x}', { x: a.label }) : t('Firma {x}', { x: a.label }));
       if (st?.signerList?.entries.some((e) => e.account === d.address)) roles.push(t('Firmante de {x}', { x: a.label }));
     }
     return roles;
@@ -55,7 +55,7 @@ export function DevicesScreen() {
       {app.devices.length === 0 ? (
         <Empty icon="key" title="Sin dispositivos" text="Agrega tus tarjetas Tangem, tu Ledger o una cuenta Xaman." />
       ) : (
-        <Section title={`Registrados (${app.devices.length})`}>
+        <Section title={t('Registrados ({n})', { n: app.devices.length })}>
           {app.devices.map((d) => (
             <Card key={d.id}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -173,14 +173,14 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
       await app.addDevice({ ...d, id: newId(), createdAt: Date.now() });
       success();
       if (close) nav.pop();
-      else toast(`“${d.label}” agregada`);
+      else toast(t('“{x}” agregada', { x: d.label }));
     } catch (e: any) {
       Alert.alert('No se pudo guardar', e.message);
     }
   };
 
   return (
-    <Screen title={`Agregar ${KIND_LABEL[kind]}`} onBack={nav.pop}>
+    <Screen title={t('Agregar {x}', { x: KIND_LABEL[kind] })} onBack={nav.pop}>
       <BusySheet visible={!!busy} text={busy ?? ''} />
       <Field label="Nombre" value={label} onChangeText={setLabel} hint="Para reconocerlo al firmar, por ejemplo “Tangem caja fuerte”." />
 

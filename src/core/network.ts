@@ -3,7 +3,7 @@
  * preparación y envío de transacciones.
  */
 import { Client, convertHexToString } from 'xrpl';
-import { locale } from '../i18n';
+import { locale, t as tl } from '../i18n';
 import { ACCOUNT_FLAGS, HARDENING, TxJson, SignerEntryInput, dropsToXrp } from './tx';
 
 export type NetworkId = 'testnet' | 'mainnet';
@@ -40,7 +40,7 @@ export async function getClient(net: NetworkId): Promise<Client> {
         lastErr = e;
       }
     }
-    throw new Error(`Sin conexión a ${NETWORKS[net].label}: ${String((lastErr as any)?.message ?? lastErr)}`);
+    throw new Error(tl('Sin conexión a {net}: {e}', { net: NETWORKS[net].label, e: String((lastErr as any)?.message ?? lastErr) }));
   })();
   try {
     return await connecting[net]!;
@@ -210,7 +210,7 @@ export function describeActivity(account: string, tx: any, meta: any, closeIso?:
       };
     }
     case 'SignerListSet':
-      return { ...base, kind: 'config', title: tx.SignerQuorum ? `Multifirma: quórum ${tx.SignerQuorum}` : 'Multifirma eliminada' };
+      return { ...base, kind: 'config', title: tx.SignerQuorum ? tl('Multifirma: quórum {n}', { n: tx.SignerQuorum }) : 'Multifirma eliminada' };
     case 'AccountSet': {
       let title = 'Ajustes de cuenta';
       if (tx.SetFlag === 4) title = 'Master key desactivada';
@@ -224,9 +224,9 @@ export function describeActivity(account: string, tx: any, meta: any, closeIso?:
     case 'SetRegularKey':
       return { ...base, kind: 'config', title: tx.RegularKey ? 'Clave regular asignada' : 'Clave regular quitada' };
     case 'TicketCreate':
-      return { ...base, kind: 'config', title: `${tx.TicketCount} tickets creados` };
+      return { ...base, kind: 'config', title: tl('{n} tickets creados', { n: tx.TicketCount }) };
     case 'TrustSet':
-      return { ...base, kind: 'config', title: `Línea de confianza ${currencyLabel(tx.LimitAmount?.currency ?? '')}` };
+      return { ...base, kind: 'config', title: tl('Línea de confianza {x}', { x: currencyLabel(tx.LimitAmount?.currency ?? '') }) };
     case 'OfferCreate':
       return { ...base, kind: 'dex', title: (tx.Flags ?? 0) & 0x00040000 ? 'Swap' : 'Orden en el DEX' };
     case 'OfferCancel':
@@ -452,5 +452,5 @@ export async function fundTestnet(address: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ destination: address }),
   });
-  if (!res.ok) throw new Error(`Faucet respondió ${res.status}`);
+  if (!res.ok) throw new Error(tl('Faucet respondió {n}', { n: res.status }));
 }

@@ -277,7 +277,7 @@ export function DonateScreen() {
               />
             </Card>
           ))}
-          <Button title={xrp ? `Donar ${xrp} XRP` : 'Elige un monto'} icon="heart" busy={busy} disabled={!xrp || !src} onPress={donate} />
+          <Button title={xrp ? t('Donar {x} XRP', { x: xrp }) : 'Elige un monto'} icon="heart" busy={busy} disabled={!xrp || !src} onPress={donate} />
         </>
       )}
 

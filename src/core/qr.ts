@@ -9,6 +9,7 @@ import { decode, encode } from 'ripple-binary-codec';
 import { bytesToHex, hexToBytes, sha512Half } from './crypto';
 import { SignerSig, TxJson, normalizeForMultisign, verifySignerSig } from './tx';
 import type { NetworkId } from './network';
+import { t } from '../i18n';
 
 const PREFIX = 'QRM1';
 
@@ -46,7 +47,7 @@ export function decodeProposalQr(text: string): DecodedProposal {
   const tx = normalizeForMultisign(rest);
   const signatures: SignerSig[] = (Signers ?? []).map((x: any) => x.Signer as SignerSig);
   for (const s of signatures) {
-    if (!verifySignerSig(tx, s)) throw new Error(`El QR trae una firma inválida de ${s.Account}`);
+    if (!verifySignerSig(tx, s)) throw new Error(t('El QR trae una firma inválida de {a}', { a: s.Account }));
   }
   return { network, tx, signatures, id: proposalIdFor(tx) };
 }

@@ -1,4 +1,5 @@
 import type { AccountState } from './network';
+import { t } from '../i18n';
 
 /** Mínimo de firmantes (los de mayor peso) para alcanzar el quórum. */
 export function minSigners(list: { quorum: number; entries: { weight: number }[] }): number {
@@ -45,14 +46,14 @@ export function vaultHealth(st?: AccountState): { level: HealthLevel; checks: He
     {
       key: 'list',
       ok: !!list && need >= 2,
-      label: list ? `Multifirma ${need} de ${list.entries.length}` : 'Sin multifirma',
+      label: list ? t('Multifirma {a} de {b}', { a: need, b: list.entries.length }) : 'Sin multifirma',
       detail: list ? (need >= 2 ? 'Ningún dispositivo puede mover fondos solo' : 'Un solo dispositivo basta para mover todo') : 'Configura los firmantes',
       fix: 'signers',
     },
     {
       key: 'tolerance',
       ok: !!list && tol >= 1,
-      label: list ? (tol >= 1 ? `Tolera perder ${tol} dispositivo${tol > 1 ? 's' : ''}` : 'No tolera perder ningún dispositivo') : 'Respaldo de dispositivos',
+      label: list ? (tol >= 1 ? tol === 1 ? t('Tolera perder 1 dispositivo') : t('Tolera perder {n} dispositivos', { n: tol }) : 'No tolera perder ningún dispositivo') : 'Respaldo de dispositivos',
       detail: list && tol < 1 ? 'Si pierdes uno, la bóveda queda bloqueada' : undefined,
       fix: 'signers',
     },

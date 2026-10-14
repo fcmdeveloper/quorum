@@ -145,8 +145,8 @@ export default function SettingsScreen() {
               />
             }
           />
-          <ListItem icon="key" title="Dispositivos de firma" subtitle={`${app.devices.length} registrados`} onPress={() => nav.push('devices', {})} />
-          <ListItem icon="book" title="Contactos" subtitle={`${app.contacts.length} guardados`} onPress={() => nav.push('contacts', {})} />
+          <ListItem icon="key" title="Dispositivos de firma" subtitle={app.devices.length === 1 ? t('1 registrado') : t('{n} registrados', { n: app.devices.length })} onPress={() => nav.push('devices', {})} />
+          <ListItem icon="book" title="Contactos" subtitle={app.contacts.length === 1 ? t('1 guardado') : t('{n} guardados', { n: app.contacts.length })} onPress={() => nav.push('contacts', {})} />
         </Card>
       </Section>
 

@@ -74,7 +74,7 @@ export default function TradeScreen({ id }: { id: string }) {
   };
 
   const cancel = (o: OpenOffer) =>
-    Alert.alert('Cancelar orden', `Orden #${o.seq}`, [
+    Alert.alert('Cancelar orden', t('Orden #{n}', { n: o.seq }), [
       { text: 'Volver', style: 'cancel' },
       {
         text: 'Cancelar orden',
@@ -200,7 +200,7 @@ export default function TradeScreen({ id }: { id: string }) {
                 <ListItem
                   icon={sell ? 'arrow-up-right' : 'arrow-down-left'}
                   iconColor={sell ? C.bad : C.green}
-                  title={`${sell ? 'Vender' : 'Comprar'} ${fmt(xrpAmt, 2)} XRP`}
+                  title={sell ? t('Vender {x} XRP', { x: fmt(xrpAmt, 2) }) : t('Comprar {x} XRP', { x: fmt(xrpAmt, 2) })}
                   subtitle={`a ${fmt(p, 5)} ${assetSymbol(other.asset, a.network)} · #${o.seq}`}
                   right={
                     <Pressable hitSlop={8} onPress={() => cancel(o)}>

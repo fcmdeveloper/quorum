@@ -6,6 +6,7 @@ import { useApp } from '../state';
 import { useNav } from '../nav';
 import { Badge, Button, Notice, Screen, Txt, toast } from '../ui/components';
 import { C, R, SP, F } from '../ui/theme';
+import { t } from '../i18n';
 
 export default function ReceiveScreen({ id }: { id: string }) {
   const app = useApp();
@@ -41,7 +42,9 @@ export default function ReceiveScreen({ id }: { id: string }) {
         <Button title="Compartir" icon="share" kind="secondary" style={{ flex: 1 }} onPress={() => Share.share({ message: a.address })} />
       </View>
       <Notice kind="info">
-        Solo envía XRP o tokens del XRP Ledger{a.network === 'testnet' ? ' de testnet' : ''} a esta dirección. Desde un exchange no necesitas destination tag para tu propia cuenta.
+        {a.network === 'testnet'
+          ? t('Solo envía XRP o tokens del XRP Ledger de testnet a esta dirección. Desde un exchange no necesitas destination tag para tu propia cuenta.')
+          : t('Solo envía XRP o tokens del XRP Ledger a esta dirección. Desde un exchange no necesitas destination tag para tu propia cuenta.')}
       </Notice>
       {a.kind === 'vault' && <Notice kind="info">Esta es una bóveda: recibir es libre, pero cada salida requiere el quórum de firmas.</Notice>}
     </Screen>

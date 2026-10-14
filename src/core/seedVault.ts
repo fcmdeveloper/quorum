@@ -10,6 +10,7 @@ import { Account as SecretAccount, checkChecksum, entropyToSecret } from '@xrplf
 import { encodeForSigning } from 'ripple-binary-codec';
 import { sign as keypairSign } from 'ripple-keypairs';
 import { TxJson, attachSingleSignature } from './tx';
+import { t } from '../i18n';
 
 export const SECRET_ROWS = 8;
 export const ROW_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -46,7 +47,7 @@ export function addressFromSecret(rows: string[]): string {
 function keysFromSecret(rows: string[]): { address: string; publicKey: string; privateKey: string } {
   if (rows.length !== SECRET_ROWS) throw new Error('Faltan filas de los números secretos');
   rows.forEach((r, i) => {
-    if (!rowValid(i, r)) throw new Error(`La fila ${ROW_LETTERS[i]} no es válida`);
+    if (!rowValid(i, r)) throw new Error(t('La fila {x} no es válida', { x: ROW_LETTERS[i] }));
   });
   const acc = new SecretAccount(rows.map((r) => r.trim()));
   const kp = acc.getKeypair();

@@ -3,7 +3,7 @@
  * Todo aquí es puro y testeable sin red ni dispositivos.
  */
 import { decodeAccountID, isValidClassicAddress } from 'ripple-address-codec';
-import { locale } from '../i18n';
+import { locale, t } from '../i18n';
 import { encode, decode } from 'ripple-binary-codec';
 import { hashes } from 'xrpl';
 import { Asset, amountOf, assetSymbol, isXrp, readAmount } from './assets';
@@ -76,7 +76,7 @@ export function dropsToXrp(drops: string | number): string {
 }
 
 function assertAddress(a: string, label: string) {
-  if (!isValidClassicAddress(a)) throw new Error(`${label}: dirección inválida (${a || 'vacía'})`);
+  if (!isValidClassicAddress(a)) throw new Error(t('{x}: dirección inválida ({a})', { x: label, a: a || t('vacía') }));
 }
 
 export function buildPayment(vault: string, destination: string, amountXrp: string, destinationTag?: string, memo?: string): TxJson {
@@ -150,13 +150,13 @@ export function buildSignerListSet(vault: string, quorum: number, entries: Signe
   for (const e of entries) {
     assertAddress(e.account, 'Firmante');
     if (e.account === vault) throw new Error('La bóveda no puede ser firmante de sí misma');
-    if (seen.has(e.account)) throw new Error(`Firmante duplicado: ${e.account}`);
+    if (seen.has(e.account)) throw new Error(t('Firmante duplicado: {a}', { a: e.account }));
     seen.add(e.account);
     if (!Number.isInteger(e.weight) || e.weight < 1 || e.weight > 65535) throw new Error('Peso inválido (1–65535)');
   }
   const total = entries.reduce((a, e) => a + e.weight, 0);
   if (!Number.isInteger(quorum) || quorum < 1) throw new Error('Quórum inválido');
-  if (quorum > total) throw new Error(`Quórum ${quorum} inalcanzable: la suma de pesos es ${total}`);
+  if (quorum > total) throw new Error(t('Quórum {q} inalcanzable: la suma de pesos es {n}', { q: quorum, n: total }));
   return {
     TransactionType: 'SignerListSet',
     Account: vault,
@@ -205,7 +205,7 @@ export function buildRemoveRegularKey(vault: string): TxJson {
 export function normalizeForMultisign(tx: TxJson): TxJson {
   const { Signers, TxnSignature, ...rest } = tx;
   for (const f of ['Sequence', 'Fee']) {
-    if (rest[f] === undefined) throw new Error(`Falta ${f}: la transacción no fue preparada`);
+    if (rest[f] === undefined) throw new Error(t('Falta {x}: la transacción no fue preparada', { x: f }));
   }
   return { ...rest, SigningPubKey: '' };
 }
@@ -237,7 +237,7 @@ export function combineSignatures(
   const unique = new Map<string, SignerSig>();
   for (const s of sigs) {
     if (unique.has(s.Account)) continue;
-    if (!verifySignerSig(base, s)) throw new Error(`La firma de ${s.Account} no es válida para esta transacción`);
+    if (!verifySignerSig(base, s)) throw new Error(t('La firma de {a} no es válida para esta transacción', { a: s.Account }));
     unique.set(s.Account, { ...s, SigningPubKey: compressPublicKey(s.SigningPubKey), TxnSignature: s.TxnSignature.toUpperCase() });
   }
   let weight = 0;
@@ -245,10 +245,10 @@ export function combineSignatures(
     const weights = new Map(signerList.entries.map((e) => [e.account, e.weight]));
     for (const acc of unique.keys()) {
       const w = weights.get(acc);
-      if (w === undefined) throw new Error(`${acc} no está en la lista de firmantes de la bóveda`);
+      if (w === undefined) throw new Error(t('{a} no está en la lista de firmantes de la bóveda', { a: acc }));
       weight += w;
     }
-    if (weight < signerList.quorum) throw new Error(`Peso acumulado ${weight} menor que el quórum ${signerList.quorum}`);
+    if (weight < signerList.quorum) throw new Error(t('Peso acumulado {w} menor que el quórum {q}', { w: weight, q: signerList.quorum }));
   }
   const sorted = [...unique.values()].sort((a, b) => {
     const x = accountIdHex(a.Account);
@@ -298,13 +298,13 @@ export function acceptXamanSigned(proposed: TxJson, signedHex: string): { tx: Tx
     if (XAMAN_MAY_CHANGE.has(k)) continue;
     if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) {
       const show = (v: unknown) => (typeof v === 'object' ? JSON.stringify(v) : String(v));
-      throw new Error(`Xaman firmó una transacción distinta a la propuesta (campo ${k}: se propuso ${show(a[k])}, Xaman firmó ${show(b[k])})`);
+      throw new Error(t('Xaman firmó una transacción distinta a la propuesta (campo {k}: se propuso {a}, Xaman firmó {b})', { k, a: show(a[k]), b: show(b[k]) }));
     }
   }
   const f0 = ((proposed.Flags ?? 0) as number) >>> 0;
   const f1 = ((signed.Flags ?? 0) as number) >>> 0;
   if ((f0 | TF_FULLY_CANONICAL) >>> 0 !== (f1 | TF_FULLY_CANONICAL) >>> 0) throw new Error('Xaman cambió los flags de la transacción');
-  if (Number(signed.Fee) > MAX_XAMAN_FEE_DROPS) throw new Error(`Comisión demasiado alta (${dropsToXrp(String(signed.Fee))} XRP)`);
+  if (Number(signed.Fee) > MAX_XAMAN_FEE_DROPS) throw new Error(t('Comisión demasiado alta ({x} XRP)', { x: dropsToXrp(String(signed.Fee)) }));
   if (!signed.TxnSignature || !signed.SigningPubKey) throw new Error('Xaman no devolvió una firma simple');
   const pub = compressPublicKey(signed.SigningPubKey);
   const { TxnSignature, ...unsigned } = signed;
@@ -351,7 +351,7 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
         title = 'Configurar lista de firmantes';
         lines.push(['Quórum', String(tx.SignerQuorum)]);
         tx.SignerEntries.forEach((e: any, i: number) =>
-          lines.push([`Firmante ${i + 1}`, `${e.SignerEntry.Account} (peso ${e.SignerEntry.SignerWeight})`]),
+          lines.push([t('Firmante {n}', { n: i + 1 }), t('{a} (peso {w})', { a: e.SignerEntry.Account, w: e.SignerEntry.SignerWeight })]),
         );
       }
       break;
@@ -472,7 +472,7 @@ export function describeTradeTx(tx: TxJson, net?: any): { title: string; lines: 
     case 'TrustSet': {
       const sym = assetSymbol({ currency: tx.LimitAmount.currency, issuer: tx.LimitAmount.issuer }, net);
       const off = tx.LimitAmount.value === '0';
-      return { title: off ? `Quitar ${sym}` : `Habilitar ${sym}`, lines: [['Token', sym], ['Emisor', tx.LimitAmount.issuer]] };
+      return { title: off ? t('Quitar {x}', { x: sym }) : t('Habilitar {x}', { x: sym }), lines: [['Token', sym], ['Emisor', tx.LimitAmount.issuer]] };
     }
     case 'OfferCreate': {
       const swap = (tx.Flags ?? 0) & OFFER_FLAGS.tfFillOrKill;

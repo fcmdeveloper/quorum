@@ -2,7 +2,7 @@
  * Precio de XRP en la divisa elegida (solo informativo, nunca interviene en la firma).
  * Fuente: API pública de CoinGecko, con caché en memoria.
  */
-import { locale } from '../i18n';
+import { locale, t } from '../i18n';
 export type Fiat = 'usd' | 'eur';
 
 export const FIATS: { value: Fiat; label: string; symbol: string; decimals: number }[] = [
@@ -23,7 +23,7 @@ export async function fetchXrpPrice(force = false): Promise<PriceQuote> {
   const url =
     'https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd,eur&include_24hr_change=true';
   const res = await fetch(url, { headers: { accept: 'application/json' } });
-  if (!res.ok) throw new Error(`Precio no disponible (${res.status})`);
+  if (!res.ok) throw new Error(t('Precio no disponible ({n})', { n: res.status }));
   const j = (await res.json())?.ripple;
   if (!j?.usd) throw new Error('Respuesta de precio inválida');
   cache = {
@@ -133,5 +133,5 @@ export async function fetchXrpHistory(fiat: Fiat, range: Range): Promise<{ point
   }
   // sin red: mejor mostrar lo último que se tuvo que nada
   if (hit) return { points: hit.pts, limited: hit.limited };
-  throw new Error(`Historial de precio no disponible${lastErr ? ` (${(lastErr as any)?.message ?? lastErr})` : ''}`);
+  throw new Error(t('Historial de precio no disponible') + (lastErr ? ` (${(lastErr as any)?.message ?? lastErr})` : ''));
 }

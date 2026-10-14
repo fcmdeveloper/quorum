@@ -6,6 +6,7 @@ import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { sha512 } from '@noble/hashes/sha2.js';
 import { encodeForMultisigning, encodeForSigning } from 'ripple-binary-codec';
 import { deriveAddress } from 'ripple-keypairs';
+import { t } from '../i18n';
 
 const N = secp256k1.Point.CURVE().n;
 const HALF_N = N >> 1n;
@@ -109,7 +110,7 @@ export function toCanonicalDer(sigHex: string): string {
   } else if (bytes[0] === 0x30) {
     ({ r, s } = parseDer(bytes));
   } else {
-    throw new Error(`Formato de firma no reconocido (${bytes.length} bytes)`);
+    throw new Error(t('Formato de firma no reconocido ({n} bytes)', { n: bytes.length }));
   }
   if (r <= 0n || r >= N || s <= 0n || s >= N) throw new Error('Firma fuera de rango');
   if (s > HALF_N) s = N - s;

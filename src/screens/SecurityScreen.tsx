@@ -82,20 +82,20 @@ export default function SecurityScreen({ id }: { id: string }) {
   };
 
   return (
-    <Screen title={`Seguridad · ${a.label}`} onBack={nav.pop}>
+    <Screen title={t('Seguridad · {x}', { x: a.label })} onBack={nav.pop}>
       <View style={{ alignItems: 'center', paddingVertical: SP.md }}>
         <QuorumRing
           size={150}
           segments={list ? list.entries.map((e) => ({ weight: e.weight, on: true })) : [{ weight: 1, on: false }]}
           center={list ? `${minSigners(list)}/${list.entries.length}` : '—'}
-          sub={list ? `quórum ${list.quorum}` : 'sin firmantes'}
+          sub={list ? t('quórum {n}', { n: list.quorum }) : 'sin firmantes'}
         />
         <Txt v="h2" style={{ marginTop: SP.md }}>
           {h.summary}
         </Txt>
         {list && (
           <Txt v="small">
-            Tolera perder {lossTolerance(list)} dispositivo{lossTolerance(list) === 1 ? '' : 's'}
+            {lossTolerance(list) === 1 ? t('Tolera perder 1 dispositivo') : t('Tolera perder {n} dispositivos', { n: lossTolerance(list) })}
           </Txt>
         )}
       </View>
@@ -125,7 +125,7 @@ export default function SecurityScreen({ id }: { id: string }) {
                 iconColor={d ? C.green : C.dim}
                 title={d?.label ?? c?.label ?? 'Firmante externo'}
                 subtitle={`${d ? 'En este teléfono' : 'En otro teléfono'} · ${e.account.slice(0, 6)}…${e.account.slice(-4)}`}
-                right={<Badge text={`peso ${e.weight}`} color={C.dim} />}
+                right={<Badge text={t('peso {n}', { n: e.weight })} color={C.dim} />}
               />
             );
           }) ?? <Txt v="small" style={{ padding: SP.md }}>Sin firmantes todavía.</Txt>}

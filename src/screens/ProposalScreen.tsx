@@ -202,7 +202,7 @@ export default function ProposalScreen({ id }: { id: string }) {
               icon={r.signed ? 'check' : r.device ? (r.device.kind === 'ledger' ? 'cpu' : r.device.kind === 'tangem' ? 'credit-card' : 'smartphone') : 'smartphone'}
               iconColor={r.signed ? C.green : r.device ? C.dim : C.faint}
               title={r.device ? r.device.label : 'En otro teléfono'}
-              subtitle={`${r.device ? KIND_LABEL[r.device.kind] + ' · ' : ''}${r.account.slice(0, 6)}…${r.account.slice(-4)}${p.mode === 'multi' ? ` · peso ${r.weight}` : ''}`}
+              subtitle={`${r.device ? KIND_LABEL[r.device.kind] + ' · ' : ''}${r.account.slice(0, 6)}…${r.account.slice(-4)}${p.mode === 'multi' ? ' · ' + t('peso {n}', { n: r.weight }) : ''}`}
               right={r.signed ? <Badge text="Firmó" /> : undefined}
             />
             {!r.signed && active && r.device && <Button title={t('Firmar con {x}', { x: r.device.label })} kind="secondary" icon="edit-3" onPress={() => sign(r.device!)} />}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { t } from '../i18n';
+import { t, tr } from '../i18n';
 import { Feather } from '@expo/vector-icons';
 import { Alert, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { useApp } from '../state';
@@ -237,7 +237,7 @@ export default function AccountScreen({ id }: { id: string }) {
                     iconColor={d ? C.green : C.faint}
                     title={d ? d.label : 'Dispositivo de otro teléfono'}
                     subtitle={`${d ? KIND_LABEL[d.kind] + ' · ' : ''}${e.account.slice(0, 6)}…${e.account.slice(-4)}`}
-                    right={<Badge text={`peso ${e.weight}`} color={C.dim} />}
+                    right={<Badge text={t('peso {n}', { n: e.weight })} color={C.dim} />}
                   />
                 );
               })}
@@ -260,7 +260,7 @@ export default function AccountScreen({ id }: { id: string }) {
         <Section title="Por firmar">
           {pend.map((p) => (
             <Card key={p.id} onPress={() => nav.push('proposal', { id: p.id })}>
-              <ListItem icon="edit-3" iconColor={C.warn} title={p.tx.TransactionType === 'Payment' ? 'Envío' : p.tx.TransactionType} subtitle={p.status === 'ready' ? 'Lista para enviar' : `${p.signatures.length} firma(s)`} />
+              <ListItem icon="edit-3" iconColor={C.warn} title={p.tx.TransactionType === 'Payment' ? 'Envío' : p.tx.TransactionType} subtitle={p.status === 'ready' ? 'Lista para enviar' : (p.signatures.length === 1 ? t('1 firma') : t('{n} firmas', { n: p.signatures.length }))} />
             </Card>
           ))}
         </Section>
@@ -295,7 +295,7 @@ export default function AccountScreen({ id }: { id: string }) {
                   icon="dollar-sign"
                   iconColor={C.faint}
                   title={k.symbol}
-                  subtitle={`${k.name} · no habilitado`}
+                  subtitle={t('{x} · no habilitado', { x: k.name })}
                   right={
                     canSign ? (
                       <Pressable
@@ -326,7 +326,7 @@ export default function AccountScreen({ id }: { id: string }) {
                   icon="disc"
                   iconColor={C.dim}
                   title={t.label}
-                  subtitle={`No verificado · ${t.issuer.slice(0, 6)}…${t.issuer.slice(-4)}`}
+                  subtitle={`${tr('No verificado')} · ${t.issuer.slice(0, 6)}…${t.issuer.slice(-4)}`}
                   right={<Txt v="h3">{m.xrp(t.balance)}</Txt>}
                 />
               ))}

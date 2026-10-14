@@ -8,6 +8,7 @@ import { SignerDevice } from './types';
 import { tangemSignHash } from './tangem';
 import { ledgerSignMulti, ledgerSignSingle } from './ledger';
 import { xamanSignMulti, xamanSignSingle, XamanSession } from './xaman';
+import { t } from '../i18n';
 
 export interface SignContext {
   /** Devuelve una sesión de Xaman válida (inicia sesión si hace falta). */
@@ -24,7 +25,7 @@ export async function signAsMultisigner(device: SignerDevice, tx: TxJson, ctx: S
     case 'tangem': {
       if (!device.tangem || !device.publicKey) throw new Error('Firmante Tangem incompleto: vuelve a escanear la tarjeta');
       ctx.onStatus?.('Acerca la tarjeta al teléfono…');
-      const der = await tangemSignHash(multisignHash(tx, device.address), device.tangem, `Multifirma · ${tx.TransactionType}`);
+      const der = await tangemSignHash(multisignHash(tx, device.address), device.tangem, t('Multifirma · {x}', { x: tx.TransactionType }));
       sig = { Account: device.address, SigningPubKey: device.publicKey, TxnSignature: der };
       break;
     }
@@ -63,7 +64,7 @@ export async function signAsMaster(
       if (!device.tangem || !device.publicKey) throw new Error('Tangem incompleto');
       const withKey = { ...tx, SigningPubKey: device.publicKey };
       ctx.onStatus?.('Acerca la tarjeta al teléfono…');
-      const der = await tangemSignHash(singleSignHash(withKey), device.tangem, `Bóveda · ${tx.TransactionType}`);
+      const der = await tangemSignHash(singleSignHash(withKey), device.tangem, t('Bóveda · {x}', { x: tx.TransactionType }));
       return attachSingleSignature(tx, device.publicKey, der);
     }
     case 'ledger': {

@@ -27,6 +27,7 @@ import {
 } from '../core/xamanAuth';
 import { compressPublicKey } from '../core/crypto';
 import { QUORUM } from '../config';
+import { t } from '../i18n';
 export { xamanInstruction };
 
 /**
@@ -71,7 +72,7 @@ export async function xamanConnect(onStatus?: (s: string) => void): Promise<Xama
     body: tokenRequestBody({ clientId: QUORUM.xamanApiKey, redirectUri: QUORUM.xamanRedirect, code: q.code, verifier }),
   });
   const j: any = await tok.json().catch(() => ({}));
-  if (!tok.ok || !j.access_token) throw new Error(`Xaman no entregó el token (${j.error_description ?? j.error ?? tok.status})`);
+  if (!tok.ok || !j.access_token) throw new Error(t('Xaman no entregó el token ({x})', { x: j.error_description ?? j.error ?? tok.status }));
   return { ...sessionFromJwt(j.access_token, Number(j.expires_in) || undefined), clientId: QUORUM.xamanApiKey };
 }
 
@@ -145,7 +146,7 @@ async function call(s: XamanSession, path: string, init: RequestInit = {}) {
   if (json?.error?.code === 1217) {
     // No es la sesión: la app de Quorum en Xaman no tiene permiso para este tipo de transacción.
     throw new Error(
-      `Xaman no permite a Quorum pedir la firma de este tipo de transacción (${txTypeOf(init.body)}). Hay que pedir a Xaman que habilite ese permiso para la app. (1217 · ${json.error.reference ?? ''})`,
+      t('Xaman no permite a Quorum pedir la firma de este tipo de transacción ({x}). Hay que pedir a Xaman que habilite ese permiso para la app.', { x: txTypeOf(init.body) }) + ` (1217 · ${json.error.reference ?? ''})`,
     );
   }
   if (res.status === 401 || res.status === 403) {
@@ -153,7 +154,7 @@ async function call(s: XamanSession, path: string, init: RequestInit = {}) {
     const e = json?.error ?? {};
     const why = [e.code, e.message, e.reference].filter(Boolean).join(' · ') || text.slice(0, 200);
     const method = (init.method ?? 'GET').toUpperCase();
-    throw new XamanAuthError(`La sesión de Xaman venció. Vuelve a firmar para reconectar. (${res.status} ${method} ${path.split('/').slice(0, 2).join('/')}: ${why})`);
+    throw new XamanAuthError(t('La sesión de Xaman venció. Vuelve a firmar para reconectar.') + ` (${res.status} ${method} ${path.split('/').slice(0, 2).join('/')}: ${why})`);
   }
   if (!res.ok) {
     throw new Error(`Xaman API ${res.status}: ${json?.error?.reference ?? json?.error?.code ?? text.slice(0, 160)}`);
@@ -237,7 +238,7 @@ export async function xamanSignMulti(
     network,
   });
   if (res.signer && res.signer !== signerAddress) {
-    throw new Error(`Firmó la cuenta ${res.signer}, se esperaba ${signerAddress}`);
+    throw new Error(t('Firmó la cuenta {a}, se esperaba {b}', { a: res.signer, b: signerAddress }));
   }
   return signerSigFromBlob(res.hex, signerAddress);
 }

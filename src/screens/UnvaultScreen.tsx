@@ -218,7 +218,9 @@ export default function UnvaultScreen({ id }: { id: string }) {
 
       {st.tickets.length > 0 && (
         <Txt v="small" style={{ marginBottom: SP.md }}>
-          Quedan {st.tickets.length} ticket{st.tickets.length === 1 ? '' : 's'} sin usar (0,2 XRP de reserva cada uno). No se pueden cancelar directamente; se liberan al usarlos.
+          {st.tickets.length === 1
+            ? t('Queda 1 ticket sin usar (0,2 XRP de reserva). No se puede cancelar directamente; se libera al usarlo.')
+            : t('Quedan {n} tickets sin usar (0,2 XRP de reserva cada uno). No se pueden cancelar directamente; se liberan al usarlos.', { n: st.tickets.length })}
         </Txt>
       )}
 

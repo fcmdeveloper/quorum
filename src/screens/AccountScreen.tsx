@@ -339,6 +339,9 @@ export default function AccountScreen({ id }: { id: string }) {
       <Card style={{ marginTop: SP.lg, paddingVertical: 4 }}>
         <ListItem icon="image" title="NFTs" onPress={() => nav.push('nfts', { id: a.id })} />
         {isVault && <ListItem icon="shield" title="Seguridad de la bóveda" onPress={() => nav.push('security', { id: a.id })} />}
+        {a.network === 'mainnet' && !!QUORUM.nftGalleryAddress && a.address === QUORUM.nftGalleryAddress && (
+          <ListItem icon="award" title="Insignias de validador" subtitle="Entregar los NFT Quorum Validator" onPress={() => nav.push('badges', { id: a.id })} />
+        )}
         {isVault && a.network === 'mainnet' && !!QUORUM.releasesAddress && a.address === QUORUM.releasesAddress && (
           <ListItem icon="check-circle" title="Registrar una versión" subtitle="Registro público de Quorum Releases" onPress={() => nav.push('registerRelease', { id: a.id })} />
         )}

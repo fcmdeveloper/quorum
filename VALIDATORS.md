@@ -139,9 +139,17 @@ Council members sign with the Quorum app (Tangem, Ledger or Xaman), exactly like
 
 ## Recognition
 
-Every validator who records a correct attestation receives the **Quorum Validator** NFT for that release, sent from the Quorum gallery account. You accept it from your wallet (on the XRP Ledger nobody can send you an NFT without your consent) and can use it as an account image in Quorum.
+Every community validator with a **correct** attestation receives a **Quorum Validator** NFT for that release.
 
-These NFTs are **non-transferable and have no monetary value**. Quorum doesn't pay validators: it is a free, non-profit project, and validation is a contribution to the community.
+- **One collection, one edition per release.** All badges belong to the *Quorum Validators* collection, issued by the Quorum gallery account `rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE` (taxon 2026). Each release has its own color; **1.0.0 is the Genesis edition**.
+- **Minted on demand.** There's no pre-minted stock: one badge is minted for each correct attestation, so the total always equals the real number of validations.
+- **Delivered as a free offer.** The gallery mints the badge and offers it for 0 XRP to your address only. You accept it from your wallet (on the XRP Ledger nobody can send you an NFT without your consent). Then you can use it as an account image in Quorum.
+- **Non-transferable and without monetary value.** It can only go back to the gallery, never be sold. Quorum doesn't pay validators: it's a free, non-profit project.
+- **Minify doesn't award itself.** The developer's own accounts never receive badges.
+
+⚠️ If your account blocks incoming NFT offers (one of the protections Quorum offers for vaults), the offer can't reach you. Validate from a regular account.
+
+The badge images and metadata are published on [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.0.json), not on IPFS.
 
 ## Questions
 

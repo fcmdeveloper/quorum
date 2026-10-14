@@ -14,6 +14,7 @@ import { C, R, SP, accountColor } from '../ui/theme';
 import { NftImage } from '../ui/NftImage';
 import { NftItem, fetchNfts } from '../core/network';
 import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
+import { BADGE_TAXON } from '../core/badges';
 import { Account } from '../store';
 import { QUORUM } from '../config';
 
@@ -56,7 +57,8 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
   useEffect(() => {
     (async () => {
       try {
-        const list = await fetchNfts(source.network, source.address);
+        // las insignias de validador que la galería aún no entrega no son imágenes de uso público
+        const list = (await fetchNfts(source.network, source.address)).filter((n) => !(source.id === GALLERY.id && n.taxon === BADGE_TAXON));
         const { items: cached, pending } = await withCachedMeta(list);
         if (!alive.current) return;
         const pend = new Set(pending.map((n) => n.id));

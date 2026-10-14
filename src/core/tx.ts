@@ -421,6 +421,24 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
       }
       break;
     }
+    case 'NFTokenMint': {
+      const badge = memoTexts(tx).map((m) => /^quorum\.badge\s+(\{.*\})$/.exec(m.text.trim())).find(Boolean);
+      let d: any = null;
+      try {
+        d = badge ? JSON.parse(badge[1]) : null;
+      } catch {}
+      title = d ? t('Acuñar insignia de validador {v}', { v: d.release }) : 'Acuñar NFT';
+      if (d) lines.push(['Para', String(d.to)]);
+      lines.push(['Transferible', tx.Flags && tx.Flags & 8 ? 'Sí' : 'No']);
+      if (tx.URI) lines.push(['URI', Buffer.from(tx.URI, 'hex').toString('utf8')]);
+      break;
+    }
+    case 'NFTokenCreateOffer':
+      title = tx.Amount === '0' && tx.Destination ? t('Regalar NFT a {a}', { a: `${tx.Destination.slice(0, 6)}…${tx.Destination.slice(-4)}` }) : 'Oferta de NFT';
+      lines.push(['NFT', `${String(tx.NFTokenID).slice(0, 12)}…`]);
+      if (tx.Destination) lines.push(['Para', tx.Destination]);
+      lines.push(['Monto', tx.Amount === '0' ? t('Gratis') : JSON.stringify(tx.Amount)]);
+      break;
     case 'TicketCreate':
       title = 'Crear tickets';
       lines.push(['Cantidad', String(tx.TicketCount)]);

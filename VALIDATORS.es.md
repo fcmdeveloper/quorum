@@ -139,9 +139,17 @@ Los miembros del Consejo firman con la app Quorum (Tangem, Ledger o Xaman), igua
 
 ## Reconocimiento
 
-Cada validador que registra una validación correcta recibe el NFT **Quorum Validator** de esa versión, enviado desde la cuenta de la galería de Quorum. Lo aceptas desde tu billetera (en el XRP Ledger nadie puede enviarte un NFT sin tu consentimiento) y puedes usarlo como imagen de una cuenta en Quorum.
+Cada validador de la comunidad con una validación **correcta** recibe el NFT **Quorum Validator** de esa versión.
 
-Estos NFTs **no se pueden transferir y no tienen valor monetario**. Quorum no paga a los validadores: es un proyecto gratuito y sin fines de lucro, y validar es un aporte a la comunidad.
+- **Una colección, una edición por versión.** Todas las insignias son de la colección *Quorum Validators*, emitida por la cuenta de la galería de Quorum `rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE` (taxon 2026). Cada versión tiene su color; **la 1.0.0 es la edición Génesis**.
+- **Se acuñan a pedido.** No hay stock por adelantado: se acuña una insignia por cada validación correcta, así que el total siempre es el número real de validaciones.
+- **Se entregan como oferta gratis.** La galería acuña la insignia y la ofrece por 0 XRP solo a tu dirección. La aceptas desde tu billetera (en el XRP Ledger nadie puede enviarte un NFT sin tu consentimiento) y después puedes usarla como imagen de una cuenta en Quorum.
+- **No se pueden transferir y no tienen valor monetario.** Solo pueden volver a la galería, nunca venderse. Quorum no paga a los validadores: es un proyecto gratuito y sin fines de lucro.
+- **Minify no se entrega insignias a sí mismo.** Las cuentas del desarrollador nunca reciben insignia.
+
+⚠️ Si tu cuenta bloquea las ofertas de NFT entrantes (una de las protecciones que Quorum ofrece para las bóvedas), la oferta no te llega. Valida desde una cuenta normal.
+
+Las imágenes y los datos de las insignias se publican en [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.0.json), no en IPFS.
 
 ## Preguntas
 

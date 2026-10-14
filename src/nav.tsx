@@ -21,6 +21,7 @@ export type Route =
   | { name: 'about'; params: {} }
   | { name: 'verify'; params: {} }
   | { name: 'registerRelease'; params: { id: string } }
+  | { name: 'badges'; params: { id: string } }
   | { name: 'donate'; params: {} }
   | { name: 'guide'; params: {} }
   | { name: 'unvault'; params: { id: string } }

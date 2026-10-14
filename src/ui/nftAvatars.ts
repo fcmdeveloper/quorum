@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { NftItem, fetchNfts, ipfsToHttp } from '../core/network';
 import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
 import { QUORUM } from '../config';
+import { BADGE_TAXON } from '../core/badges';
 
 /**
  * Revisa que los NFTs elegidos como imagen sigan en alguna de tus cuentas de Quorum.
@@ -73,7 +74,7 @@ export function useGalleryPrefetch() {
     const timer = setTimeout(async () => {
       try {
         // solo lo primero que se ve (una fila); el resto se carga al pedir "Ver más"
-        const list = (await fetchNfts('mainnet', QUORUM.nftGalleryAddress)).slice(0, 3);
+        const list = (await fetchNfts('mainnet', QUORUM.nftGalleryAddress)).filter((n) => n.taxon !== BADGE_TAXON).slice(0, 3);
         const { items, pending } = await withCachedMeta(list);
         const done: NftItem[] = items.filter((n) => n.image);
         await loadMetaParallel(pending, (r) => r.image && done.push(r), () => true, 3);

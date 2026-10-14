@@ -6,34 +6,11 @@ import { useApp } from '../state';
 import { useNav } from '../nav';
 import { Address, Badge, Button, Empty, Row, Screen, Txt } from '../ui/components';
 import { C, R, SP } from '../ui/theme';
-import { IPFS_GATEWAYS, NETWORKS, NftItem, fetchNfts, ipfsPath, ipfsToHttp, loadNftMetadata } from '../core/network';
+import { NETWORKS, NftItem, fetchNfts, loadNftMetadata } from '../core/network';
+import { NftImage } from '../ui/NftImage';
 
 const W = Dimensions.get('window').width;
 
-/** Imagen de NFT: si un gateway IPFS falla, prueba el siguiente; si todos fallan, muestra un ícono. */
-function NftImage({ src, fit = 'cover', size = 28 }: { src?: string; fit?: 'cover' | 'contain'; size?: number }) {
-  const [g, setG] = useState(0);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setG(0);
-    setFailed(false);
-  }, [src]);
-  if (!src || failed) return <Feather name="image" size={size} color={C.faint} />;
-  const uri = ipfsToHttp(src, g)!;
-  return (
-    <Image
-      source={{ uri }}
-      style={{ width: '100%', height: '100%' }}
-      contentFit={fit}
-      transition={200}
-      cachePolicy="memory-disk"
-      onError={() => {
-        if (ipfsPath(src) && g < IPFS_GATEWAYS.length - 1) setG(g + 1);
-        else setFailed(true);
-      }}
-    />
-  );
-}
 const TILE = (W - SP.lg * 2 - SP.md) / 2;
 
 export default function NftsScreen({ id }: { id: string }) {

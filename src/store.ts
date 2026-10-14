@@ -24,6 +24,11 @@ export interface Account {
   color?: string;
   /** Ícono elegido (clave de ACCOUNT_ICONS); sin él se usa el del tipo de cuenta. */
   icon?: string;
+  /**
+   * NFT elegido como imagen (de cualquiera de las cuentas en Quorum). Es solo decorativo:
+   * si el NFT ya no está en ninguna de tus cuentas, se quita y vuelve el ícono.
+   */
+  nft?: { id: string; image: string; network: NetworkId; name?: string };
   /** Solo bóvedas: destinos permitidos (fuera de esta lista la app exige confirmación reforzada). */
   allowed?: string[];
   /**

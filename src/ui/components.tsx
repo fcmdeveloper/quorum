@@ -20,6 +20,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import { t, tr } from '../i18n';
+import { NftImage } from './NftImage';
 import { C, F, R, SP, T, ACCOUNT_COLORS, ACCOUNT_ICONS, accountColor, alpha, onThemeChange } from './theme';
 
 export type IconName = React.ComponentProps<typeof Feather>['name'];
@@ -860,9 +861,16 @@ export function accountIcon(a: { icon?: string; kind: string }, dev?: { kind: st
   return dev.kind === 'ledger' ? 'cpu' : dev.kind === 'tangem' ? 'credit-card' : 'smartphone';
 }
 
-/** Ícono de una cuenta con su color. */
-export function AccountAvatar({ color, icon, size = 40 }: { color?: string; icon: string; size?: number }) {
+/** Ícono de una cuenta con su color, o la imagen del NFT elegido. */
+export function AccountAvatar({ color, icon, size = 40, nft }: { color?: string; icon: string; size?: number; nft?: string }) {
   const c = accountColor(color);
+  if (nft) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: size * 0.3, overflow: 'hidden', backgroundColor: C.surface2, borderWidth: 1, borderColor: alpha(c, 0.45), alignItems: 'center', justifyContent: 'center' }}>
+        <NftImage src={nft} size={size * 0.4} />
+      </View>
+    );
+  }
   return (
     <View
       style={{

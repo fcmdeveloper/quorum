@@ -10,6 +10,8 @@ import { C, F, SP, accountColor, alpha as alphaC } from '../ui/theme';
 import { minSigners, vaultHealth } from '../core/health';
 import { Account } from '../store';
 import { formatFiat } from '../core/market';
+import { NftImage } from '../ui/NftImage';
+import { useNftAvatarCheck } from '../ui/nftAvatars';
 
 const LEVEL = {
   // getters: el color se lee al dibujar (cambia con el tema)
@@ -32,6 +34,7 @@ export default function HomeScreen() {
   const nav = useNav();
   const m = useMoney();
   const [refreshing, setRefreshing] = React.useState(false);
+  useNftAvatarCheck();
 
   const vaults = app.accounts.filter((a) => a.kind === 'vault');
   const wallets = app.accounts.filter((a) => a.kind === 'wallet');
@@ -295,8 +298,8 @@ function VaultCard({ a }: { a: Account }) {
     <Card onPress={() => nav.push('account', { id: a.id })} style={{ padding: SP.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
         <QuorumRing size={68} color={c} segments={list ? list.entries.map((e) => ({ weight: e.weight, on: h.level === 'secure' })) : [{ weight: 1, on: false }]}>
-          <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: alphaC(c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
-            <AccountGlyph icon={accountIcon(a)} size={20} color={c} />
+          <View style={{ width: a.nft ? 52 : 46, height: a.nft ? 52 : 46, borderRadius: 26, overflow: 'hidden', backgroundColor: alphaC(c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
+            {a.nft ? <NftImage src={a.nft.image} size={18} /> : <AccountGlyph icon={accountIcon(a)} size={20} color={c} />}
           </View>
         </QuorumRing>
         <View style={{ flex: 1, gap: 4 }}>
@@ -329,7 +332,7 @@ function WalletRow({ a }: { a: Account }) {
   return (
     <Card onPress={() => nav.push('account', { id: a.id })} style={{ paddingVertical: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <AccountAvatar color={a.color} icon={accountIcon(a, dev)} />
+        <AccountAvatar color={a.color} icon={accountIcon(a, dev)} nft={a.nft?.image} />
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <Txt v="body" numberOfLines={1} style={{ flexShrink: 1 }}>

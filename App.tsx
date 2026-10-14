@@ -46,6 +46,7 @@ import { LockScreen, Onboarding, TermsScreen, useAppLock } from './src/screens/G
 import { TERMS_VERSION } from './src/legal';
 import { ReminderScreen, TermsReviewScreen } from './src/screens/ReviewScreens';
 import { needsReview } from './src/core/reminder';
+import PickNftScreen from './src/screens/PickNftScreen';
 
 function RouteView({ r }: { r: Route }) {
   switch (r.name) {
@@ -87,6 +88,8 @@ function RouteView({ r }: { r: Route }) {
       return <UnvaultScreen id={r.params.id} />;
     case 'finishVault':
       return <FinishVaultScreen id={r.params.id} />;
+    case 'pickNft':
+      return <PickNftScreen id={r.params.id} />;
     case 'terms':
       return <TermsReviewScreen />;
     case 'backup':

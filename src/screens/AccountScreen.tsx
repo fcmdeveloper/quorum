@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { t } from '../i18n';
+import { Feather } from '@expo/vector-icons';
 import { Alert, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { useApp } from '../state';
 import { useNav } from '../nav';
@@ -94,17 +95,27 @@ export default function AccountScreen({ id }: { id: string }) {
     >
       <View style={{ alignItems: 'center', paddingVertical: SP.md }}>
         <Pressable onPress={() => setPicking((v) => !v)} accessibilityLabel={t('Cambiar color e ícono')} style={{ marginBottom: SP.md }}>
-          <AccountAvatar color={a.color} size={56} icon={accountIcon(a, dev)} />
+          <AccountAvatar color={a.color} size={56} icon={accountIcon(a, dev)} nft={a.nft?.image} />
         </Pressable>
         {picking && (
           <View style={{ marginBottom: SP.lg, gap: SP.md, alignItems: 'center' }}>
             <Txt v="label">Color</Txt>
             <ColorPicker value={a.color} onChange={(c) => app.updateAccount(a.id, { color: c })} />
             <Txt v="label" style={{ marginTop: SP.sm }}>Ícono</Txt>
-            <IconPicker value={a.icon} color={a.color} onChange={(ic) => app.updateAccount(a.id, { icon: ic })} />
+            <IconPicker value={a.nft ? undefined : a.icon} color={a.color} onChange={(ic) => app.updateAccount(a.id, { icon: ic, nft: undefined })} />
+            <Txt v="label" style={{ marginTop: SP.sm }}>NFT</Txt>
+            <Pressable
+              onPress={() => nav.push('pickNft', { id: a.id })}
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: SP.lg, height: 40, borderRadius: 20, borderWidth: 1, borderColor: a.nft ? C.green : C.lineStrong, opacity: pressed ? 0.7 : 1 })}
+            >
+              <Feather name="image" size={16} color={a.nft ? C.green : C.dim} />
+              <Txt v="label" color={a.nft ? C.green : C.text}>
+                {a.nft ? t('Cambiar NFT') : t('Usar un NFT de tus cuentas')}
+              </Txt>
+            </Pressable>
             <View style={{ flexDirection: 'row', gap: SP.xl, marginTop: SP.sm }}>
-              {a.icon || a.color ? (
-                <Pressable onPress={() => app.updateAccount(a.id, { icon: undefined, color: undefined })} hitSlop={10}>
+              {a.icon || a.color || a.nft ? (
+                <Pressable onPress={() => app.updateAccount(a.id, { icon: undefined, color: undefined, nft: undefined })} hitSlop={10}>
                   <Txt v="label" color={C.dim}>Volver al original</Txt>
                 </Pressable>
               ) : null}

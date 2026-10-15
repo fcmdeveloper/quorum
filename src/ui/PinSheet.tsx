@@ -58,7 +58,8 @@ export function PinSheet({ mode, onDone, onCancel }: { mode: 'create' | 'verify'
       return true;
     }
     const n = f.n + 1;
-    const until = Date.now() + lockoutMs(n);
+    const wait = lockoutMs(n);
+    const until = wait > 0 ? Date.now() + wait : 0;
     await savePinFails({ n, until });
     setBlockedUntil(until);
     setHint(t('Código incorrecto'));

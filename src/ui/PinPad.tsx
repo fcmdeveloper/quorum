@@ -37,15 +37,19 @@ export function PinPad({
 }) {
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [, setTick] = useState(0);
   const x = useRef(new Animated.Value(0)).current;
 
+  // Cuenta regresiva: se recalcula con la hora actual cada segundo y se detiene al llegar a 0
   useEffect(() => {
     if (blockedUntil <= Date.now()) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => {
+      setTick((n) => n + 1);
+      if (Date.now() >= blockedUntil) clearInterval(id);
+    }, 500);
     return () => clearInterval(id);
   }, [blockedUntil]);
-  const wait = Math.max(0, Math.ceil((blockedUntil - now) / 1000));
+  const wait = Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000));
 
   const press = async (d: string) => {
     if (busy || wait > 0) return;

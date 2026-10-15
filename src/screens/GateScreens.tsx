@@ -147,7 +147,8 @@ export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<vo
     await new Promise<void>((resolve) =>
       Animated.parallel([
         Animated.timing(fade, { toValue: 0, duration: 260, delay: 220, useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 1.15, duration: 320, delay: 220, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        // sin agrandar: escalar una vista ya dibujada la pixela
+        Animated.timing(scale, { toValue: 0.98, duration: 320, delay: 220, easing: Easing.in(Easing.quad), useNativeDriver: true }),
       ]).start(() => resolve()),
     );
   };

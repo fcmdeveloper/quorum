@@ -2,12 +2,15 @@
  * Logo de Quorum que se transforma en la X de XRP: la bóveda gira, se abre y desde el centro
  * nacen las dos mitades de la X. Se usa al desbloquear, en Acerca de (en bucle), en Inicio
  * (ida y vuelta al cambiar la unidad u ocultar saldos) y al crear una bóveda o cuenta (con chispas).
- * Todo con Animated + react-native-svg y el driver nativo. Con "Reducir movimiento", sin giros ni saltos.
+ * Todo se anima dentro del SVG (se redibuja como vector en cada cuadro), así se ve nítido. Con "Reducir movimiento", sin giros ni saltos.
  */
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
-import { Logo } from './components';
-import { XrpHalf } from './XrpLoader';
+import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { LOGO_GRADIENT } from './components';
+import { XRP_BOTTOM, XRP_TOP } from './XrpLoader';
+import { useFrameValues } from './useFrame';
+
 import { C } from './theme';
 
 export interface QuorumMorphHandle {
@@ -50,11 +53,9 @@ export const QuorumMorph = forwardRef<QuorumMorphHandle, { size?: number; loop?:
   const offY = (size - LOGO_H * k) / 2;
   const cx = DIAL.cx * k;
   const cy = (DIAL.cy - LOGO_Y0) * k + offY;
-  const xw = 512 * X_SCALE * k;
-  const xh = (xw * 424) / 512;
-  const travel = reduce ? 0 : 150 * X_SCALE * k;
-  const N = true;
-
+  // Todo se anima DENTRO del SVG (se redibuja como vector en cada cuadro): nítido a cualquier escala.
+  const N = false;
+  const travel = reduce ? 0 : 150; // en unidades de la X
   const spin = () =>
     Animated.sequence([
       Animated.timing(dial, { toValue: reduce ? 0 : 135, duration: reduce ? 200 : 520, easing: Easing.bezier(0.45, 0, 0.2, 1), useNativeDriver: N }),
@@ -67,8 +68,8 @@ export const QuorumMorph = forwardRef<QuorumMorphHandle, { size?: number; loop?:
       Animated.timing(xIn, { toValue: 1, duration: 520, delay: 80, easing: Easing.out(Easing.back(1.6)), useNativeDriver: N }),
       Animated.sequence([
         Animated.delay(300),
-        Animated.timing(glow, { toValue: 1, duration: 260, useNativeDriver: N }),
-        Animated.timing(glow, { toValue: 0, duration: 420, useNativeDriver: N }),
+        Animated.timing(glow, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: N }),
+        Animated.timing(glow, { toValue: 0, duration: 380, easing: Easing.inOut(Easing.sin), useNativeDriver: N }),
       ]),
     ]);
   const close = () =>
@@ -127,21 +128,65 @@ export const QuorumMorph = forwardRef<QuorumMorphHandle, { size?: number; loop?:
     return () => a.stop();
   }, [loop, reduce]);
 
-  const xStyle = (dir: 1 | -1) => ({
-    opacity: xIn.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 1, 1] }),
-    transform: [
-      { translateY: xIn.interpolate({ inputRange: [0, 1], outputRange: [dir * travel, 0] }) },
-      { scale: xIn.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }) },
-    ],
-  });
+  // valores actuales (se redibuja el SVG en cada cuadro)
+  const [vDial, vO, vS, vX, vGlow] = useFrameValues([dial, logoO, logoS, xIn, glow]);
+  const about = (cxv: number, cyv: number, sc: number) => `translate(${cxv} ${cyv}) scale(${sc}) translate(${-cxv} ${-cyv})`;
+  const half = (dir: 1 | -1) => `translate(0 ${dir * travel * (1 - vX)}) ${about(256, 212, 0.55 + 0.45 * vX)}`;
+  const xOpacity = Math.max(0, Math.min(1, vX / 0.35));
+  const g = `url(#${uid}g)`;
+  const M = 0.15; // margen del lienzo para que el logo pueda crecer sin recortarse
+  const arms = [
+    [372, 249, 372, 166],
+    [308.8, 358.5, 237, 400],
+    [435.2, 358.5, 507, 400],
+  ];
 
   return (
     <View style={{ width: size, height: size }}>
-      <Animated.View style={{ opacity: logoO, transform: [{ scale: logoS }] }}>
-        <Logo size={size} dial={dial} />
-      </Animated.View>
-      <View pointerEvents="none" style={{ position: 'absolute', left: cx - xw / 2, top: cy - xh / 2, width: xw, height: xh }}>
-        {/* chispas */}
+      <Svg
+        style={{ position: 'absolute', left: -size * M, top: -size * M }}
+        width={size * (1 + 2 * M)}
+        height={size * (1 + 2 * M)}
+        viewBox={`${-LOGO_W * M} ${LOGO_Y0 - offY / k - LOGO_W * M} ${LOGO_W * (1 + 2 * M)} ${LOGO_W * (1 + 2 * M)}`}
+      >
+        <Defs>
+          <LinearGradient id={uid + 'g'} x1="50" y1="-10" x2="690" y2="670" gradientUnits="userSpaceOnUse">
+            <Stop offset="0" stopColor={LOGO_GRADIENT.from} />
+            <Stop offset="1" stopColor={LOGO_GRADIENT.to} />
+          </LinearGradient>
+        </Defs>
+        {/* bóveda: marco, puerta y rueda */}
+        <G opacity={vO} transform={about(DIAL.cx, DIAL.cy, vS)}>
+          <Rect x={72} y={22} width={600} height={600} rx={112} fill="none" stroke={g} strokeWidth={44} />
+          <Rect x={26} y={128} width={62} height={96} rx={20} fill={g} />
+          <Rect x={26} y={420} width={62} height={96} rx={20} fill={g} />
+          <Circle cx={DIAL.cx} cy={DIAL.cy} r={196} fill="none" stroke={g} strokeWidth={30} opacity={0.55} />
+          <G transform={`rotate(${vDial} ${DIAL.cx} ${DIAL.cy})`}>
+            <G stroke={g} strokeWidth={38} strokeLinecap="round">
+              {arms.map(([x1, y1, x, y]) => (
+                <Line key={`${x}-${y}`} x1={x1} y1={y1} x2={x} y2={y} />
+              ))}
+            </G>
+            {arms.map(([, , x, y]) => (
+              <Circle key={`d${x}-${y}`} cx={x} cy={y} r={34} fill={g} />
+            ))}
+            <Circle cx={DIAL.cx} cy={DIAL.cy} r={58} fill={C.bg} stroke={g} strokeWidth={30} />
+          </G>
+        </G>
+        {/* X de XRP, centrada en la rueda */}
+        <G transform={`translate(${DIAL.cx} ${DIAL.cy}) scale(${X_SCALE}) translate(-256 -212)`}>
+          <G transform={about(256, 212, 1 + (reduce ? 0 : 0.06) * vGlow)}>
+            <G opacity={xOpacity} transform={half(1)}>
+              <Path d={XRP_TOP} fill={g} />
+            </G>
+            <G opacity={xOpacity} transform={half(-1)}>
+              <Path d={XRP_BOTTOM} fill={g} />
+            </G>
+          </G>
+        </G>
+      </Svg>
+      {/* chispas (puntos chicos que se achican: no se pixelan) */}
+      <View pointerEvents="none" style={{ position: 'absolute', left: cx, top: cy }}>
         {Array.from({ length: SPARKS }, (_, i) => {
           const a = (i / SPARKS) * Math.PI * 2 + (i % 3) * 0.12;
           const r = size * (0.85 + (i % 4) * 0.18);
@@ -151,8 +196,8 @@ export const QuorumMorph = forwardRef<QuorumMorphHandle, { size?: number; loop?:
               key={i}
               style={{
                 position: 'absolute',
-                left: xw / 2 - d / 2,
-                top: xh / 2 - d / 2,
+                left: -d / 2,
+                top: -d / 2,
                 width: d,
                 height: d,
                 borderRadius: d / 2,
@@ -167,21 +212,6 @@ export const QuorumMorph = forwardRef<QuorumMorphHandle, { size?: number; loop?:
             />
           );
         })}
-        {/* brillo: la X un poco más grande y transparente */}
-        <Animated.View style={{ position: 'absolute', opacity: glow.interpolate({ inputRange: [0, 1], outputRange: [0, 0.3] }), transform: [{ scale: 1.2 }] }}>
-          <View style={{ position: 'absolute' }}>
-            <XrpHalf half="top" width={xw} id={uid + 'g1'} />
-          </View>
-          <View style={{ position: 'absolute' }}>
-            <XrpHalf half="bottom" width={xw} id={uid + 'g2'} />
-          </View>
-        </Animated.View>
-        <Animated.View style={[{ position: 'absolute' }, xStyle(1)]}>
-          <XrpHalf half="top" width={xw} id={uid + 't'} />
-        </Animated.View>
-        <Animated.View style={[{ position: 'absolute' }, xStyle(-1)]}>
-          <XrpHalf half="bottom" width={xw} id={uid + 'b'} />
-        </Animated.View>
       </View>
     </View>
   );

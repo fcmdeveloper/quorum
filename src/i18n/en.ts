@@ -1212,4 +1212,5 @@ export const EN: Record<string, string> = {
   "Bóveda agregada": "Vault added",
   "Cuenta agregada": "Account added",
   "Bóveda creada": "Vault created",
+  "iOS no pudo cambiar el ícono ahora. Intenta de nuevo en un momento; si sigue, reinicia el teléfono.": "iOS couldn't change the icon right now. Try again in a moment; if it persists, restart your phone.",
 };

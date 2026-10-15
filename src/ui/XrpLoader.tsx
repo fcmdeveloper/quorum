@@ -5,9 +5,10 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Defs, G, LinearGradient, Path, Stop } from 'react-native-svg';
 import { t } from '../i18n';
 import { LOGO_GRADIENT, Txt } from './components';
+import { useFrameValues } from './useFrame';
 
 export const XRP_TOP = 'M437 0h74L357 152.48c-55.77 55.19-146.19 55.19-202 0L0 0h74l117 115.83a91.11 91.11 0 0 0 127.91 0Z';
 export const XRP_BOTTOM = 'M74 424H0l155-153.42c55.77-55.19 146.19-55.19 202 0L512 424h-74L321 308.17a91.11 91.11 0 0 0-127.91 0Z';
@@ -34,6 +35,7 @@ export function XrpLoader({ size = 56, color, label, delay = 300 }: { size?: num
   const [shown, setShown] = useState(delay <= 0);
   const [reduce, setReduce] = useState(false);
   const p = useRef(new Animated.Value(0)).current;
+  const appear = useRef(new Animated.Value(delay <= 0 ? 1 : 0)).current;
   const id = 'xl' + React.useId().replace(/[^a-zA-Z0-9]/g, '');
 
   useEffect(() => {
@@ -46,45 +48,56 @@ export function XrpLoader({ size = 56, color, label, delay = 300 }: { size?: num
 
   useEffect(() => {
     if (!shown) return;
-    const ease = Easing.inOut(Easing.cubic);
+    Animated.timing(appear, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    // Un solo ciclo de 1,4 s como en la vista previa: se juntan (45 %), se quedan (15 %), se separan (40 %).
+    // Curva seno: arranca y frena suave, sin tirones al dar la vuelta.
+    const ease = Easing.inOut(Easing.sin);
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(p, { toValue: 1, duration: 630, easing: ease, useNativeDriver: true }),
+        Animated.timing(p, { toValue: 1, duration: 630, easing: ease, useNativeDriver: false, isInteraction: false }),
         Animated.delay(210),
-        Animated.timing(p, { toValue: 0, duration: 560, easing: ease, useNativeDriver: true }),
+        Animated.timing(p, { toValue: 0, duration: 560, easing: ease, useNativeDriver: false, isInteraction: false }),
       ]),
     );
     loop.start();
     return () => loop.stop();
   }, [shown]);
 
-  const h = (size * 424) / 512;
-  const gap = reduce ? 0 : size * 0.09;
-  const top = { transform: [{ translateY: p.interpolate({ inputRange: [0, 1], outputRange: [-gap, 0] }) }], opacity: p.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) };
-  const bottom = { transform: [{ translateY: p.interpolate({ inputRange: [0, 1], outputRange: [gap, 0] }) }], opacity: p.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) };
-  // brillo: una X más grande y transparente detrás, que se enciende cuando las mitades se juntan
-  const glow = { opacity: p.interpolate({ inputRange: [0, 0.8, 1], outputRange: [0, 0, 0.28] }), transform: [{ scale: 1.18 }] };
+  // Se anima dentro del SVG (se redibuja como vector en cada cuadro): nítido a cualquier tamaño.
+  const GAP = reduce ? 0 : 44; // en unidades de la X (512 de ancho)
+  const [v] = useFrameValues([p]);
+  const fade = (reduce ? 0.45 : 0.35) + (1 - (reduce ? 0.45 : 0.35)) * v;
+  const shift = (dir: 1 | -1) => `translate(0 ${dir * GAP * (1 - v)})`;
+  // al juntarse, la X late apenas
+  const sc = 1 + (reduce ? 0 : 0.04) * Math.max(0, (v - 0.85) / 0.15);
+  const beat = `translate(256 212) scale(${sc}) translate(-256 -212)`;
+  const PAD = 70; // margen para el desplazamiento y el latido
+  const vbH = 424 + PAD * 2;
+  const h = (size * vbH) / (512 + PAD * 2);
+  const fill = color ?? `url(#${id}g)`;
 
   const text = label === null ? null : label ?? t('Leyendo el XRP Ledger…');
   return (
-    <View style={{ alignItems: 'center', gap: 12, opacity: shown ? 1 : 0 }} accessibilityRole="progressbar" accessibilityLabel={text ?? t('Cargando')}>
-      <View style={{ width: size, height: h + gap * 2, justifyContent: 'center', alignItems: 'center' }}>
-        <Animated.View style={[{ position: 'absolute', width: size, height: h }, glow]}>
-          <View style={{ position: 'absolute', top: 0 }}>
-            <XrpHalf half="top" width={size} color={color} id={id + 'g1'} />
-          </View>
-          <View style={{ position: 'absolute', top: 0 }}>
-            <XrpHalf half="bottom" width={size} color={color} id={id + 'g2'} />
-          </View>
-        </Animated.View>
-        <Animated.View style={[{ position: 'absolute', width: size, height: h }, top]}>
-          <XrpHalf half="top" width={size} color={color} id={id + 't'} />
-        </Animated.View>
-        <Animated.View style={[{ position: 'absolute', width: size, height: h }, bottom]}>
-          <XrpHalf half="bottom" width={size} color={color} id={id + 'b'} />
-        </Animated.View>
-      </View>
+    <Animated.View style={{ alignItems: 'center', gap: 12, opacity: appear }} accessibilityRole="progressbar" accessibilityLabel={text ?? t('Cargando')}>
+      <Svg width={size} height={h} viewBox={`${-PAD} ${-PAD} ${512 + PAD * 2} ${vbH}`}>
+        {!color && (
+          <Defs>
+            <LinearGradient id={id + 'g'} x1="0" y1="0" x2="512" y2="424" gradientUnits="userSpaceOnUse">
+              <Stop offset="0" stopColor={LOGO_GRADIENT.from} />
+              <Stop offset="1" stopColor={LOGO_GRADIENT.to} />
+            </LinearGradient>
+          </Defs>
+        )}
+        <G transform={beat}>
+          <G opacity={fade} transform={shift(-1)}>
+            <Path d={XRP_TOP} fill={fill} />
+          </G>
+          <G opacity={fade} transform={shift(1)}>
+            <Path d={XRP_BOTTOM} fill={fill} />
+          </G>
+        </G>
+      </Svg>
       {text ? <Txt v="small">{text}</Txt> : null}
-    </View>
+    </Animated.View>
   );
 }

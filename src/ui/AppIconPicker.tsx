@@ -42,6 +42,26 @@ function current(): string | null {
   }
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const isBusyError = (e: any) => /temporarily|code[ =]35|EAGAIN/i.test(String(e?.message ?? e));
+
+/** iOS a veces responde "Resource temporarily unavailable" si se le pide justo después de otra acción: se reintenta. */
+async function setIconWithRetry(name: string | null) {
+  const waits = [0, 600, 1500];
+  let last: unknown;
+  for (const w of waits) {
+    if (w) await sleep(w);
+    try {
+      await setAlternateAppIcon(name);
+      return;
+    } catch (e) {
+      last = e;
+      if (!isBusyError(e)) throw e;
+    }
+  }
+  throw last;
+}
+
 export function AppIconPicker() {
   const [sel, setSel] = useState<string | null>(current);
   const [busy, setBusy] = useState(false);
@@ -54,11 +74,18 @@ export function AppIconPicker() {
     tap();
     setBusy(true);
     try {
-      await setAlternateAppIcon(name);
+      await setIconWithRetry(name);
       setSel(name);
     } catch (e: any) {
-      // Si el ícono no está dentro de la app (falta `expo prebuild` tras agregarlo), iOS lo rechaza.
-      toast(`${t('No se pudo cambiar el ícono')}${e?.message ? `: ${String(e.message).slice(0, 80)}` : ''}`, 'warn');
+      if (isBusyError(e)) {
+        // Error conocido de iOS 26+ (NSPOSIXErrorDomain 35): el sistema de íconos queda ocupado y
+        // a veces solo se libera reiniciando el teléfono. No es un problema de la app.
+        toast(t('iOS no pudo cambiar el ícono ahora. Intenta de nuevo en un momento; si sigue, reinicia el teléfono.'), 'warn');
+      } else {
+        // Si el ícono no está dentro de la app (falta `expo prebuild` tras agregarlo), iOS lo rechaza.
+        toast(`${t('No se pudo cambiar el ícono')}${e?.message ? `: ${String(e.message).slice(0, 80)}` : ''}`, 'warn');
+      }
+      setSel(current());
     } finally {
       setBusy(false);
     }

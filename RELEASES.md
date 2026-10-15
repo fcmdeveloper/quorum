@@ -57,6 +57,20 @@ quorum.join {"github":"your-github-user"}
 
 `github` is optional.
 
+### `quorum.revoke`: withdraw a version
+
+Sent **from** the Releases account and signed by the Council quorum, like a release. The app checks the registry when it opens and every 24 hours; a withdrawn version shows a red warning on Home and asks for confirmation before signing on mainnet. It never blocks the app.
+
+```
+quorum.revoke {"v":"1.0.1","reason":"short reason"}
+```
+
+| Field | Meaning |
+|---|---|
+| `v` | Version withdrawn |
+| `app` | Optional: withdraw only the build with this app code hash (prefix). Without it, every build of that version |
+| `reason` | Optional, short and public |
+
 ## Council changes
 
 The Council is the Releases account's signer list. Adding or removing members is a `SignerListSet` signed by the current quorum, so the history of the Council is the history of that account's signer list.

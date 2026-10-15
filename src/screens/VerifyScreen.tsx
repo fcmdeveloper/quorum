@@ -84,9 +84,12 @@ export default function VerifyScreen() {
         </>
       );
     if (!status) return null;
-    const { release, sameVersionOther, pass, fail } = status;
+    const { release, sameVersionOther, pass, fail, revoked } = status;
     return (
       <>
+        {revoked && (
+          <Row icon="alert-octagon" color={C.bad} title={t('Versión retirada')} text={revoked.reason ? t('El Consejo retiró esta versión: {x}. Actualiza la app.', { x: revoked.reason }) : t('El Consejo retiró esta versión. Actualiza la app.')} />
+        )}
         {release ? (
           <Row
             icon="check-circle"

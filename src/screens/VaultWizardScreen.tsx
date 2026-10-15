@@ -15,6 +15,7 @@ import { KIND_LABEL } from '../signers/types';
 import { Account, newId } from '../store';
 import { Reserves, addressFromSecret, generateSecret, setupBalanceLimitXrp, setupMinimumXrp, signerProblem } from '../core/seedVault';
 import { CheckRow, SecretEntrySheet, SecretGrid, TestnetSecretNotice, useNoScreenCapture } from '../ui/secret';
+import { confirmValidated } from '../ui/releaseCheck';
 
 type Step = 'base' | 'secret' | 'signers' | 'protect' | 'run';
 /** Cómo se firma la configuración: números secretos, el dispositivo creador o el quórum. */
@@ -227,7 +228,10 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
   const masterDevice = vault ? app.deviceFor(vault.address) : undefined;
   const useMaster = how !== 'multi';
 
-  const run = async () => {
+  const run = () => {
+    if (vault) confirmValidated(vault.network, runChecked);
+  };
+  const runChecked = async () => {
     if (!vault) return;
     if (how === 'secret') {
       if (overLimit) {

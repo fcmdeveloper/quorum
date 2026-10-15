@@ -57,6 +57,20 @@ quorum.join {"github":"tu-usuario-de-github"}
 
 `github` es opcional.
 
+### `quorum.revoke`: retirar una versión
+
+Se envía **desde** la cuenta Releases y la firma el quórum del Consejo, igual que un registro. La app consulta el registro al abrirse y cada 24 horas; una versión retirada muestra un aviso rojo en Inicio y pide confirmación antes de firmar en mainnet. Nunca bloquea la app.
+
+```
+quorum.revoke {"v":"1.0.1","reason":"motivo breve"}
+```
+
+| Campo | Significado |
+|---|---|
+| `v` | Versión retirada |
+| `app` | Opcional: retira solo el build con esta huella (prefijo). Sin él, todos los builds de esa versión |
+| `reason` | Opcional, breve y público |
+
 ## Cambios en el Consejo
 
 El Consejo es la lista de firmantes de la cuenta Releases. Agregar o sacar miembros es un `SignerListSet` firmado por el quórum actual, así que la historia del Consejo es la historia de la lista de firmantes de esa cuenta.

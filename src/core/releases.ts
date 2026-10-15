@@ -40,15 +40,26 @@ export interface JoinRecord {
   date?: string;
 }
 
+/** Versión retirada por el Consejo (`quorum.revoke`): la app que la tenga instalada lo avisa. */
+export interface RevokeRecord {
+  v: string;
+  /** Huella retirada; si falta, se retira cualquier build de esa versión. */
+  app?: string;
+  reason?: string;
+  hash: string;
+  date?: string;
+}
+
 export interface ReleaseLog {
   releases: ReleaseRecord[];
   attestations: Attestation[];
   joins: JoinRecord[];
+  revoked: RevokeRecord[];
 }
 
 /** `quorum.attest {"release":…}` → { kind: 'attest', data }. Cualquier otro texto → null. */
-export function parseQuorumMemo(text: string): { kind: 'release' | 'attest' | 'join'; data: any } | null {
-  const m = /^\s*quorum\.(release|attest|join)\s+(\{[\s\S]*\})\s*$/.exec(text);
+export function parseQuorumMemo(text: string): { kind: 'release' | 'attest' | 'join' | 'revoke'; data: any } | null {
+  const m = /^\s*quorum\.(release|attest|join|revoke)\s+(\{[\s\S]*\})\s*$/.exec(text);
   if (!m) return null;
   try {
     const data = JSON.parse(m[2]);
@@ -72,7 +83,7 @@ export const normHash = (h: string) => str(h).toLowerCase().replace(/^sha256:/, 
 
 /** Ordena las transacciones de la cuenta de registro en versiones, validaciones e inscripciones. */
 export function readReleaseLog(registry: string, txs: any[]): ReleaseLog {
-  const log: ReleaseLog = { releases: [], attestations: [], joins: [] };
+  const log: ReleaseLog = { releases: [], attestations: [], joins: [], revoked: [] };
   for (const x of txs) {
     const tx = x.tx_json ?? x.tx ?? {};
     const meta = x.meta ?? {};
@@ -112,6 +123,10 @@ export function readReleaseLog(registry: string, txs: any[]): ReleaseLog {
           hash,
           date,
         });
+      } else if (p.kind === 'revoke') {
+        // solo cuenta si la firmó el Consejo desde la propia cuenta de registro
+        if (tx.Account !== registry || !str(d.v)) continue;
+        log.revoked.push({ v: str(d.v), app: d.app ? normHash(d.app) : undefined, reason: str(d.reason) || undefined, hash, date });
       } else if (p.kind === 'join') {
         if (tx.Destination !== registry || tx.Account === registry) continue;
         log.joins.push({ account: tx.Account, github: str(d.github) || undefined, hash, date });
@@ -139,6 +154,8 @@ export interface ReleaseStatus {
   sameVersionOther: ReleaseRecord[];
   pass: Attestation[];
   fail: Attestation[];
+  /** El Consejo retiró esta versión (o este build). */
+  revoked?: RevokeRecord;
 }
 
 /** Estado de la app instalada frente al registro: la versión que coincide y sus validaciones. */
@@ -159,7 +176,8 @@ export function releaseStatus(log: ReleaseLog, version: string, appHash: string)
     if (a.result === 'pass' && release && attestationMatches(release, a)) pass.push(a);
     else if (a.result === 'fail') fail.push(a);
   }
-  return { release, sameVersionOther, pass, fail };
+  const revoked = log.revoked.find((r) => r.v === (release?.v ?? version) && (!r.app || h.startsWith(r.app) || r.app.startsWith(h)));
+  return { release, sameVersionOther, pass, fail, revoked };
 }
 
 /** Lee las transacciones de la cuenta de registro (las más nuevas primero), con un tope. */

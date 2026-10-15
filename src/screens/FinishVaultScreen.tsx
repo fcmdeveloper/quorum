@@ -15,6 +15,7 @@ import { fetchReserves, hasMultisigTx } from '../core/network';
 import { Reserves, setupBalanceLimitXrp, setupMinimumXrp } from '../core/seedVault';
 import { SecretEntrySheet } from '../ui/secret';
 import { Step } from './UnvaultScreen';
+import { confirmValidated } from '../ui/releaseCheck';
 
 /** Nota de la operación de prueba (también sirve para reconocerla). */
 export const MULTISIG_TEST_NOTE = 'Prueba de multifirma (sin efecto)';
@@ -76,6 +77,9 @@ export default function FinishVaultScreen({ id }: { id: string }) {
   };
 
   const disable = () => {
+    if (tested) confirmValidated(a.network, disableChecked);
+  };
+  const disableChecked = () => {
     if (!tested) return;
     const go = () =>
       Alert.alert(

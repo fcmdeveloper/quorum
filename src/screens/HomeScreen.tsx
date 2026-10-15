@@ -13,6 +13,7 @@ import { formatFiat } from '../core/market';
 import { NftImage } from '../ui/NftImage';
 import { useGalleryPrefetch, useNftAvatarCheck, usePinnedNftSync } from '../ui/nftAvatars';
 import { useNativeSelectors } from '../ui/Glass';
+import { ReleaseBanner } from '../ui/releaseCheck';
 
 const LEVEL = {
   // getters: el color se lee al dibujar (cambia con el tema)
@@ -99,6 +100,7 @@ export default function HomeScreen() {
         setRefreshing(false);
       }}
     >
+      <ReleaseBanner onOpen={() => nav.push('verify', {})} />
       {/* Patrimonio: al tocarlo se abre su gráfico; el selector cambia entre la divisa y XRP */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Pressable

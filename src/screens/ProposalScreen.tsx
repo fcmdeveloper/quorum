@@ -13,6 +13,7 @@ import { describeTx } from '../core/tx';
 import { NETWORKS, currentLedger } from '../core/network';
 import { KIND_LABEL, SignerDevice } from '../signers/types';
 import { Proposal } from '../store';
+import { confirmValidated } from '../ui/releaseCheck';
 
 export const STATUS: Record<Proposal['status'], { text: string; color: string }> = {
   // getters: el color se lee al dibujar (cambia con el tema)
@@ -123,7 +124,8 @@ export default function ProposalScreen({ id }: { id: string }) {
   const nameOf = (addr: string) =>
     app.accounts.find((x) => x.address === addr)?.label ?? app.contacts.find((c) => c.address === addr)?.label ?? app.deviceFor(addr)?.label;
 
-  const sign = async (dev: SignerDevice) => {
+  const sign = (dev: SignerDevice) => confirmValidated(p.network, () => signNow(dev));
+  const signNow = async (dev: SignerDevice) => {
     setErr(null);
     try {
       await app.signProposal(p.id, dev);
@@ -134,7 +136,8 @@ export default function ProposalScreen({ id }: { id: string }) {
     }
   };
 
-  const submit = () =>
+  const submit = () => confirmValidated(p.network, submitNow);
+  const submitNow = () =>
     Alert.alert('Enviar a la red', `${t(d.title)}\n${net.label}\n\n${t('Una vez enviada no se puede deshacer.')}`, [
       { text: 'Cancelar', style: 'cancel' },
       {

@@ -16,6 +16,7 @@ import { Account, newId } from '../store';
 import { Reserves, addressFromSecret, generateSecret, setupBalanceLimitXrp, setupMinimumXrp, signerProblem } from '../core/seedVault';
 import { CheckRow, SecretEntrySheet, SecretGrid, TestnetSecretNotice, useNoScreenCapture } from '../ui/secret';
 import { confirmValidated } from '../ui/releaseCheck';
+import { celebrate } from '../ui/Celebrate';
 
 type Step = 'base' | 'secret' | 'signers' | 'protect' | 'run';
 /** Cómo se firma la configuración: números secretos, el dispositivo creador o el quórum. */
@@ -136,6 +137,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
       const acc = await app.addAccount({ label: name.trim() || 'Bóveda', kind: 'vault', network, address, allowed: [], origin: 'quorum' });
       setSecret(null);
       setVault(acc);
+      celebrate('Bóveda creada');
       await app.refreshAccount(acc);
       setStep('signers');
     } catch (e: any) {
@@ -179,6 +181,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
           acc = await app.addAccount({ label: name.trim() || 'Bóveda', kind: 'vault', network, address: dev.address, allowed: [] });
         }
         setVault(acc);
+        celebrate('Bóveda creada');
         await app.refreshAccount(acc);
         setStep('signers');
       } catch (e: any) {

@@ -13,6 +13,7 @@ import { C, F, R, SP } from '../ui/theme';
 import { QUORUM } from '../config';
 import { NeverAskCard, ResponsibilityList } from '../ui/legalBlocks';
 import { buildDonation, DONATION_LIMITS } from '../core/tx';
+import { QuorumMorph } from '../ui/QuorumMorph';
 
 const PRINCIPLES: { icon: React.ComponentProps<typeof Feather>['name']; title: string; text: string }[] = [
   {
@@ -50,7 +51,7 @@ export default function AboutScreen() {
   return (
     <Screen title="Acerca de Quorum" onBack={nav.pop}>
       <View style={{ alignItems: 'center', paddingVertical: SP.lg }}>
-        <Logo size={84} />
+        <QuorumMorph size={84} loop />
         <Txt v="h1" style={{ marginTop: SP.lg }}>
           Quorum
         </Txt>

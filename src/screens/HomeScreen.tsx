@@ -14,6 +14,7 @@ import { NftImage } from '../ui/NftImage';
 import { useGalleryPrefetch, useNftAvatarCheck, usePinnedNftSync } from '../ui/nftAvatars';
 import { useNativeSelectors } from '../ui/Glass';
 import { ReleaseBanner } from '../ui/releaseCheck';
+import { QuorumMorph, QuorumMorphHandle } from '../ui/QuorumMorph';
 
 const LEVEL = {
   // getters: el color se lee al dibujar (cambia con el tema)
@@ -67,6 +68,17 @@ export default function HomeScreen() {
     return { main, test, stableFiat };
   }, [app.accounts, app.states, m.price]);
 
+  // El logo de arriba hace bóveda → X → bóveda al cambiar la unidad o mostrar/ocultar saldos
+  const morph = React.useRef<QuorumMorphHandle>(null);
+  const firstToggle = React.useRef(true);
+  React.useEffect(() => {
+    if (firstToggle.current) {
+      firstToggle.current = false;
+      return;
+    }
+    morph.current?.roundTrip();
+  }, [app.settings.balanceUnit, app.settings.hideBalances]);
+
   const onlyTest = totals.main === 0 && totals.test > 0;
   const excludedCount = app.accounts.filter((a) => a.excluded).length;
   const heroXrp = onlyTest ? totals.test : totals.main;
@@ -83,7 +95,7 @@ export default function HomeScreen() {
             hitSlop={8}
             style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, opacity: pressed ? 0.6 : 1 })}
           >
-            <Logo size={34} />
+            <QuorumMorph ref={morph} size={34} />
             <Text style={{ fontFamily: F.bold, fontSize: 22, color: C.text, letterSpacing: -0.4 }}>Quorum</Text>
           </Pressable>
           <IconButton

@@ -252,6 +252,22 @@ export function describeActivity(account: string, tx: any, meta: any, closeIso?:
   }
 }
 
+/** Una página de movimientos (las más nuevas primero). `marker` sigue con la anterior; sin marker no hay más. */
+export async function fetchActivityPage(net: NetworkId, address: string, limit = 25, marker?: unknown): Promise<{ items: ActivityItem[]; marker?: unknown }> {
+  const client = await getClient(net);
+  try {
+    const r: any = await client.request({ command: 'account_tx', account: address, limit, api_version: 2, ...(marker ? { marker } : {}) } as any);
+    const items = (r.result.transactions ?? []).map((x: any) => {
+      const tx = { ...(x.tx_json ?? x.tx), hash: x.hash ?? x.tx_json?.hash ?? x.tx?.hash };
+      return describeActivity(address, tx, x.meta, x.close_time_iso);
+    });
+    return { items, marker: r.result.marker };
+  } catch (e: any) {
+    if (e?.data?.error === 'actNotFound') return { items: [] };
+    throw e;
+  }
+}
+
 export async function fetchActivity(net: NetworkId, address: string, limit = 30): Promise<ActivityItem[]> {
   const client = await getClient(net);
   try {

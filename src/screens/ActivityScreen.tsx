@@ -1,12 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { locale } from '../i18n';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state';
 import { useMoney } from '../ui/money';
-import { Badge, Card, Empty, Screen, Segmented, Txt } from '../ui/components';
+import { Badge, Button, Card, Empty, Screen, Segmented, Txt } from '../ui/components';
+import { XrpLoader } from '../ui/XrpLoader';
 import { C, F, SP } from '../ui/theme';
-import { ActivityItem, NETWORKS, NetworkId, fetchActivity } from '../core/network';
+import { ActivityItem, NETWORKS, NetworkId, fetchActivityPage } from '../core/network';
+import { FeedSource, Period, hasMore, mergeFeed, periodStart, sourcesToLoad } from '../core/activityFeed';
 import { lookalikeOf, trustedAddresses } from '../core/lookalike';
 import { t } from '../i18n';
 
@@ -92,40 +94,84 @@ function dayLabel(ts: number): string {
   return d.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 }
 
+type Row = ActivityItem & { network: NetworkId; label: string };
+const PAGE = 25;
+/** Tope de páginas por cuenta al cubrir un período (25 × 12 = 300 movimientos). */
+const MAX_PAGES = 12;
+
 export default function ActivityScreen() {
   const app = useApp();
-  const [items, setItems] = useState<(ActivityItem & { network: NetworkId; label: string })[] | null>(null);
+  const [sources, setSources] = useState<FeedSource<Row>[] | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
+  const [period, setPeriod] = useState<Period>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pages = useRef<Record<string, number>>({});
+  const gen = useRef(0);
 
+  const page = async (a: (typeof app.accounts)[number], marker?: unknown): Promise<Partial<FeedSource<Row>>> => {
+    try {
+      const r = await fetchActivityPage(a.network, a.address, PAGE, marker);
+      return { items: r.items.map((x) => ({ ...x, network: a.network, label: a.label })), marker: r.marker, done: !r.marker };
+    } catch {
+      return { items: [], done: true };
+    }
+  };
+
+  /** Primera página de cada cuenta (al abrir y al deslizar para actualizar). */
   const load = useCallback(async () => {
-    const all = await Promise.all(
+    const g = ++gen.current;
+    const list = await Promise.all(
       app.accounts.map(async (a) => {
-        try {
-          const list = await fetchActivity(a.network, a.address, 25);
-          return list.map((x) => ({ ...x, network: a.network, label: a.label }));
-        } catch {
-          return [];
-        }
+        const key = `${a.network}:${a.address}`;
+        pages.current[key] = 1;
+        const p = await page(a);
+        return { key, items: p.items ?? [], marker: p.marker, done: !!p.done } as FeedSource<Row>;
       }),
     );
-    // Una transacción entre dos cuentas propias aparece una sola vez (la de quien envía)
-    const seen = new Set<string>();
-    const merged = all
-      .flat()
-      .sort((x, y) => y.date - x.date)
-      .filter((x) => {
-        const k = x.hash;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
-    setItems(merged);
+    if (g === gen.current) setSources(list);
   }, [app.accounts]);
+
+  /** Pide la página siguiente a las cuentas que lo necesitan (para cubrir el período o "cargar más"). */
+  const more = useCallback(
+    async (cur: FeedSource<Row>[], from: number | null) => {
+      // Al cubrir un período hay tope de páginas por cuenta; "cargar más" no lo tiene (lo pide el usuario)
+      const want = sourcesToLoad(cur, from).filter((s) => from === null || (pages.current[s.key] ?? 1) < MAX_PAGES);
+      if (!want.length) return cur;
+      const g = gen.current;
+      setLoadingMore(true);
+      const next = await Promise.all(
+        cur.map(async (s) => {
+          if (!want.includes(s)) return s;
+          const a = app.accounts.find((x) => `${x.network}:${x.address}` === s.key);
+          if (!a) return { ...s, done: true };
+          pages.current[s.key] = (pages.current[s.key] ?? 1) + 1;
+          const p = await page(a, s.marker);
+          return { ...s, items: [...s.items, ...(p.items ?? [])], marker: p.marker, done: !!p.done };
+        }),
+      );
+      setLoadingMore(false);
+      if (g !== gen.current) return cur;
+      setSources(next);
+      return next;
+    },
+    [app.accounts],
+  );
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const from = useMemo(() => periodStart(period, Date.now()), [period]);
+
+  // Al elegir un período, se piden páginas hasta cubrirlo (con tope por cuenta)
+  useEffect(() => {
+    if (!sources || from === null || loadingMore || !hasMore(sources, from)) return;
+    more(sources, from);
+  }, [sources, from]);
+
+  const items = useMemo(() => (sources ? mergeFeed(sources, from) : null), [sources, from]);
+  const canLoadMore = !!sources && period === 'all' && hasMore(sources, null);
 
   const shown = useMemo(() => {
     if (!items) return [];
@@ -157,6 +203,16 @@ export default function ActivityScreen() {
       <Txt v="h1" style={{ marginBottom: SP.lg }}>
         Actividad
       </Txt>
+      <Segmented<Period>
+        value={period}
+        onChange={setPeriod}
+        options={[
+          { value: '7d', label: '7 días' },
+          { value: '30d', label: '30 días' },
+          { value: 'year', label: 'Este año' },
+          { value: 'all', label: 'Todo' },
+        ]}
+      />
       <Segmented
         value={filter}
         onChange={setFilter}
@@ -167,10 +223,12 @@ export default function ActivityScreen() {
           { value: 'config', label: 'Ajustes' },
         ]}
       />
-      {items === null ? (
-        <Txt v="small">Cargando movimientos…</Txt>
+      {items === null || (groups.length === 0 && loadingMore) ? (
+        <View style={{ paddingVertical: SP.xxl }}>
+          <XrpLoader size={60} />
+        </View>
       ) : groups.length === 0 ? (
-        <Empty icon="activity" title="Sin movimientos" text="Cuando tus cuentas envíen o reciban, lo verás aquí." />
+        <Empty icon="activity" title="Sin movimientos" text={period === 'all' ? 'Cuando tus cuentas envíen o reciban, lo verás aquí.' : 'No hay movimientos en este período.'} />
       ) : (
         groups.map((g) => (
           <View key={g.day} style={{ marginBottom: SP.md }}>
@@ -185,6 +243,13 @@ export default function ActivityScreen() {
           </View>
         ))
       )}
+      {items && groups.length > 0 && loadingMore ? (
+        <View style={{ paddingVertical: SP.lg }}>
+          <XrpLoader size={40} label={null} delay={0} />
+        </View>
+      ) : canLoadMore ? (
+        <Button title="Cargar más" kind="ghost" icon="chevron-down" onPress={() => sources && more(sources, null)} style={{ marginTop: SP.sm }} />
+      ) : null}
     </Screen>
   );
 }

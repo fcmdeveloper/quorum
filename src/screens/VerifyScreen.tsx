@@ -4,7 +4,7 @@
  * Es una ayuda: la prueba real es reconstruir el código uno mismo (VALIDATORS.md).
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
@@ -16,6 +16,7 @@ import { QUORUM } from '../config';
 import { NETWORKS } from '../core/network';
 import { appCodeHash } from '../ui/appHash';
 import { fetchReleaseLog, ReleaseStatus, releaseStatus } from '../core/releases';
+import { XrpLoader } from '../ui/XrpLoader';
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
@@ -75,7 +76,7 @@ export default function VerifyScreen() {
     if (!hash) return null;
     if (!registry)
       return <Row icon="clock" color={C.dim} title={t('El registro aún no está activo')} text={t('Se activa con la primera versión publicada. Mientras tanto puedes reconstruir el código y comparar la huella.')} />;
-    if (loading && !status) return <ActivityIndicator color={C.green} style={{ paddingVertical: SP.md }} />;
+    if (loading && !status) return <View style={{ paddingVertical: SP.md }}><XrpLoader size={44} /></View>;
     if (err)
       return (
         <>
@@ -139,7 +140,7 @@ export default function VerifyScreen() {
         <Card>
           <Txt v="small">{build ? t('Versión {v} (build {b})', { v: version, b: String(build) }) : t('Versión {v}', { v: version })}</Txt>
           {hash === undefined ? (
-            <ActivityIndicator color={C.green} style={{ paddingVertical: SP.md }} />
+            <View style={{ paddingVertical: SP.md }}><XrpLoader size={40} label={null} /></View>
           ) : hash === null ? (
             <Txt v="body" style={{ marginTop: 6 }}>
               Build de desarrollo: el código se carga desde el computador, así que no hay huella que verificar.

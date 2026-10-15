@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state';
 import { Button, Logo, Txt, hapticsEnabled, tap } from '../ui/components';
 import { C, SP } from '../ui/theme';
+import { QuorumMorph, QuorumMorphHandle } from '../ui/QuorumMorph';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -132,7 +133,7 @@ export function useAppLock(enabled: boolean, ready: boolean, graceSec = 0, suspe
 }
 
 export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<void>) => void }) {
-  const dial = useRef(new Animated.Value(0)).current;
+  const morph = useRef<QuorumMorphHandle>(null);
   const fade = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -140,18 +141,16 @@ export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<vo
   // con "clics" hápticos, y la pantalla se desvanece hacia la app.
   // La rueda empieza a girar al instante; las vibraciones se acomodan solas a cuando
   // iOS las permite (ver whenActive), sin esperas fijas.
-  const opening = () =>
-    new Promise<void>((resolve) => {
-      Animated.sequence([
-        Animated.timing(dial, { toValue: 135, duration: 520, easing: Easing.bezier(0.45, 0, 0.2, 1), useNativeDriver: true }),
-        Animated.spring(dial, { toValue: 120, friction: 6, tension: 180, useNativeDriver: true, restDisplacementThreshold: 0.5, restSpeedThreshold: 2 }),
-      ]).start(() => {
-        Animated.parallel([
-          Animated.timing(fade, { toValue: 0, duration: 260, delay: 160, useNativeDriver: true }),
-          Animated.timing(scale, { toValue: 1.18, duration: 340, delay: 160, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-        ]).start(() => resolve());
-      });
-    });
+  // Luego la bóveda se abre y se transforma en la X de XRP, y aparece la app.
+  const opening = async () => {
+    await (morph.current?.unlock() ?? Promise.resolve());
+    await new Promise<void>((resolve) =>
+      Animated.parallel([
+        Animated.timing(fade, { toValue: 0, duration: 260, delay: 220, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.15, duration: 320, delay: 220, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ]).start(() => resolve()),
+    );
+  };
 
   const tryUnlock = () => onUnlock(opening);
 
@@ -174,7 +173,7 @@ export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<vo
   return (
     <Animated.View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: SP.xl, opacity: fade }}>
       <Animated.View style={{ transform: [{ scale }] }}>
-        <Logo size={88} dial={dial} />
+        <QuorumMorph ref={morph} size={88} />
       </Animated.View>
       <Txt v="h1" style={{ marginTop: SP.xl }}>
         Quorum

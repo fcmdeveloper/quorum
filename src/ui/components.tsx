@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Modal,
   Pressable,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -24,6 +24,7 @@ import { NftImage } from './NftImage';
 import { Glass, useNativeSelectors } from './Glass';
 import NativeSegmented from '@react-native-segmented-control/segmented-control';
 import { C, F, R, SP, T, ACCOUNT_COLORS, ACCOUNT_ICONS, accountColor, alpha, onThemeChange, themeName } from './theme';
+import { XrpLoader } from './XrpLoader';
 
 export type IconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -159,9 +160,15 @@ export function Screen({
           keyboardDismissMode="interactive"
           automaticallyAdjustKeyboardInsets
           refreshControl={
-            onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.green} /> : undefined
+            // iOS: la rueda del sistema queda invisible y se ve la X de Quorum. Android usa su indicador.
+            onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={Platform.OS === 'ios' ? 'transparent' : C.green} colors={[C.green]} /> : undefined
           }
         >
+          {refreshing && Platform.OS === 'ios' ? (
+            <View style={{ alignItems: 'center', paddingBottom: SP.md }}>
+              <XrpLoader size={30} delay={0} label={null} />
+            </View>
+          ) : null}
           {children}
         </ScrollView>
       ) : (
@@ -300,7 +307,7 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={fg} />
+        <XrpLoader size={26} color={fg} delay={0} label={null} />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {icon ? <Feather name={icon} size={18} color={fg} /> : null}
@@ -541,7 +548,7 @@ export function BusySheet({ visible, text }: { visible: boolean; text: string })
     <Modal visible={visible} transparent animationType="fade">
       <View style={st.sheetWrap}>
         <View style={st.sheet}>
-          <ActivityIndicator color={C.green} size="large" />
+          <XrpLoader size={64} delay={0} label={null} />
           <Txt v="body" style={{ textAlign: 'center', marginTop: 16 }}>
             {text}
           </Txt>

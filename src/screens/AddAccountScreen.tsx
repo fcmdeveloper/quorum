@@ -10,6 +10,7 @@ import { C, SP } from '../ui/theme';
 import { NetworkId, fetchAccountState } from '../core/network';
 import { KIND_LABEL } from '../signers/types';
 import { DEVICE_ICON } from './DevicesScreen';
+import { celebrate } from '../ui/Celebrate';
 
 export default function AddAccountScreen() {
   const app = useApp();
@@ -33,6 +34,7 @@ export default function AddAccountScreen() {
       const acc = await app.addAccount({ label: name, kind, network, address, allowed: kind === 'vault' ? [] : undefined });
       app.refreshAccount(acc);
       nav.replace('account', { id: acc.id });
+      celebrate(kind === 'vault' ? 'Bóveda agregada' : 'Cuenta agregada');
     } catch (e: any) {
       Alert.alert('No se pudo agregar', e.message);
     } finally {

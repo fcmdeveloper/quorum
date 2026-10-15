@@ -4,7 +4,7 @@
  * Las cuentas y dispositivos de este teléfono (Minify) no reciben insignia.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { t } from '../i18n';
 import { useApp } from '../state';
 import { useNav } from '../nav';
@@ -14,6 +14,7 @@ import { proposalFailed } from '../ui/proposalError';
 import { QUORUM } from '../config';
 import { fetchReleaseLog } from '../core/releases';
 import { BadgeRow, badgeRows, badgeUri, buildBadgeMint, buildBadgeOffer, fetchGalleryBadgeState } from '../core/badges';
+import { XrpLoader } from '../ui/XrpLoader';
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
@@ -106,7 +107,7 @@ export default function BadgesScreen({ id }: { id: string }) {
       {!QUORUM.releasesAddress ? (
         <Notice kind="info">El registro de versiones aún no está activo.</Notice>
       ) : rows === null ? (
-        <ActivityIndicator color={C.green} style={{ paddingVertical: SP.xl }} />
+        <View style={{ paddingVertical: SP.xl }}><XrpLoader size={48} /></View>
       ) : (
         <>
           {err ? <Notice kind="warn">{t('No se pudo leer el XRP Ledger')}</Notice> : null}

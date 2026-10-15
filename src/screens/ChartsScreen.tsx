@@ -3,7 +3,7 @@
  * Se abre desde el inicio (tocando el patrimonio o el precio) y se puede cambiar entre ambos.
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 import { t, locale } from '../i18n';
 import { useApp } from '../state';
 import { useNav } from '../nav';
@@ -13,6 +13,7 @@ import { LineChart } from '../ui/LineChart';
 import { C, F, SP } from '../ui/theme';
 import { FIATS, fetchXrpHistory, formatFiat, PricePoint, Range } from '../core/market';
 import { BalanceHistory, fetchBalanceHistory, portfolioSeries } from '../core/history';
+import { XrpLoader } from '../ui/XrpLoader';
 
 export type ChartView = 'portfolio' | 'market';
 
@@ -187,7 +188,7 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
                 Agrega una cuenta de mainnet para ver cómo evoluciona tu patrimonio.
               </Txt>
             ) : (
-              <ActivityIndicator color={C.green} />
+              <XrpLoader size={40} label={null} />
             )}
           </View>
         )}

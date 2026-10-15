@@ -4,7 +4,7 @@
  * Es solo decorativo: vive en este teléfono y no da permisos de nada.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Dimensions, Pressable, View } from 'react-native';
+import { Dimensions, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { t } from '../i18n';
 import { useApp } from '../state';
@@ -17,6 +17,7 @@ import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
 import { BADGE_TAXON } from '../core/badges';
 import { Account } from '../store';
 import { QUORUM } from '../config';
+import { XrpLoader } from '../ui/XrpLoader';
 
 const W = Dimensions.get('window').width;
 const COLS = 3;
@@ -122,7 +123,7 @@ function AccountNfts({ source, selectedId, onPick, hideHead }: { source: Account
   );
   const placeholder = (key: string) => (
     <View key={key} style={{ width: TILE, height: TILE, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
-      <ActivityIndicator color={C.green} />
+      <XrpLoader size={44} />
     </View>
   );
 

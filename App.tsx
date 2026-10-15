@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Animated, Modal, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Animated, Modal, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -52,6 +52,8 @@ import { TERMS_VERSION } from './src/legal';
 import { ReminderScreen, TermsReviewScreen } from './src/screens/ReviewScreens';
 import { needsReview } from './src/core/reminder';
 import PickNftScreen from './src/screens/PickNftScreen';
+import { XrpLoader } from './src/ui/XrpLoader';
+import { CelebrateHost } from './src/ui/Celebrate';
 
 function RouteView({ r }: { r: Route }) {
   switch (r.name) {
@@ -282,7 +284,7 @@ function Shell() {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
         {bar}
-        <ActivityIndicator color={C.green} />
+        <XrpLoader size={56} label={null} />
       </View>
     );
   }
@@ -321,6 +323,7 @@ function Shell() {
           </>
         )}
         <OfflineBanner onBackOnline={app.refreshAll} />
+        <CelebrateHost />
         <ToastHost />
       </View>
       {lockLayer}

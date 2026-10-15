@@ -17,6 +17,7 @@ import { newId } from '../store';
 import { lookalikeOf, trustedAddresses } from '../core/lookalike';
 import { useBackupState } from './ReviewScreens';
 import { hasGlass } from '../ui/Glass';
+import { AppIconPicker } from '../ui/AppIconPicker';
 
 export default function SettingsScreen() {
   const app = useApp();
@@ -76,6 +77,7 @@ export default function SettingsScreen() {
             { value: 'en', label: 'English' },
           ]}
         />
+        <AppIconPicker />
         {hasGlass() && (
           <Card style={{ paddingVertical: 4 }}>
             <ListItem

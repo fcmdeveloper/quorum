@@ -1222,4 +1222,7 @@ export const EN: Record<string, string> = {
   "Decimales en saldos": "Balance decimals",
   "Auto": "Auto",
   "Para el patrimonio y los saldos de las cuentas. Las transacciones siempre muestran el monto exacto.": "For your net worth and account balances. Transactions always show the exact amount.",
+  "Guardar en contactos": "Save to contacts",
+  "Así la reconoces por su nombre y te avisamos si alguien te manda una dirección parecida.": "So you recognize it by name, and we warn you if someone sends you a lookalike address.",
+  "Guardado en contactos como «{x}»": "Saved to contacts as “{x}”",
 };

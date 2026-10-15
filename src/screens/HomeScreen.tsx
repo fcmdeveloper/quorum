@@ -134,11 +134,11 @@ export default function HomeScreen() {
         {inXrp ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 }}>
             <XrpMark size={34} color={C.text} />
-            <Text style={{ fontFamily: F.bold, fontSize: 44, color: C.text, letterSpacing: -1.5 }}>{m.xrp(heroXrp)}</Text>
+            <Text style={{ fontFamily: F.bold, fontSize: 44, color: C.text, letterSpacing: -1.5 }}>{m.balXrp(heroXrp)}</Text>
           </View>
         ) : (
           <Text style={{ fontFamily: F.bold, fontSize: 44, color: C.text, letterSpacing: -1.5, marginTop: 2 }}>
-            {m.fiatRaw(heroXrp * m.price! + totals.stableFiat)}
+            {m.balFiat(heroXrp * m.price! + totals.stableFiat)}
           </Text>
         )}
       </Pressable>
@@ -146,8 +146,8 @@ export default function HomeScreen() {
         {!onlyTest && m.price ? (
           <Txt v="body" color={C.dim}>
             {inXrp
-              ? `≈ ${m.fiatRaw(heroXrp * m.price)}`
-              : totals.stableFiat > 0 ? t('{a} XRP + {b} en stablecoins', { a: m.xrp(heroXrp), b: m.fiatRaw(totals.stableFiat) }) : `${m.xrp(heroXrp)} XRP`}
+              ? `≈ ${m.balFiat(heroXrp * m.price)}`
+              : totals.stableFiat > 0 ? t('{a} XRP + {b} en stablecoins', { a: m.balXrp(heroXrp), b: m.balFiat(totals.stableFiat) }) : `${m.balXrp(heroXrp)} XRP`}
           </Txt>
         ) : null}
         {excludedCount > 0 ? (
@@ -318,9 +318,9 @@ function useBalance(a: Account) {
   if (!st) return { main: '…', sub: '', xrp: false };
   const fiatV = m.accountFiatValue(st, a.network);
   if (app.settings.balanceUnit === 'xrp' || fiatV == null) {
-    return { main: m.xrp(st.balanceXrp), sub: a.network === 'testnet' ? t('XRP de prueba') : m.fiatOf(st.balanceXrp, a.network), xrp: true };
+    return { main: m.balXrp(st.balanceXrp), sub: a.network === 'testnet' ? t('XRP de prueba') : m.balFiatOf(st.balanceXrp, a.network), xrp: true };
   }
-  return { main: m.fiatRaw(fiatV), sub: `${m.xrp(st.balanceXrp)} XRP`, xrp: false };
+  return { main: m.balFiat(fiatV), sub: `${m.balXrp(st.balanceXrp)} XRP`, xrp: false };
 }
 
 function VaultCard({ a }: { a: Account }) {

@@ -1214,4 +1214,12 @@ export const EN: Record<string, string> = {
   "Bóveda creada": "Vault created",
   "iOS no pudo cambiar el ícono ahora. Intenta de nuevo en un momento; si sigue, reinicia el teléfono.": "iOS couldn't change the icon right now. Try again in a moment; if it persists, restart your phone.",
   "Quorum no está afiliado a Ripple, la XRPL Foundation, Tangem, Ledger ni Xaman; sus nombres y marcas pertenecen a sus dueños. El símbolo de XRP es de uso libre para la comunidad.": "Quorum is not affiliated with Ripple, the XRPL Foundation, Tangem, Ledger or Xaman; their names and marks belong to their owners. The XRP symbol is free for the community to use.",
+  "Ya la envió otro teléfono": "Already sent from another phone",
+  "Operación enviada": "Operation sent",
+  "Otra operación de esta cuenta ya usó su turno (secuencia o ticket). Crea esta operación de nuevo.": "Another operation from this account already used its turn (sequence or ticket). Create this operation again.",
+  "La envió otro teléfono antes. Quedó registrada una sola vez en el XRP Ledger.": "Another phone sent it first. It was recorded only once on the XRP Ledger.",
+  "Bóveda protegida": "Vault protected",
+  "Decimales en saldos": "Balance decimals",
+  "Auto": "Auto",
+  "Para el patrimonio y los saldos de las cuentas. Las transacciones siempre muestran el monto exacto.": "For your net worth and account balances. Transactions always show the exact amount.",
 };

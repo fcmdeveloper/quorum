@@ -279,7 +279,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
         items[i] = { ...items[i], state: 'ok' };
         setPlan([...items]);
       }
-      success();
+      celebrate('Bóveda configurada');
       await app.refreshAccount(vault);
     } catch (e: any) {
       warnBuzz();

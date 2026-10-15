@@ -14,6 +14,7 @@ import { NETWORKS, currentLedger } from '../core/network';
 import { KIND_LABEL, SignerDevice } from '../signers/types';
 import { Proposal } from '../store';
 import { confirmValidated } from '../ui/releaseCheck';
+import { celebrate } from '../ui/Celebrate';
 
 export const STATUS: Record<Proposal['status'], { text: string; color: string }> = {
   // getters: el color se lee al dibujar (cambia con el tema)
@@ -147,7 +148,15 @@ export default function ProposalScreen({ id }: { id: string }) {
           try {
             const r = await app.submitProposal(p.id);
             if (r.status === 'submitted') {
-              success();
+              // la celebración trae su propia vibración
+              celebrate(r.sentElsewhere ? 'Ya la envió otro teléfono' : 'Operación enviada');
+              return;
+            }
+            if (r.status === 'expired' && r.resultMessage === 'Otra operación usó ese turno') {
+              warnBuzz();
+              const msg = t('Otra operación de esta cuenta ya usó su turno (secuencia o ticket). Crea esta operación de nuevo.');
+              setErr(msg);
+              Alert.alert('No se envió', msg);
               return;
             }
             warnBuzz();
@@ -302,6 +311,7 @@ export default function ProposalScreen({ id }: { id: string }) {
       )}
 
       {p.status === 'expired' && <Notice>Esta operación venció o su secuencia ya se usó. Crea una nueva.</Notice>}
+      {p.sentElsewhere && p.status === 'submitted' && <Notice kind="info">{t('La envió otro teléfono antes. Quedó registrada una sola vez en el XRP Ledger.')}</Notice>}
 
       {p.hash && (p.status === 'submitted' || p.status === 'failed') && (
         <Button title="Ver en el explorador" kind="ghost" icon="external-link" onPress={() => Linking.openURL(`${net.explorer}/transactions/${p.hash}`)} />

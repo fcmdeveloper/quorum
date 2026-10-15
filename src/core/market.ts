@@ -34,10 +34,26 @@ export async function fetchXrpPrice(force = false): Promise<PriceQuote> {
   return cache;
 }
 
-export function formatFiat(value: number, fiat: Fiat): string {
+export function formatFiat(value: number, fiat: Fiat, decimals?: number): string {
   const f = FIATS.find((x) => x.value === fiat)!;
-  const s = value.toLocaleString(locale(), { minimumFractionDigits: f.decimals, maximumFractionDigits: f.decimals });
+  const d = decimals ?? f.decimals;
+  const s = value.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
   return `${f.symbol} ${s}`;
+}
+
+/** Saldo con decimales fijos ('auto' = como siempre: hasta 6 para XRP). */
+export function formatBalanceXrp(xrp: string | number, pref: 'auto' | '0' | '2' | '4' | '6' = 'auto'): string {
+  if (pref === 'auto') return formatXrp(xrp);
+  const d = Number(pref);
+  const n = typeof xrp === 'string' ? Number(xrp) : xrp;
+  // se trunca (no se redondea hacia arriba): nunca mostrar más saldo del que hay
+  const k = 10 ** d;
+  return (Math.floor(n * k + 1e-7) / k).toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+/** Decimales de divisa para saldos: 0 si se eligió 0; si no, los de la divisa (2). */
+export function balanceFiatDecimals(pref: 'auto' | '0' | '2' | '4' | '6' = 'auto'): number | undefined {
+  return pref === '0' ? 0 : undefined;
 }
 
 export function formatXrp(xrp: string | number, maxDecimals = 6): string {

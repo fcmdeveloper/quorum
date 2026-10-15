@@ -209,14 +209,14 @@ export default function AccountScreen({ id }: { id: string }) {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: SP.lg }}>
           <XrpMark size={30} color={C.text} />
-          <Text style={{ fontFamily: F.bold, fontSize: 42, color: C.text, letterSpacing: -1.4 }}>{st ? m.xrp(st.balanceXrp) : '…'}</Text>
+          <Text style={{ fontFamily: F.bold, fontSize: 42, color: C.text, letterSpacing: -1.4 }}>{st ? m.balXrp(st.balanceXrp) : '…'}</Text>
         </View>
         <Txt v="body" color={C.dim}>
-          {st ? m.fiatOf(st.balanceXrp, a.network) : ''}
+          {st ? m.balFiatOf(st.balanceXrp, a.network) : ''}
         </Txt>
         {st?.exists ? (
           <Txt v="small" style={{ marginTop: 4 }}>
-            Disponible {m.xrp(st.spendableXrp)} · Reserva {st.reserveXrp}
+            Disponible {m.balXrp(st.spendableXrp)} · Reserva {st.reserveXrp}
           </Txt>
         ) : st ? (
           <Txt v="small" color={C.warn} style={{ marginTop: 6, textAlign: 'center' }}>
@@ -338,8 +338,8 @@ export default function AccountScreen({ id }: { id: string }) {
             <ListItem
               glyph={<XrpMark size={17} color={C.green} />}
               title="XRP"
-              subtitle={m.fiatOf(st.balanceXrp, a.network)}
-              right={<Txt v="h3">{m.xrp(st.balanceXrp)}</Txt>}
+              subtitle={m.balFiatOf(st.balanceXrp, a.network)}
+              right={<Txt v="h3">{m.balXrp(st.balanceXrp)}</Txt>}
             />
             {KNOWN_TOKENS[a.network].map((k) => {
               const line = st.tokens.find((t) => t.currency === k.currency && t.issuer === k.issuer);
@@ -351,7 +351,7 @@ export default function AccountScreen({ id }: { id: string }) {
                     iconColor={k.color}
                     title={k.symbol}
                     subtitle={m.tokenFiat(Number(line.balance), { currency: k.currency, issuer: k.issuer }, a.network) || k.name}
-                    right={<Txt v="h3">{m.xrp(line.balance)}</Txt>}
+                    right={<Txt v="h3">{m.balXrp(line.balance)}</Txt>}
                   />
                 );
               }
@@ -393,7 +393,7 @@ export default function AccountScreen({ id }: { id: string }) {
                   iconColor={C.dim}
                   title={t.label}
                   subtitle={`${tr('No verificado')} · ${t.issuer.slice(0, 6)}…${t.issuer.slice(-4)}`}
-                  right={<Txt v="h3">{m.xrp(t.balance)}</Txt>}
+                  right={<Txt v="h3">{m.balXrp(t.balance)}</Txt>}
                 />
               ))}
           </Card>

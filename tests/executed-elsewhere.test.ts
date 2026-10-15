@@ -32,3 +32,13 @@ test('a different operation that used the same ticket is not mistaken for the pr
   const other = { ...accountSet, SetFlag: 8 };
   assert.notStrictEqual(ledgerTxProposalId(fromLedger(other)), proposalIdFor(accountSet));
 });
+
+test('al enviar: el turno usado por esta misma operación (otro teléfono) vs por otra', async () => {
+  const { classifyUsedTurn, TURN_USED } = await import('../src/core/usedTurn');
+  const id = proposalIdFor(payment);
+  const mine = classifyUsedTurn(id, { tx: fromLedger(payment), hash: 'H1', result: 'tesSUCCESS' });
+  assert.deepStrictEqual(mine, { kind: 'elsewhere', hash: 'H1', result: 'tesSUCCESS' });
+  assert.deepStrictEqual(classifyUsedTurn(id, { tx: fromLedger({ ...payment, Amount: '5' }), hash: 'H2', result: 'tesSUCCESS' }), { kind: 'other' });
+  assert.deepStrictEqual(classifyUsedTurn(id, null), { kind: 'unknown' });
+  assert.ok(TURN_USED.has('tefPAST_SEQ') && TURN_USED.has('tefNO_TICKET'));
+});

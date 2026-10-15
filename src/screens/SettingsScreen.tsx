@@ -77,6 +77,23 @@ export default function SettingsScreen() {
             { value: 'en', label: 'English' },
           ]}
         />
+        <Txt v="label" style={{ marginBottom: 6 }}>
+          Decimales en saldos
+        </Txt>
+        <Segmented
+          value={app.settings.balanceDecimals ?? 'auto'}
+          onChange={(v) => app.updateSettings({ balanceDecimals: v })}
+          options={[
+            { value: 'auto', label: 'Auto' },
+            { value: '0', label: '0' },
+            { value: '2', label: '2' },
+            { value: '4', label: '4' },
+            { value: '6', label: '6' },
+          ]}
+        />
+        <Txt v="small" style={{ marginTop: -4, marginBottom: SP.sm }}>
+          {t('Para el patrimonio y los saldos de las cuentas. Las transacciones siempre muestran el monto exacto.')}
+        </Txt>
         <AppIconPicker />
         {hasGlass() && (
           <Card style={{ paddingVertical: 4 }}>

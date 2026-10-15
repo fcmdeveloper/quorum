@@ -75,6 +75,8 @@ export interface Settings {
   backupHash?: string;
   /** Nombre que aparece al compartir una operación por mensaje (opcional, solo en este teléfono). */
   shareName?: string;
+  /** Decimales de los saldos (patrimonio y cuentas; no las transacciones). 'auto': XRP hasta 6, divisa 2. */
+  balanceDecimals?: 'auto' | '0' | '2' | '4' | '6';
 }
 
 export type ProposalStatus = 'collecting' | 'ready' | 'submitted' | 'failed' | 'expired';
@@ -97,6 +99,8 @@ export interface Proposal {
   /** Recibida por enlace: quién la compartió y su motivo, tal como los escribió esa persona (no verificados). */
   sharedFrom?: string;
   sharedNote?: string;
+  /** Otro teléfono la envió primero (se reconoció en el ledger al intentar enviarla aquí). */
+  sentElsewhere?: boolean;
 }
 
 const K = {

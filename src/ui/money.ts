@@ -1,5 +1,5 @@
 import { useApp } from '../state';
-import { formatFiat, formatXrp } from '../core/market';
+import { balanceFiatDecimals, formatBalanceXrp, formatFiat, formatXrp } from '../core/market';
 import { NetworkId } from '../core/network';
 import { Asset, knownToken } from '../core/assets';
 
@@ -21,6 +21,15 @@ export function useMoney() {
       return formatFiat(Number(v) * p, settings.fiat);
     },
     fiatRaw: (n: number) => (hidden ? '••••' : formatFiat(n, settings.fiat)),
+    /** Saldos (patrimonio y cuentas) con los decimales elegidos en Ajustes. Las transacciones usan xrp/fiatOf. */
+    balXrp: (v: string | number) => (hidden ? '••••' : formatBalanceXrp(v, settings.balanceDecimals)),
+    balFiat: (n: number) => (hidden ? '••••' : formatFiat(n, settings.fiat, balanceFiatDecimals(settings.balanceDecimals))),
+    balFiatOf: (v: string | number, net: NetworkId = 'mainnet') => {
+      if (hidden) return '••••';
+      if (net === 'testnet') return 'XRP de prueba';
+      if (!p) return '—';
+      return formatFiat(Number(v) * p, settings.fiat, balanceFiatDecimals(settings.balanceDecimals));
+    },
     /** Valor en la divisa elegida de un monto de token; solo stablecoins conocidas (1 USD). */
     tokenFiatValue: (amount: number, asset: Asset, net: NetworkId): number | null => {
       if (net === 'testnet') return null;

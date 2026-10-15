@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { encode } from 'ripple-binary-codec';
 import { hashes } from 'xrpl';
 import { AccountState, NetworkId, currentLedger, fetchAccountState, findTxBySequence, prepareForSigning, submitBlob } from './core/network';
+import { TURN_USED, classifyUsedTurn } from './core/usedTurn';
 import { PriceQuote, fetchXrpPrice } from './core/market';
 import { combineSignatures, SignerSig, TxJson } from './core/tx';
 import { decodeProposalQr, ledgerTxProposalId, mergeSigs, proposalIdFor } from './core/qr';
@@ -554,6 +555,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         setBusy('Esperando validación del ledger…');
         const r = await submitBlob(p.network, blob, hash);
+        if (!r.validated && TURN_USED.has(r.engineResult) && p.mode === 'multi') {
+          // ¿La envió otro teléfono? Se busca qué transacción usó esa secuencia o ese ticket.
+          const found = await findTxBySequence(p.network, p.account, { sequence: p.tx.TicketSequence ? undefined : p.tx.Sequence, ticket: p.tx.TicketSequence }).catch(() => null);
+          const u = classifyUsedTurn(p.id, found);
+          if (u.kind === 'elsewhere') {
+            const done: Proposal = { ...p, hash: u.hash, status: u.result === 'tesSUCCESS' ? 'submitted' : 'failed', result: u.result, resultMessage: undefined, sentElsewhere: true };
+            await persistProposals(pRef.current.map((x) => (x.id === p.id ? done : x)));
+            const acc = accounts.find((a) => a.network === p.network && a.address === p.account);
+            if (acc) refreshAccount(acc);
+            return done;
+          }
+          if (u.kind === 'other') {
+            const exp: Proposal = { ...p, status: 'expired', result: r.engineResult, resultMessage: 'Otra operación usó ese turno' };
+            await persistProposals(pRef.current.map((x) => (x.id === p.id ? exp : x)));
+            return exp;
+          }
+        }
         const ok = r.validated && r.finalResult === 'tesSUCCESS';
         const upd: Proposal = {
           ...p,

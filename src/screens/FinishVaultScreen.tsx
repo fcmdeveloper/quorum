@@ -16,6 +16,7 @@ import { Reserves, setupBalanceLimitXrp, setupMinimumXrp } from '../core/seedVau
 import { SecretEntrySheet } from '../ui/secret';
 import { Step } from './UnvaultScreen';
 import { confirmValidated } from '../ui/releaseCheck';
+import { celebrate } from '../ui/Celebrate';
 
 /** Nota de la operación de prueba (también sirve para reconocerla). */
 export const MULTISIG_TEST_NOTE = 'Prueba de multifirma (sin efecto)';
@@ -113,7 +114,7 @@ export default function FinishVaultScreen({ id }: { id: string }) {
       if (res.status !== 'submitted') throw new Error(t('La red no la aceptó ({x}).', { x: res.result ?? '?' }));
       const st2 = await app.refreshAccount(a);
       if (!st2?.masterDisabled) throw new Error('La red todavía no muestra la master key desactivada. Actualiza en unos segundos.');
-      success();
+      celebrate('Bóveda protegida');
     } catch (e: any) {
       warnBuzz();
       proposalFailed('No se pudo desactivar', e, nav);

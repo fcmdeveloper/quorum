@@ -634,7 +634,9 @@ export async function submitBlob(net: NetworkId, blob: string, hash: string): Pr
   if (!pending) {
     return { engineResult: engine, engineMessage: res.result.engine_result_message, validated: false, hash };
   }
-  for (let i = 0; i < 20; i++) {
+  // tefPAST_SEQ: si es este mismo envío (un reintento) aparece enseguida; si no, lo usó otra transacción.
+  const tries = engine === 'tefPAST_SEQ' ? 2 : 20;
+  for (let i = 0; i < tries; i++) {
     await new Promise((r) => setTimeout(r, 3000));
     try {
       const t: any = await client.request({ command: 'tx', transaction: hash } as any);

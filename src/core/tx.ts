@@ -413,6 +413,13 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
         if (rel.js) lines.push(['Huella del JavaScript', rel.js]);
         break;
       }
+      if (typeof tx.WalletLocator === 'string') {
+        const on = /[1-9A-F]/i.test(tx.WalletLocator);
+        title = on ? 'Fijar NFT como imagen' : 'Quitar NFT fijado';
+        if (on) lines.push(['NFT', tx.WalletLocator]);
+        lines.push(['Visibilidad', on ? t('Pública: cualquiera la ve en el XRP Ledger') : t('Se borra del registro de la cuenta')]);
+        break;
+      }
       if (tx.SetFlag === ACCOUNT_SET.asfDisableMaster) title = 'Desactivar master key';
       else if (tx.ClearFlag === ACCOUNT_SET.asfDisableMaster) title = 'Reactivar master key';
       else {

@@ -14,7 +14,7 @@ import { lossTolerance, minSigners } from '../core/health';
 import { KIND_LABEL } from '../signers/types';
 import { Account, newId } from '../store';
 import { Reserves, addressFromSecret, generateSecret, setupBalanceLimitXrp, setupMinimumXrp, signerProblem } from '../core/seedVault';
-import { CheckRow, SecretEntrySheet, SecretGrid, useNoScreenCapture } from '../ui/secret';
+import { CheckRow, SecretEntrySheet, SecretGrid, TestnetSecretNotice, useNoScreenCapture } from '../ui/secret';
 
 type Step = 'base' | 'secret' | 'signers' | 'protect' | 'run';
 /** Cómo se firma la configuración: números secretos, el dispositivo creador o el quórum. */
@@ -381,6 +381,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
             Anótalos en papel, en orden. Son la clave de emergencia de esta bóveda. Quorum no los guarda: te los pedirá para configurarla y para desactivar su clave original.
           </Txt>
           <SecretGrid rows={secret} />
+          {(vault?.network ?? network) === 'testnet' ? <TestnetSecretNotice /> : null}
           <Notice kind="bad">
             No les saques foto ni los guardes en el teléfono o en la nube. Cuando la bóveda esté lista no sirven para mover fondos, pero vuelven a valer si algún día se reactiva su master key.
           </Notice>
@@ -657,6 +658,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
       {vault && (
         <SecretEntrySheet
           visible={askSecret}
+          testnet={vault.network === 'testnet'}
           address={vault.address}
           title="Escribe tus números secretos"
           text="Los que anotaste al crear la bóveda. Quorum firma con ellos la configuración y los borra al terminar; no se guardan en el teléfono."

@@ -27,8 +27,9 @@ export interface Account {
   /**
    * NFT elegido como imagen (de cualquiera de las cuentas en Quorum). Es solo decorativo:
    * si el NFT ya no está en ninguna de tus cuentas, se quita y vuelve el ícono.
+   * `pinned`: viene del NFT fijado en el XRP Ledger (core/pin.ts) y se sigue al ledger.
    */
-  nft?: { id: string; image: string; network: NetworkId; name?: string; gallery?: boolean };
+  nft?: { id: string; image: string; network: NetworkId; name?: string; gallery?: boolean; pinned?: boolean };
   /** true: no se suma al patrimonio total de Inicio ni al gráfico. */
   excluded?: boolean;
   /** Solo bóvedas: destinos permitidos (fuera de esta lista la app exige confirmación reforzada). */

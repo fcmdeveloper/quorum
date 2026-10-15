@@ -72,6 +72,8 @@ export interface AccountState {
   ownerCount: number;
   ledgerIndex: number;
   fetchedAt: number;
+  /** Campo WalletLocator de la cuenta: Quorum lo usa para fijar un NFT como imagen (ver core/pin.ts). */
+  walletLocator?: string | null;
 }
 
 /** Nombre legible de un código de moneda (3 letras o hex de 40). */
@@ -155,6 +157,7 @@ export async function fetchAccountState(net: NetworkId, address: string): Promis
     ownerCount: data.OwnerCount,
     ledgerIndex: info.result.ledger_index ?? vl.seq,
     fetchedAt: Date.now(),
+    walletLocator: typeof data.WalletLocator === 'string' && /[1-9A-F]/i.test(data.WalletLocator) ? data.WalletLocator.toUpperCase() : null,
   };
 }
 
@@ -213,7 +216,8 @@ export function describeActivity(account: string, tx: any, meta: any, closeIso?:
       return { ...base, kind: 'config', title: tx.SignerQuorum ? tl('Multifirma: quórum {n}', { n: tx.SignerQuorum }) : 'Multifirma eliminada' };
     case 'AccountSet': {
       let title = 'Ajustes de cuenta';
-      if (tx.SetFlag === 4) title = 'Master key desactivada';
+      if (typeof tx.WalletLocator === 'string') title = /[1-9A-F]/i.test(tx.WalletLocator) ? 'NFT fijado como imagen' : 'NFT fijado quitado';
+      else if (tx.SetFlag === 4) title = 'Master key desactivada';
       else if (tx.ClearFlag === 4) title = 'Master key reactivada';
       else {
         const h = HARDENING.find((x) => x.asf === tx.SetFlag);
@@ -404,6 +408,19 @@ export async function fetchNfts(net: NetworkId, address: string, max = 20_000): 
     if (marker && out.length >= max) throw new Error(tl('La cuenta tiene más de {n} NFTs', { n: max }));
   } while (marker);
   return out;
+}
+
+/** Busca un NFT en una cuenta, página por página, y para apenas lo encuentra. null: no está. */
+export async function findNftIn(net: NetworkId, owner: string, nftId: string): Promise<NftItem | null> {
+  const id = nftId.toUpperCase();
+  let marker: unknown;
+  do {
+    const page = await fetchNftsPage(net, owner, marker);
+    const hit = page.items.find((n) => n.id.toUpperCase() === id);
+    if (hit) return hit;
+    marker = page.marker;
+  } while (marker);
+  return null;
 }
 
 function pickImage(j: any): string | undefined {

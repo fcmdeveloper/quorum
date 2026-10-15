@@ -5,6 +5,7 @@ import { NftItem, fetchNfts, ipfsToHttp } from '../core/network';
 import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
 import { QUORUM } from '../config';
 import { BADGE_TAXON } from '../core/badges';
+import { resolvePinnedNft } from '../core/pin';
 
 /**
  * Revisa que los NFTs elegidos como imagen sigan en alguna de tus cuentas de Quorum.
@@ -86,4 +87,47 @@ export function useGalleryPrefetch() {
     }, 4000);
     return () => clearTimeout(timer);
   }, [app.ready]);
+}
+
+/**
+ * NFT fijado en el XRP Ledger (campo WalletLocator): se muestra en cualquier teléfono con Quorum,
+ * también en cuentas de solo lectura. Una elección propia hecha en este teléfono (sin `pinned`)
+ * no se reemplaza. Si el ledger ya no lo tiene fijado o dejó de ser válido, se quita.
+ */
+export function usePinnedNftSync() {
+  const app = useApp();
+  const key = app.accounts
+    .map((a) => `${a.id}:${app.stateOf(a)?.walletLocator ?? '-'}:${a.nft?.pinned ? a.nft.id : a.nft ? 'own' : '-'}`)
+    .join(',');
+  useEffect(() => {
+    if (!app.ready) return;
+    let alive = true;
+    (async () => {
+      for (const a of app.accounts) {
+        const st = app.stateOf(a);
+        if (!st || !st.exists) continue;
+        const wl = st.walletLocator ?? null;
+        if (a.nft && !a.nft.pinned) continue; // elección propia de este teléfono
+        if (!wl) {
+          if (a.nft?.pinned) await app.updateAccount(a.id, { nft: undefined });
+          continue;
+        }
+        if (a.nft?.pinned && a.nft.id === wl) continue;
+        try {
+          const r = await resolvePinnedNft(a.network, a.address, wl, QUORUM.nftGalleryAddress || undefined);
+          if (!alive) return;
+          if (r?.item.image) {
+            await app.updateAccount(a.id, { nft: { id: r.item.id, image: r.item.image, name: r.item.name, network: r.network, gallery: r.gallery || undefined, pinned: true } });
+          } else if (!r && a.nft?.pinned) {
+            await app.updateAccount(a.id, { nft: undefined });
+          }
+        } catch {
+          // sin red: se reintenta en la próxima actualización
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [key, app.ready]);
 }

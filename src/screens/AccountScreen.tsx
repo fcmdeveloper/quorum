@@ -14,6 +14,7 @@ import { ActivityItem, NETWORKS, fetchActivity, fundTestnet } from '../core/netw
 import { KIND_LABEL } from '../signers/types';
 import { KNOWN_TOKENS } from '../core/assets';
 import { buildTrustSet } from '../core/tx';
+import { buildPinNft, canPin } from '../core/pin';
 import { isPreparing } from '../core/seedVault';
 import { ActivityRow } from './ActivityScreen';
 
@@ -27,6 +28,7 @@ export default function AccountScreen({ id }: { id: string }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(a?.label ?? '');
   const [picking, setPicking] = useState(false);
+  const [pinBusy, setPinBusy] = useState(false);
 
   const load = async () => {
     if (!a) return;
@@ -57,6 +59,47 @@ export default function AccountScreen({ id }: { id: string }) {
   // Bóveda creada en Quorum sin terminar: solo se permiten los pasos de configuración.
   const preparing = isPreparing(a, st);
   const canSign = preparing ? false : isVault ? !!list || (!!dev && !st?.masterDisabled) : !!dev;
+
+  // NFT fijado en el XRP Ledger (core/pin.ts): visible para cualquiera con Quorum.
+  const pinnedId = st?.walletLocator ?? null;
+  const pinnedHere = !!a.nft && pinnedId === a.nft.id.toUpperCase();
+  const pinTx = async (nftId: string | null) => {
+    setPinBusy(true);
+    try {
+      const p = await app.createProposal(a, buildPinNft(a.address, nftId));
+      nav.push('proposal', { id: p.id });
+    } catch (e: any) {
+      proposalFailed('No se pudo preparar', e, nav);
+    } finally {
+      setPinBusy(false);
+    }
+  };
+  const pin = async () => {
+    if (!a.nft) return;
+    setPinBusy(true);
+    let ok = false;
+    try {
+      ok = await canPin(a.network, a.address, a.nft.id, QUORUM.nftGalleryAddress || undefined);
+    } catch {
+      setPinBusy(false);
+      return Alert.alert(t('No se pudo leer el XRP Ledger'), t('Revisa la conexión e inténtalo de nuevo.'));
+    }
+    setPinBusy(false);
+    if (!ok) return Alert.alert(t('No se puede fijar'), t('Para fijarlo, el NFT tiene que estar en esta cuenta o ser de Quorum Gallery.'));
+    Alert.alert(
+      t('Fijar en el XRP Ledger'),
+      t('La imagen quedará guardada en la cuenta: cualquiera con Quorum la verá, en cualquier teléfono. Es pública y queda en el historial de la cuenta. Solo cuesta la comisión de la red.'),
+      [
+        { text: t('Cancelar'), style: 'cancel' },
+        { text: t('Fijar'), onPress: () => pinTx(a.nft!.id.toUpperCase()) },
+      ],
+    );
+  };
+  const unpin = () =>
+    Alert.alert(t('Quitar del XRP Ledger'), t('La cuenta dejará de mostrar esta imagen en otros teléfonos. El cambio queda en el historial.'), [
+      { text: t('Cancelar'), style: 'cancel' },
+      { text: t('Quitar'), style: 'destructive', onPress: () => pinTx(null) },
+    ]);
 
   const menu = () =>
     Alert.alert(a.label, undefined, [
@@ -114,6 +157,22 @@ export default function AccountScreen({ id }: { id: string }) {
                 {a.nft ? t('Cambiar NFT') : t('Elegir un NFT')}
               </Txt>
             </Pressable>
+            {canSign && st?.exists && (a.nft || pinnedId) ? (
+              <View style={{ alignItems: 'center', gap: 6, marginTop: SP.xs, paddingHorizontal: SP.lg }}>
+                {pinnedHere ? (
+                  <Txt v="small" color={C.green} style={{ textAlign: 'center' }}>
+                    {t('Fijado en el XRP Ledger: se ve igual en cualquier teléfono')}
+                  </Txt>
+                ) : a.nft && !a.nft.pinned ? (
+                  <Button title={t('Fijar en el XRP Ledger')} kind="secondary" icon="anchor" busy={pinBusy} onPress={pin} />
+                ) : null}
+                {pinnedId ? (
+                  <Pressable onPress={unpin} hitSlop={10} disabled={pinBusy}>
+                    <Txt v="label" color={C.dim}>{t('Quitar del XRP Ledger')}</Txt>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
             <View style={{ flexDirection: 'row', gap: SP.xl, marginTop: SP.sm }}>
               {a.icon || a.color || a.nft ? (
                 <Pressable onPress={() => app.updateAccount(a.id, { icon: undefined, color: undefined, nft: undefined })} hitSlop={10}>

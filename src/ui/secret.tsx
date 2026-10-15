@@ -77,8 +77,11 @@ export function SecretEntrySheet({
   confirm,
   onCancel,
   onSubmit,
+  testnet,
 }: {
   visible: boolean;
+  /** Bóveda de testnet: se recuerda que los mismos números valen en mainnet. */
+  testnet?: boolean;
   address: string;
   title: string;
   text: string;
@@ -119,6 +122,7 @@ export function SecretEntrySheet({
           <Txt v="body" color={C.dim} style={{ marginTop: 6, marginBottom: SP.lg }}>
             {text}
           </Txt>
+          {testnet ? <TestnetSecretNotice /> : null}
           {rows.map((r, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md, marginBottom: SP.sm }}>
               <Text style={{ fontFamily: F.semibold, fontSize: 16, color: C.dim, width: 22 }}>{ROW_LETTERS[i]}</Text>
@@ -169,5 +173,17 @@ export function SecretEntrySheet({
         </ScrollView>
       </View>
     </Modal>
+  );
+}
+
+/**
+ * Las llaves del XRP Ledger no dependen de la red: los mismos números controlan la misma dirección
+ * en mainnet, donde sería una cuenta normal (sin firmantes, con la master key activa).
+ */
+export function TestnetSecretNotice() {
+  return (
+    <Notice kind="warn">
+      Estos números son de prueba. La misma dirección existe en mainnet: nunca le envíes fondos reales. Para mainnet, crea una bóveda nueva con números nuevos.
+    </Notice>
   );
 }

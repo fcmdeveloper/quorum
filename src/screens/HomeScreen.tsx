@@ -11,7 +11,7 @@ import { minSigners, vaultHealth } from '../core/health';
 import { Account } from '../store';
 import { formatFiat } from '../core/market';
 import { NftImage } from '../ui/NftImage';
-import { useGalleryPrefetch, useNftAvatarCheck } from '../ui/nftAvatars';
+import { useGalleryPrefetch, useNftAvatarCheck, usePinnedNftSync } from '../ui/nftAvatars';
 import { useNativeSelectors } from '../ui/Glass';
 
 const LEVEL = {
@@ -37,6 +37,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   useNftAvatarCheck();
   useGalleryPrefetch();
+  usePinnedNftSync();
 
   const vaults = app.accounts.filter((a) => a.kind === 'vault');
   const wallets = app.accounts.filter((a) => a.kind === 'wallet');

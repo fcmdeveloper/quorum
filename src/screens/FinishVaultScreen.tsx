@@ -195,6 +195,7 @@ export default function FinishVaultScreen({ id }: { id: string }) {
 
       <SecretEntrySheet
         visible={ask}
+        testnet={a.network === 'testnet'}
         address={a.address}
         title="Escribe tus números secretos"
         text="Los que anotaste al crear la bóveda. Se usan solo para firmar la desactivación de la master key y no se guardan."

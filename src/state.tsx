@@ -65,6 +65,10 @@ interface AppCtx {
   refreshAll: () => Promise<void>;
   refreshPrice: () => Promise<void>;
   stateOf: (a: Account) => AccountState | undefined;
+  /** Estado de cualquier dirección en una red (también de bóvedas que no están en este teléfono). */
+  stateAt: (net: NetworkId, address: string) => AccountState | undefined;
+  /** Lee del ledger el estado de una dirección que no está en este teléfono (p. ej. la bóveda de una operación recibida por QR). */
+  loadRemoteState: (net: NetworkId, address: string) => Promise<AccountState | undefined>;
   deviceFor: (address: string) => SignerDevice | undefined;
   accountFor: (net: NetworkId, address: string) => Account | undefined;
   createProposal: (a: Account, tx: TxJson, opts?: { mode?: 'multi' | 'single'; note?: string }) => Promise<Proposal>;
@@ -315,6 +319,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [ready, accounts.length]);
 
   const stateOf = useCallback((a: Account) => states[stateKey(a.network, a.address)], [states]);
+  const stateAt = useCallback((net: NetworkId, address: string) => states[stateKey(net, address)], [states]);
+  const loadRemoteState = useCallback(async (net: NetworkId, address: string) => {
+    const key = stateKey(net, address);
+    try {
+      const st = await fetchAccountState(net, address);
+      sRef.current = { ...sRef.current, [key]: st };
+      setStates(sRef.current);
+      return st;
+    } catch {
+      return sRef.current[key];
+    }
+  }, []);
   const deviceFor = useCallback((address: string) => devices.find((d) => d.address === address), [devices]);
   const accountFor = useCallback(
     (net: NetworkId, address: string) => accounts.find((a) => a.network === net && a.address === address),
@@ -393,7 +409,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const d = decodeProposalQr(text);
       const existing = pRef.current.find((p) => p.id === d.id);
       const acc = accounts.find((a) => a.network === d.network && a.address === d.tx.Account);
+      // Lo normal es que el teléfono que firma no tenga la bóveda: sus firmantes y quórum se leen del ledger.
       if (acc) await refreshAccount(acc);
+      else await loadRemoteState(d.network, d.tx.Account);
       if (existing) {
         const before = existing.signatures.length;
         const sigs = mergeSigs(existing.signatures, d.signatures);
@@ -416,7 +434,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await persistProposals([p, ...pRef.current]);
       return { proposal: p, added: d.signatures.length, isNew: true };
     },
-    [accounts, refreshAccount, persistProposals],
+    [accounts, refreshAccount, loadRemoteState, persistProposals],
   );
 
   const signOnce = useCallback(
@@ -623,6 +641,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     refreshAll,
     refreshPrice,
     stateOf,
+    stateAt,
+    loadRemoteState,
     deviceFor,
     accountFor,
     createProposal,

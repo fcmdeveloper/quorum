@@ -15,7 +15,7 @@ export default function ProposalsScreen() {
 
   const item = (p: (typeof app.proposals)[number]) => {
     const acc = app.accountFor(p.network, p.account);
-    const st = acc ? app.stateOf(acc) : undefined;
+    const st = acc ? app.stateOf(acc) : app.stateAt(p.network, p.account);
     const s = STATUS[p.status];
     const w = signedWeight(p.signatures, st?.signerList);
     return (

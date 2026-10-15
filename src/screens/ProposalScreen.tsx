@@ -78,8 +78,12 @@ export default function ProposalScreen({ id }: { id: string }) {
   }, [p?.id, p?.status]);
 
   const acc = p ? app.accountFor(p.network, p.account) : undefined;
-  const st = acc ? app.stateOf(acc) : undefined;
+  // La bóveda puede no estar en este teléfono (operación recibida por QR): su estado se lee del ledger.
+  const st = acc ? app.stateOf(acc) : p ? app.stateAt(p.network, p.account) : undefined;
   const list = st?.signerList;
+  useEffect(() => {
+    if (p && !acc && !st) app.loadRemoteState(p.network, p.account);
+  }, [p?.network, p?.account, !!acc, !!st]);
 
   const rows = useMemo(() => {
     if (!p) return [];

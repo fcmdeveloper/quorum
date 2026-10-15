@@ -739,8 +739,11 @@ export function QuorumRing({
   sub,
   children,
   color,
+  stroke: strokeProp,
 }: {
   size?: number;
+  /** Grosor del anillo (por defecto, proporcional al tamaño). Con un NFT al centro va fino. */
+  stroke?: number;
   /** Color de los segmentos encendidos (por defecto, el verde de Quorum). */
   color?: string;
   segments: { weight: number; on: boolean }[];
@@ -749,7 +752,7 @@ export function QuorumRing({
   /** Contenido propio en el centro (reemplaza a `center`/`sub`). */
   children?: React.ReactNode;
 }) {
-  const stroke = Math.max(6, size * 0.085);
+  const stroke = strokeProp ?? Math.max(6, size * 0.085);
   const r = (size - stroke) / 2;
   const cx = size / 2;
   const total = segments.reduce((a, s) => a + s.weight, 0) || 1;
@@ -896,11 +899,14 @@ export function accountIcon(a: { icon?: string; kind: string }, dev?: { kind: st
 }
 
 /** Ícono de una cuenta con su color, o la imagen del NFT elegido. */
-export function AccountAvatar({ color, icon, size = 40, nft }: { color?: string; icon: string; size?: number; nft?: string }) {
+export function AccountAvatar({ color, icon, size = 40, nft, round }: { color?: string; icon: string; size?: number; nft?: string; round?: boolean }) {
   const c = accountColor(color);
+  // Bóvedas: círculo. Cuentas: cuadrado con bordes redondeados.
+  const radius = round ? size / 2 : size * 0.3;
   if (nft) {
+    // El NFT ocupa todo; el color de la cuenta queda como un borde fino.
     return (
-      <View style={{ width: size, height: size, borderRadius: size * 0.3, overflow: 'hidden', backgroundColor: C.surface2, borderWidth: 1, borderColor: alpha(c, 0.45), alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: size, height: size, borderRadius: radius, overflow: 'hidden', backgroundColor: C.surface2, borderWidth: 1.5, borderColor: alpha(c, 0.7), alignItems: 'center', justifyContent: 'center' }}>
         <NftImage src={nft} size={size * 0.4} />
       </View>
     );
@@ -910,7 +916,7 @@ export function AccountAvatar({ color, icon, size = 40, nft }: { color?: string;
       style={{
         width: size,
         height: size,
-        borderRadius: size * 0.3,
+        borderRadius: radius,
         backgroundColor: alpha(c, 0.16),
         borderWidth: 1,
         borderColor: alpha(c, 0.45),

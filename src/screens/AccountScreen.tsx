@@ -139,7 +139,7 @@ export default function AccountScreen({ id }: { id: string }) {
     >
       <View style={{ alignItems: 'center', paddingVertical: SP.md }}>
         <Pressable onPress={() => setPicking((v) => !v)} accessibilityLabel={t('Cambiar color e ícono')} style={{ marginBottom: SP.md }}>
-          <AccountAvatar color={a.color} size={56} icon={accountIcon(a, dev)} nft={a.nft?.image} />
+          <AccountAvatar color={a.color} size={isVault && a.nft ? 72 : 56} icon={accountIcon(a, dev)} nft={a.nft?.image} round={isVault} />
         </Pressable>
         {picking && (
           <View style={{ marginBottom: SP.lg, gap: SP.md, alignItems: 'center' }}>

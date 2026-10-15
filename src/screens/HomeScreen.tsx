@@ -326,8 +326,9 @@ function VaultCard({ a }: { a: Account }) {
   return (
     <Card onPress={() => nav.push('account', { id: a.id })} style={{ padding: SP.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
-        <QuorumRing size={68} color={c} segments={list ? list.entries.map((e) => ({ weight: e.weight, on: h.level === 'secure' })) : [{ weight: 1, on: false }]}>
-          <View style={{ width: a.nft ? 52 : 46, height: a.nft ? 52 : 46, borderRadius: 26, overflow: 'hidden', backgroundColor: alphaC(c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
+        {/* Con un NFT, el anillo va fino y la imagen ocupa casi todo el círculo */}
+        <QuorumRing size={68} color={c} stroke={a.nft ? 2.5 : undefined} segments={list ? list.entries.map((e) => ({ weight: e.weight, on: h.level === 'secure' })) : [{ weight: 1, on: false }]}>
+          <View style={{ width: a.nft ? 60 : 46, height: a.nft ? 60 : 46, borderRadius: 30, overflow: 'hidden', backgroundColor: alphaC(c, 0.16), alignItems: 'center', justifyContent: 'center' }}>
             {a.nft ? <NftImage src={a.nft.image} size={18} /> : <AccountGlyph icon={accountIcon(a)} size={20} color={c} />}
           </View>
         </QuorumRing>
@@ -364,7 +365,7 @@ function WalletRow({ a }: { a: Account }) {
   return (
     <Card onPress={() => nav.push('account', { id: a.id })} style={{ paddingVertical: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <AccountAvatar color={a.color} icon={accountIcon(a, dev)} nft={a.nft?.image} />
+        <AccountAvatar color={a.color} icon={accountIcon(a, dev)} nft={a.nft?.image} round={a.kind === 'vault'} />
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <Txt v="body" numberOfLines={1} style={{ flexShrink: 1 }}>

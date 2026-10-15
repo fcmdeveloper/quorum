@@ -252,7 +252,7 @@ function IncludedAccounts() {
               key={a.id}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderColor: C.line, opacity: a.excluded ? 0.55 : 1 }}
             >
-              <AccountAvatar color={a.color} icon={accountIcon(a, app.deviceFor(a.address))} nft={a.nft?.image} size={36} />
+              <AccountAvatar color={a.color} icon={accountIcon(a, app.deviceFor(a.address))} nft={a.nft?.image} size={36} round={a.kind === 'vault'} />
               <View style={{ flex: 1 }}>
                 <Txt v="body" numberOfLines={1}>
                   {a.label}

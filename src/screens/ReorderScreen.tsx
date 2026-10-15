@@ -43,7 +43,7 @@ export default function ReorderScreen({ kind }: { kind: AccountKind }) {
         return (
           <Card key={a.id} style={{ paddingVertical: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <AccountAvatar color={a.color} size={36} icon={accountIcon(a, dev)} nft={a.nft?.image} />
+              <AccountAvatar color={a.color} size={36} icon={accountIcon(a, dev)} nft={a.nft?.image} round={a.kind === 'vault'} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Txt v="body" numberOfLines={1}>
                   {a.label}

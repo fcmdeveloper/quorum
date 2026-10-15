@@ -346,7 +346,7 @@ function VaultCard({ a }: { a: Account }) {
             {pend.length ? <Badge text={t('{n} por firmar', { n: pend.length })} color={C.warn} icon="edit-3" /> : null}
           </View>
           {st ? (
-            <Txt v="small">{here === 0 ? 'Solo lectura' : list ? t('Firmantes en este teléfono: {n} de {m}', { n: here, m: list.entries.length }) : null}</Txt>
+            <Txt v="small">{here === 0 ? 'Firmas en otros teléfonos' : list ? t('Firmantes en este teléfono: {n} de {m}', { n: here, m: list.entries.length }) : null}</Txt>
           ) : null}
         </View>
       </View>

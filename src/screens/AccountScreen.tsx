@@ -308,7 +308,7 @@ export default function AccountScreen({ id }: { id: string }) {
 
       {isVault && list && !list.entries.some((e) => app.deviceFor(e.account)) && (
         <Card style={{ marginTop: SP.lg }}>
-          <ListItem icon="eye" title="Solo lectura" subtitle="Ninguno de sus firmantes está en este teléfono. Puedes ver la bóveda y recibir; para firmar, registra aquí uno de sus dispositivos." />
+          <ListItem icon="share-2" title="Firmas en otros teléfonos" subtitle="Ninguno de sus firmantes está en este teléfono. Puedes proponer operaciones y compartirlas por QR para que las firmen; los fondos solo se mueven cuando firma el quórum." />
         </Card>
       )}
 

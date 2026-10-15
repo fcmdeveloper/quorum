@@ -1149,5 +1149,6 @@ export const EN: Record<string, string> = {
   "Visibilidad": "Visibility",
   "Estos números son de prueba. La misma dirección existe en mainnet: nunca le envíes fondos reales. Para mainnet, crea una bóveda nueva con números nuevos.": "These numbers are for testing. The same address exists on mainnet: never send it real funds. For mainnet, create a new vault with new numbers.",
   "Firmantes en este teléfono: {n} de {m}": "Signers on this phone: {n} of {m}",
-  "Ninguno de sus firmantes está en este teléfono. Puedes ver la bóveda y recibir; para firmar, registra aquí uno de sus dispositivos.": "None of its signers are on this phone. You can view the vault and receive; to sign, register one of its devices here.",
+  "Firmas en otros teléfonos": "Signed on other phones",
+  "Ninguno de sus firmantes está en este teléfono. Puedes proponer operaciones y compartirlas por QR para que las firmen; los fondos solo se mueven cuando firma el quórum.": "None of its signers are on this phone. You can propose operations and share them by QR to be signed; funds only move when the quorum signs.",
 };

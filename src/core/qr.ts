@@ -19,6 +19,21 @@ export function proposalIdFor(tx: TxJson): string {
   return bytesToHex(sha512Half(hexToBytes(encode(base as any)))).slice(0, 16);
 }
 
+/**
+ * Id de propuesta de una transacción tal como la devuelve el ledger (account_tx, api_version 2):
+ * sirve para reconocer una operación que se firmó y envió desde otro teléfono.
+ */
+export function ledgerTxProposalId(ledgerTx: TxJson): string {
+  const tx: TxJson = { ...ledgerTx };
+  for (const f of ['hash', 'ctid', 'date', 'ledger_index', 'inLedger', 'validated', 'meta', 'close_time_iso']) delete tx[f];
+  // api_version 2 entrega Amount como DeliverMax en los pagos
+  if (tx.DeliverMax !== undefined) {
+    if (tx.Amount === undefined) tx.Amount = tx.DeliverMax;
+    delete tx.DeliverMax;
+  }
+  return proposalIdFor(tx);
+}
+
 export function encodeProposalQr(network: NetworkId, tx: TxJson, sigs: SignerSig[]): string {
   const base = normalizeForMultisign(tx);
   const withSigs: TxJson = sigs.length ? { ...base, Signers: sigs.map((s) => ({ Signer: s })) } : base;

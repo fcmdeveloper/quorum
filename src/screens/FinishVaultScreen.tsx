@@ -11,7 +11,7 @@ import { proposalFailed } from '../ui/proposalError';
 import { Button, Card, Notice, Screen, Txt, success, warnBuzz } from '../ui/components';
 import { C, SP } from '../ui/theme';
 import { buildDisableMaster } from '../core/tx';
-import { fetchReserves } from '../core/network';
+import { fetchReserves, hasMultisigTx } from '../core/network';
 import { Reserves, setupBalanceLimitXrp, setupMinimumXrp } from '../core/seedVault';
 import { SecretEntrySheet } from '../ui/secret';
 import { Step } from './UnvaultScreen';
@@ -27,6 +27,15 @@ export default function FinishVaultScreen({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [ask, setAsk] = useState(false);
   const [reserves, setReserves] = useState<Reserves | null>(null);
+
+  // La prueba con multifirma puede haberse enviado desde otro teléfono: el ledger es la fuente.
+  const [ledgerTested, setLedgerTested] = useState(false);
+  useEffect(() => {
+    if (!a) return;
+    hasMultisigTx(a.network, a.address)
+      .then(setLedgerTested)
+      .catch(() => {});
+  }, [id, app.proposals.length, st?.sequence, st?.tickets.length]);
 
   useEffect(() => {
     if (!a) return;
@@ -46,7 +55,7 @@ export default function FinishVaultScreen({ id }: { id: string }) {
 
   const list = st?.signerList;
   const mine = app.proposals.filter((p) => p.account === a.address && p.network === a.network);
-  const tested = mine.some((p) => p.mode === 'multi' && p.status === 'submitted');
+  const tested = ledgerTested || mine.some((p) => p.mode === 'multi' && p.status === 'submitted');
   const pendingTest = mine.find((p) => p.mode === 'multi' && p.note === MULTISIG_TEST_NOTE && (p.status === 'collecting' || p.status === 'ready'));
   const masterOff = !!st?.masterDisabled;
   const r = reserves ?? { base: 1, inc: 0.2 };

@@ -81,9 +81,14 @@ export default function ProposalScreen({ id }: { id: string }) {
   // La bóveda puede no estar en este teléfono (operación recibida por QR): su estado se lee del ledger.
   const st = acc ? app.stateOf(acc) : p ? app.stateAt(p.network, p.account) : undefined;
   const list = st?.signerList;
+  // Mientras esté pendiente, se revisa el ledger: si otro teléfono ya la envió, aquí pasa a "Enviada".
   useEffect(() => {
-    if (p && !acc && !st) app.loadRemoteState(p.network, p.account);
-  }, [p?.network, p?.account, !!acc, !!st]);
+    if (!p || !(p.status === 'collecting' || p.status === 'ready')) return;
+    const check = () => (acc ? app.refreshAccount(acc) : app.loadRemoteState(p.network, p.account));
+    check();
+    const iv = setInterval(check, 20_000);
+    return () => clearInterval(iv);
+  }, [p?.id, p?.status, acc?.id]);
 
   const rows = useMemo(() => {
     if (!p) return [];

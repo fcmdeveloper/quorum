@@ -1,10 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { encode } from 'ripple-binary-codec';
 import { hashes } from 'xrpl';
-import { AccountState, NetworkId, currentLedger, fetchAccountState, prepareForSigning, submitBlob } from './core/network';
+import { AccountState, NetworkId, currentLedger, fetchAccountState, findTxBySequence, prepareForSigning, submitBlob } from './core/network';
 import { PriceQuote, fetchXrpPrice } from './core/market';
 import { combineSignatures, SignerSig, TxJson } from './core/tx';
-import { decodeProposalQr, mergeSigs, proposalIdFor } from './core/qr';
+import { decodeProposalQr, ledgerTxProposalId, mergeSigs, proposalIdFor } from './core/qr';
 import { signAsMaster, signAsMultisigner } from './signers/sign';
 import { signWithSecret } from './core/seedVault';
 import { SignerDevice } from './signers/types';
@@ -258,18 +258,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (net: NetworkId, st: AccountState) => {
       if (!st.exists) return;
       let changed = false;
-      const next = pRef.current.map((p) => {
-        if (p.network !== net || p.account !== st.address || !(p.status === 'collecting' || p.status === 'ready')) return p;
+      const next: Proposal[] = [];
+      const updated = new Map<string, Proposal>();
+      for (const p of pRef.current) {
+        if (p.network !== net || p.account !== st.address || !(p.status === 'collecting' || p.status === 'ready')) {
+          next.push(p);
+          continue;
+        }
         const lls = p.tx.LastLedgerSequence;
         const seqUsed = !p.tx.TicketSequence && p.tx.Sequence < st.sequence;
-        const ticketUsed = p.tx.TicketSequence && !st.tickets.includes(p.tx.TicketSequence);
-        if ((lls && st.ledgerIndex > lls) || seqUsed || ticketUsed) {
+        const ticketUsed = !!p.tx.TicketSequence && !st.tickets.includes(p.tx.TicketSequence);
+        if (seqUsed || ticketUsed) {
+          // Su secuencia o ticket ya se usó: puede ser esta misma operación, enviada desde otro teléfono.
+          const found = p.mode === 'multi' ? await findTxBySequence(net, st.address, { sequence: p.tx.TicketSequence ? undefined : p.tx.Sequence, ticket: p.tx.TicketSequence }).catch(() => null) : null;
           changed = true;
-          return { ...p, status: 'expired' as const };
+          const u: Proposal = found && ledgerTxProposalId(found.tx) === p.id ? { ...p, status: found.result === 'tesSUCCESS' ? 'submitted' : 'failed', hash: found.hash, result: found.result } : { ...p, status: 'expired' };
+          updated.set(p.id, u);
+          next.push(u);
+          continue;
         }
-        return p;
-      });
-      if (changed) await persistProposals(next);
+        if (lls && st.ledgerIndex > lls) {
+          changed = true;
+          const u: Proposal = { ...p, status: 'expired' };
+          updated.set(p.id, u);
+          next.push(u);
+          continue;
+        }
+        next.push(p);
+      }
+      // las operaciones pudieron cambiar mientras se consultaba el ledger: solo se actualizan las revisadas
+      if (changed) await persistProposals(pRef.current.map((p) => updated.get(p.id) ?? p));
     },
     [persistProposals],
   );
@@ -326,11 +344,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const st = await fetchAccountState(net, address);
       sRef.current = { ...sRef.current, [key]: st };
       setStates(sRef.current);
+      await markExpired(net, st);
       return st;
     } catch {
       return sRef.current[key];
     }
-  }, []);
+  }, [markExpired]);
   const deviceFor = useCallback((address: string) => devices.find((d) => d.address === address), [devices]);
   const accountFor = useCallback(
     (net: NetworkId, address: string) => accounts.find((a) => a.network === net && a.address === address),

@@ -260,6 +260,48 @@ export async function fetchActivity(net: NetworkId, address: string, limit = 30)
   }
 }
 
+/**
+ * La transacción de `address` que usó esa secuencia o ese ticket, si ya está en el ledger.
+ * Una secuencia o un ticket solo los puede consumir una transacción.
+ */
+export async function findTxBySequence(
+  net: NetworkId,
+  address: string,
+  by: { sequence?: number; ticket?: number },
+  maxTxs = 400,
+): Promise<{ tx: any; hash: string; result: string } | null> {
+  const client = await getClient(net);
+  let marker: unknown;
+  let seen = 0;
+  do {
+    const r: any = await client.request({ command: 'account_tx', account: address, limit: 200, marker, api_version: 2 } as any);
+    for (const x of r.result.transactions ?? []) {
+      const tx = x.tx_json ?? x.tx ?? {};
+      if (tx.Account !== address) continue;
+      const hit = by.ticket ? tx.TicketSequence === by.ticket : by.sequence !== undefined && !tx.TicketSequence && tx.Sequence === by.sequence;
+      if (hit) return { tx, hash: x.hash ?? tx.hash ?? '', result: x.meta?.TransactionResult ?? '' };
+    }
+    seen += (r.result.transactions ?? []).length;
+    marker = r.result.marker;
+  } while (marker && seen < maxTxs);
+  return null;
+}
+
+/** ¿La cuenta ya envió con éxito alguna transacción firmada con multifirma? (prueba del quórum) */
+export async function hasMultisigTx(net: NetworkId, address: string): Promise<boolean> {
+  const client = await getClient(net);
+  try {
+    const r: any = await client.request({ command: 'account_tx', account: address, limit: 200, api_version: 2 } as any);
+    return (r.result.transactions ?? []).some((x: any) => {
+      const tx = x.tx_json ?? x.tx ?? {};
+      return tx.Account === address && Array.isArray(tx.Signers) && tx.Signers.length > 0 && x.meta?.TransactionResult === 'tesSUCCESS';
+    });
+  } catch (e: any) {
+    if (e?.data?.error === 'actNotFound') return false;
+    throw e;
+  }
+}
+
 // ───────────────────────────── NFTs ─────────────────────────────
 
 export interface NftItem {

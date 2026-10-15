@@ -1128,4 +1128,7 @@ export const EN: Record<string, string> = {
   "Oferta de NFT": "NFT offer",
   "Ofrecida": "Offered",
   "Entregada": "Delivered",
+  "{n} NFTs hasta ahora · cargando más…": "{n} NFTs so far · loading more…",
+  "No se pudieron cargar todos los NFTs": "Not all NFTs could be loaded",
+  "La cuenta tiene más de {n} NFTs": "The account has more than {n} NFTs",
 };

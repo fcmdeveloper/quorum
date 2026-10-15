@@ -369,22 +369,41 @@ export function ipfsToHttp(u?: string, attempt = 0, order: number[] = gatewayOrd
   return t;
 }
 
-export async function fetchNfts(net: NetworkId, address: string): Promise<NftItem[]> {
-  const client = await getClient(net);
-  let r: any;
+const toNftItem = (n: any): NftItem => {
+  let uri: string | undefined;
   try {
-    r = await client.request({ command: 'account_nfts', account: address, limit: 100 } as any);
+    uri = n.URI ? convertHexToString(n.URI) : undefined;
+  } catch {}
+  return { id: n.NFTokenID, issuer: n.Issuer, taxon: n.NFTokenTaxon, serial: n.nft_serial, uri };
+};
+
+/** Una página de NFTs de la cuenta (hasta 400). `marker` sigue con la siguiente; sin marker no hay más. */
+export async function fetchNftsPage(net: NetworkId, address: string, marker?: unknown): Promise<{ items: NftItem[]; marker?: unknown }> {
+  const client = await getClient(net);
+  try {
+    const r: any = await client.request({ command: 'account_nfts', account: address, limit: 400, marker } as any);
+    return { items: (r.result.account_nfts ?? []).map(toNftItem), marker: r.result.marker };
   } catch (e: any) {
-    if (e?.data?.error === 'actNotFound') return [];
+    if (e?.data?.error === 'actNotFound') return { items: [] };
     throw e;
   }
-  return r.result.account_nfts.map((n: any) => {
-    let uri: string | undefined;
-    try {
-      uri = n.URI ? convertHexToString(n.URI) : undefined;
-    } catch {}
-    return { id: n.NFTokenID, issuer: n.Issuer, taxon: n.NFTokenTaxon, serial: n.nft_serial, uri };
-  });
+}
+
+/**
+ * Todos los NFTs de la cuenta, página por página. Si hay más de `max`, lanza un error en vez de
+ * devolver una lista incompleta: quien revisa si un NFT sigue en la cuenta no debe concluir
+ * "ya no está" solo porque quedó fuera de la primera página.
+ */
+export async function fetchNfts(net: NetworkId, address: string, max = 20_000): Promise<NftItem[]> {
+  const out: NftItem[] = [];
+  let marker: unknown;
+  do {
+    const page = await fetchNftsPage(net, address, marker);
+    out.push(...page.items);
+    marker = page.marker;
+    if (marker && out.length >= max) throw new Error(tl('La cuenta tiene más de {n} NFTs', { n: max }));
+  } while (marker);
+  return out;
 }
 
 function pickImage(j: any): string | undefined {

@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Dimensions, Linking, Modal, Pressable, ScrollView, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Dimensions, FlatList, Linking, Modal, Pressable, ScrollView, View, ViewToken } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state';
 import { useNav } from '../nav';
-import { Address, Badge, Button, Empty, Row, Screen, Txt } from '../ui/components';
+import { Address, Badge, Button, Empty, Notice, Row, Screen, Txt } from '../ui/components';
+import { locale, t } from '../i18n';
 import { C, R, SP } from '../ui/theme';
-import { NETWORKS, NftItem, fetchNfts } from '../core/network';
+import { NETWORKS, NftItem, fetchNftsPage } from '../core/network';
 import { loadMetaParallel, withCachedMeta } from '../core/nftCache';
 import { NftImage } from '../ui/NftImage';
 
@@ -19,62 +20,104 @@ export default function NftsScreen({ id }: { id: string }) {
   const nav = useNav();
   const a = app.accounts.find((x) => x.id === id)!;
   const [items, setItems] = useState<NftItem[] | null>(null);
+  const [complete, setComplete] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<NftItem | null>(null);
+  const alive = useRef(true);
+  const requested = useRef<Set<string>>(new Set());
+  const itemsRef = useRef<NftItem[]>([]);
 
+  // Cuentas con miles de NFTs: se leen página por página (400 cada una) y se van mostrando;
+  // la metadata e imagen solo se piden para lo que aparece en pantalla.
   useEffect(() => {
-    let alive = true;
+    alive.current = true;
     (async () => {
+      let marker: unknown;
       try {
-        const list = await fetchNfts(a.network, a.address);
-        // las imágenes ya conocidas aparecen al instante (caché); luego se completa el detalle
-        const { items: cached, pending } = await withCachedMeta(list);
-        if (!alive) return;
-        setItems(cached);
-        const rest = list.filter((n) => !pending.some((p) => p.id === n.id));
-        await loadMetaParallel(
-          [...pending, ...rest],
-          (r) => setItems((prev) => (prev ? prev.map((n) => (n.id === r.id ? r : n)) : prev)),
-          () => alive,
-          4,
-        );
+        do {
+          const page = await fetchNftsPage(a.network, a.address, marker);
+          const { items: withCache } = await withCachedMeta(page.items);
+          if (!alive.current) return;
+          itemsRef.current = [...itemsRef.current, ...withCache];
+          setItems(itemsRef.current);
+          marker = page.marker;
+        } while (marker && alive.current);
+        if (alive.current) setComplete(true);
       } catch (e: any) {
+        if (!alive.current) return;
         setErr(e.message);
-        setItems([]);
+        setItems(itemsRef.current);
+        setComplete(true);
       }
     })();
     return () => {
-      alive = false;
+      alive.current = false;
     };
   }, [id]);
 
+  const update = (r: NftItem) => {
+    itemsRef.current = itemsRef.current.map((n) => (n.id === r.id ? r : n));
+    setItems(itemsRef.current);
+  };
+
+  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const need = viewableItems
+      .map((v) => v.item as NftItem)
+      .filter((n) => n && !n.image && !requested.current.has(n.id));
+    if (!need.length) return;
+    need.forEach((n) => requested.current.add(n.id));
+    loadMetaParallel(need, update, () => alive.current, 4);
+  }).current;
+
+  const tile = useCallback(
+    ({ item: n }: { item: NftItem }) => (
+      <Pressable onPress={() => setOpen(n)} style={{ width: TILE }}>
+        <View style={{ width: TILE, height: TILE, borderRadius: R.md, backgroundColor: C.surface2, overflow: 'hidden', borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+          <NftImage src={n.image} />
+        </View>
+        <Txt v="body" numberOfLines={1} style={{ marginTop: 6 }}>
+          {n.name ?? `#${n.serial}`}
+        </Txt>
+        <Txt v="small" numberOfLines={1}>
+          {n.collection ?? `${n.issuer.slice(0, 6)}…`}
+        </Txt>
+      </Pressable>
+    ),
+    [],
+  );
+
+  const count = items?.length ?? 0;
   return (
-    <Screen title={`NFTs · ${a.label}`} onBack={nav.pop}>
+    <Screen title={`NFTs · ${a.label}`} onBack={nav.pop} scroll={false} padded={false}>
       {items === null ? (
-        <Txt v="small">Buscando NFTs…</Txt>
-      ) : items.length === 0 ? (
-        <Empty icon="image" title="Sin NFTs" text={err ?? 'Esta cuenta no tiene NFTs del XRP Ledger.'} />
+        <View style={{ padding: SP.lg }}>
+          <Txt v="small">Buscando NFTs…</Txt>
+        </View>
+      ) : count === 0 ? (
+        <View style={{ padding: SP.lg }}>
+          <Empty icon="image" title="Sin NFTs" text={err ?? 'Esta cuenta no tiene NFTs del XRP Ledger.'} />
+        </View>
       ) : (
-        <>
-          <Txt v="small" style={{ marginBottom: SP.md }}>
-            {items.length} NFT{items.length === 1 ? '' : 's'}
-          </Txt>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SP.md }}>
-            {items.map((n) => (
-              <Pressable key={n.id} onPress={() => setOpen(n)} style={{ width: TILE }}>
-                <View style={{ width: TILE, height: TILE, borderRadius: R.md, backgroundColor: C.surface2, overflow: 'hidden', borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
-                  <NftImage src={n.image} />
-                </View>
-                <Txt v="body" numberOfLines={1} style={{ marginTop: 6 }}>
-                  {n.name ?? `#${n.serial}`}
-                </Txt>
-                <Txt v="small" numberOfLines={1}>
-                  {n.collection ?? `${n.issuer.slice(0, 6)}…`}
-                </Txt>
-              </Pressable>
-            ))}
-          </View>
-        </>
+        <FlatList
+          data={items}
+          keyExtractor={(n) => n.id}
+          renderItem={tile}
+          numColumns={2}
+          columnWrapperStyle={{ gap: SP.md }}
+          contentContainerStyle={{ padding: SP.lg, gap: SP.md, paddingBottom: 80 }}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews
+          onViewableItemsChanged={onViewable}
+          viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
+          ListHeaderComponent={
+            <Txt v="small">
+              {complete ? t('{n} NFTs', { n: count.toLocaleString(locale()) }) : t('{n} NFTs hasta ahora · cargando más…', { n: count.toLocaleString(locale()) })}
+            </Txt>
+          }
+          ListFooterComponent={err && count ? <Notice kind="warn">{t('No se pudieron cargar todos los NFTs')}</Notice> : null}
+        />
       )}
 
       <Modal visible={!!open} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(null)}>

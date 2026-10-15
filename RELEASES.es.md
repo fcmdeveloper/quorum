@@ -15,7 +15,7 @@ Cada registro es un memo cuyo **MemoData** es texto UTF-8: una palabra clave, un
 La envía **la propia** cuenta Releases (un `AccountSet` sin flags que solo lleva el memo), así que solo existe cuando firmó el quórum del Consejo.
 
 ```
-quorum.release {"v":"1.0.0","build":1,"platform":"ios","commit":"2c18196618c4f8f00d13a367010cbd5aeba4a5e3","app":"sha256:73880f90328d09de2e9a05160d4837cd6749090c8717282144e11d88513fb90d","js":"sha256:2d962e5d2fc4e39719d82c93bf3269041c12b1672280edebea8661c988cde030"}
+quorum.release {"v":"1.0.0","build":1,"platform":"ios","commit":"bdc12e1308fcd7c8e57820cd0ed999cbe5604c37","app":"sha256:42d967643abc58e130fefb109e55f6f9e9139984c4b084ca9ac05a56ba9045da","js":"sha256:b391463d9c7dc4f294389a01fc775fcca664273444ffaf923ee145072d7127c4"}
 ```
 
 | Campo | Significado |
@@ -34,7 +34,7 @@ Las dos huellas son las que muestra `scripts/verify-release.sh v<versión>`.
 Se envía **a** la cuenta Releases desde cualquier cuenta, con cualquier monto (basta 1 drop).
 
 ```
-quorum.attest {"release":"1.0.0","commit":"2c18196","app":"sha256:73880f90","result":"pass"}
+quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:42d96764","result":"pass"}
 ```
 
 | Campo | Significado |

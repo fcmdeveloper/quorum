@@ -53,12 +53,12 @@ El script baja ese tag en una carpeta temporal limpia, instala las dependencias 
 
 ```
 Quorum 1.0.0 (1)
-commit    2c18196618c4f8f00d13a367010cbd5aeba4a5e3
-app code  sha256:73880f90328d09de2e9a05160d4837cd6749090c8717282144e11d88513fb90d
-js source sha256:2d962e5d2fc4e39719d82c93bf3269041c12b1672280edebea8661c988cde030
+commit    bdc12e1308fcd7c8e57820cd0ed999cbe5604c37
+app code  sha256:42d967643abc58e130fefb109e55f6f9e9139984c4b084ca9ac05a56ba9045da
+js source sha256:b391463d9c7dc4f294389a01fc775fcca664273444ffaf923ee145072d7127c4
 ```
 
-*(Salida de ejemplo. Los números que valen son los tuyos.)*
+*(Salida real de la 1.0.0. Córrelo tú: los números que valen son los tuyos.)*
 
 La primera vez toma unos minutos. El script solo lee el repositorio; no toca tus otros archivos.
 
@@ -102,13 +102,13 @@ En testnet, sin fondos reales:
 Envía **1 drop (0,000001 XRP)** a la cuenta Quorum Releases con este **memo**, como texto:
 
 ```
-quorum.attest {"release":"1.0.0","commit":"2c18196","app":"sha256:73880f90","result":"pass"}
+quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:42d96764","result":"pass"}
 ```
 
 - `commit` y `app`: bastan los primeros caracteres (7 del commit, 8 de la huella).
 - Si algo no coincidió o no funcionó, regístralo igual. **Un fail vale tanto como un pass:**
   ```
-  quorum.attest {"release":"1.0.0","commit":"2c18196","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
+  quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
   ```
   Después abre un hilo en [Discussions › Validators](https://github.com/fcmdeveloper/quorum/discussions/categories/validators) con tu salida para que otros puedan reproducirlo.
 

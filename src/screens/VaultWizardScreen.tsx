@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { isValidClassicAddress } from 'ripple-address-codec';
 import { useApp } from '../state';
 import { useNav } from '../nav';
+import { useAddressScanner } from '../ui/ScanView';
 import { Badge, BusySheet, Button, Card, Field, ListItem, Notice, QuorumRing, Screen, Segmented, Stepper, Txt, success, warnBuzz } from '../ui/components';
 import { C, SP } from '../ui/theme';
 import { NetworkId, fetchAccountState, fetchReserves, fundTestnet } from '../core/network';
@@ -29,6 +30,7 @@ interface Pick {
 export default function VaultWizardScreen({ id }: { id?: string }) {
   const app = useApp();
   const nav = useNav();
+  const scanner = useAddressScanner();
   const found = id ? app.accounts.find((a) => a.id === id) : undefined;
   // Una bóveda creada en Quorum que aún no tiene firmantes retoma la configuración completa.
   const resuming = !!found && found.origin === 'quorum' && !app.stateOf(found)?.signerList;
@@ -515,9 +517,12 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
               onChangeText={setExtAddr}
               placeholder="r…"
               right={
-                <Pressable style={{ padding: 6 }} onPress={() => nav.push('scan', { purpose: 'address', onAddress: (a: string) => setExtAddr(a) })}>
-                  <Feather name="maximize" size={18} color={C.green} />
-                </Pressable>
+                <>
+                  <Pressable style={{ padding: 6 }} onPress={() => scanner.open((a: string) => setExtAddr(a))}>
+                    <Feather name="maximize" size={18} color={C.green} />
+                  </Pressable>
+                  {scanner.modal}
+                </>
               }
             />
             <Button

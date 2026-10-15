@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Animated, Modal, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -252,6 +252,12 @@ function Shell() {
   const app = useApp();
   const nav = useNav();
   const lock = useAppLock(app.settings.lockEnabled && app.settings.onboarded, app.ready, app.settings.lockAfterSec ?? 0, !!app.busy);
+  // Las pantallas siguen montadas bajo el bloqueo: al desbloquear se actualizan los saldos.
+  const wasLocked = React.useRef(false);
+  React.useEffect(() => {
+    if (wasLocked.current && !lock.locked && app.ready) app.refreshAll();
+    wasLocked.current = lock.locked;
+  }, [lock.locked]);
 
   // Apariencia e idioma: se aplican antes de dibujar; al cambiar, `uiKey` vuelve a montar las
   // pantallas (sin perder la navegación ni el desbloqueo) para que tomen colores y textos nuevos.
@@ -278,32 +284,43 @@ function Shell() {
     );
   }
   if (!app.settings.onboarded) return <View key={uiKey} style={{ flex: 1 }}>{bar}<Onboarding /></View>;
-  if (lock.locked) return <View key={uiKey} style={{ flex: 1 }}>{bar}<LockScreen onUnlock={lock.unlock} /></View>;
-  if ((app.settings.termsAccepted ?? 0) < TERMS_VERSION) return <View key={uiKey} style={{ flex: 1 }}>{bar}<TermsScreen /></View>;
+  // El bloqueo va como capa encima de la app, no en su lugar: así lo que estabas haciendo
+  // (un formulario a medio llenar, los firmantes elegidos) sigue ahí al desbloquear.
+  // Es un Modal para quedar también por encima de otras ventanas abiertas (escáner, números secretos).
+  const hidden = lock.locked ? { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const } : {};
+  const lockLayer = (
+    <Modal visible={lock.locked} transparent animationType="none" statusBarTranslucent onRequestClose={() => {}}>
+      {lock.locked ? <LockScreen onUnlock={lock.unlock} /> : null}
+    </Modal>
+  );
+  if ((app.settings.termsAccepted ?? 0) < TERMS_VERSION) return <View key={uiKey} style={{ flex: 1 }}>{bar}<View style={{ flex: 1 }} {...hidden}><TermsScreen /></View>{lockLayer}</View>;
   // recordatorio mensual: se decide al abrir la app (no interrumpe una operación en curso)
-  if (reviewDue.current && needsReview(app.settings, Date.now())) return <View key={uiKey} style={{ flex: 1 }}>{bar}<ReminderScreen /></View>;
+  if (reviewDue.current && needsReview(app.settings, Date.now())) return <View key={uiKey} style={{ flex: 1 }}>{bar}<View style={{ flex: 1 }} {...hidden}><ReminderScreen /></View>{lockLayer}</View>;
 
   const top = nav.stack[nav.stack.length - 1];
   return (
     <View key={uiKey} style={{ flex: 1, backgroundColor: C.bg }}>
       {bar}
-      {top ? (
-        <SlideIn k={`${nav.stack.length}:${top.name}`} depth={nav.stack.length} onBack={nav.pop}>
-          <RouteView r={top} />
-        </SlideIn>
-      ) : (
-        <>
-          <View style={{ flex: 1 }}>
-            {nav.tab === 'home' && <HomeScreen />}
-            {nav.tab === 'activity' && <ActivityScreen />}
-            {nav.tab === 'proposals' && <ProposalsScreen />}
-            {nav.tab === 'settings' && <SettingsScreen />}
-          </View>
-          <TabBar />
-        </>
-      )}
-      <OfflineBanner onBackOnline={app.refreshAll} />
-      <ToastHost />
+      <View style={{ flex: 1 }} {...hidden}>
+        {top ? (
+          <SlideIn k={`${nav.stack.length}:${top.name}`} depth={nav.stack.length} onBack={nav.pop}>
+            <RouteView r={top} />
+          </SlideIn>
+        ) : (
+          <>
+            <View style={{ flex: 1 }}>
+              {nav.tab === 'home' && <HomeScreen />}
+              {nav.tab === 'activity' && <ActivityScreen />}
+              {nav.tab === 'proposals' && <ProposalsScreen />}
+              {nav.tab === 'settings' && <SettingsScreen />}
+            </View>
+            <TabBar />
+          </>
+        )}
+        <OfflineBanner onBackOnline={app.refreshAll} />
+        <ToastHost />
+      </View>
+      {lockLayer}
     </View>
   );
 }

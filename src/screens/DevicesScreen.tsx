@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { isValidClassicAddress } from 'ripple-address-codec';
 import { useApp } from '../state';
 import { useNav } from '../nav';
+import { useAddressScanner } from '../ui/ScanView';
 import { Address, Badge, BusySheet, Button, Card, Empty, Field, ListItem, Notice, Screen, Section, Txt, success, toast } from '../ui/components';
 import { C, F, SP } from '../ui/theme';
 import { KIND_LABEL, LEDGER_XRP_PATH, SignerDevice, SignerKind } from '../signers/types';
@@ -159,6 +160,7 @@ function AddressBalances({ address }: { address: string }) {
 export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
   const app = useApp();
   const nav = useNav();
+  const scanner = useAddressScanner();
   const count = app.devices.filter((d) => d.kind === kind).length + 1;
   const [label, setLabel] = useState(`${KIND_LABEL[kind]} ${count}`);
   const [busy, setBusy] = useState<string | null>(null);
@@ -350,9 +352,12 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
             onChangeText={setAddr}
             placeholder="r…"
             right={
-              <Pressable style={{ padding: 6 }} onPress={() => nav.push('scan', { purpose: 'address', onAddress: (a: string) => setAddr(a) })}>
-                <Feather name="maximize" size={18} color={C.green} />
-              </Pressable>
+              <>
+                <Pressable style={{ padding: 6 }} onPress={() => scanner.open((a: string) => setAddr(a))}>
+                  <Feather name="maximize" size={18} color={C.green} />
+                </Pressable>
+                {scanner.modal}
+              </>
             }
           />
           {isValidClassicAddress(addr.trim()) && <AddressBalances address={addr.trim()} />}

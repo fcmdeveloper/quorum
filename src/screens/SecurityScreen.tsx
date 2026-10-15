@@ -4,6 +4,7 @@ import { Alert, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state';
 import { useNav } from '../nav';
+import { useAddressScanner } from '../ui/ScanView';
 import { proposalFailed } from '../ui/proposalError';
 import { Badge, Button, Card, ListItem, Notice, QuorumRing, Screen, Section, Txt, toast } from '../ui/components';
 import { C, SP } from '../ui/theme';
@@ -13,6 +14,7 @@ import { buildDisableMaster, buildRemoveRegularKey, buildSetFlag, buildTicketCre
 export default function SecurityScreen({ id }: { id: string }) {
   const app = useApp();
   const nav = useNav();
+  const scanner = useAddressScanner();
   const a = app.accounts.find((x) => x.id === id)!;
   const st = app.stateOf(a);
   const h = vaultHealth(st);
@@ -164,14 +166,12 @@ export default function SecurityScreen({ id }: { id: string }) {
             kind="secondary"
             icon="plus"
             onPress={() =>
-              nav.push('scan', {
-                purpose: 'address',
-                onAddress: (addr: string) => {
-                  if (!(a.allowed ?? []).includes(addr)) app.updateAccount(a.id, { allowed: [...(a.allowed ?? []), addr] });
-                },
+              scanner.open((addr: string) => {
+                if (!(a.allowed ?? []).includes(addr)) app.updateAccount(a.id, { allowed: [...(a.allowed ?? []), addr] });
               })
             }
           />
+          {scanner.modal}
         </Card>
       </Section>
 

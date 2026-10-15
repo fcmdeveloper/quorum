@@ -6,6 +6,7 @@ import { isValidClassicAddress } from 'ripple-address-codec';
 import { lookalikeOf, trustedAddresses } from '../core/lookalike';
 import { useApp } from '../state';
 import { useNav } from '../nav';
+import { useAddressScanner } from '../ui/ScanView';
 import { proposalFailed } from '../ui/proposalError';
 import { useMoney } from '../ui/money';
 import { AmountInput, Badge, Button, Card, Field, ListItem, Notice, Screen, Segmented, Txt, warnBuzz } from '../ui/components';
@@ -20,6 +21,7 @@ const KNOWN_EXCHANGE_HINT = 'Si envías a un exchange, el destination tag es obl
 export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: string; to?: string; tag?: string; asset?: string }) {
   const app = useApp();
   const nav = useNav();
+  const scanner = useAddressScanner();
   const m = useMoney();
   const a = app.accounts.find((x) => x.id === id)!;
   const st = app.stateOf(a);
@@ -129,17 +131,15 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: s
               style={{ padding: 6 }}
               accessibilityLabel="Escanear"
               onPress={() =>
-                nav.push('scan', {
-                  purpose: 'address',
-                  onAddress: (addr: string, t?: string) => {
-                    setDest(addr);
-                    if (t) setTag(t);
-                  },
+                scanner.open((addr: string, t?: string) => {
+                  setDest(addr);
+                  if (t) setTag(t);
                 })
               }
             >
               <Feather name="maximize" size={18} color={C.green} />
             </Pressable>
+            {scanner.modal}
           </View>
         }
       />

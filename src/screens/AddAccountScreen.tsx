@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { isValidClassicAddress } from 'ripple-address-codec';
 import { useApp } from '../state';
 import { useNav } from '../nav';
+import { useAddressScanner } from '../ui/ScanView';
 import { Button, Card, Field, ListItem, Screen, Segmented, Txt } from '../ui/components';
 import { C, SP } from '../ui/theme';
 import { NetworkId, fetchAccountState } from '../core/network';
@@ -13,6 +14,7 @@ import { DEVICE_ICON } from './DevicesScreen';
 export default function AddAccountScreen() {
   const app = useApp();
   const nav = useNav();
+  const scanner = useAddressScanner();
   const [network, setNetwork] = useState<NetworkId>('testnet');
   const [mode, setMode] = useState<'device' | 'address'>('device');
   const [addr, setAddr] = useState('');
@@ -86,9 +88,12 @@ export default function AddAccountScreen() {
             onChangeText={setAddr}
             placeholder="r…"
             right={
-              <Pressable style={{ padding: 6 }} onPress={() => nav.push('scan', { purpose: 'address', onAddress: (a: string) => setAddr(a) })}>
-                <Feather name="maximize" size={18} color={C.green} />
-              </Pressable>
+              <>
+                <Pressable style={{ padding: 6 }} onPress={() => scanner.open((a: string) => setAddr(a))}>
+                  <Feather name="maximize" size={18} color={C.green} />
+                </Pressable>
+                {scanner.modal}
+              </>
             }
           />
           <Button title="Agregar" busy={busy} disabled={!isValidClassicAddress(addr.trim()) || !label.trim()} onPress={() => add(addr.trim(), label.trim())} />

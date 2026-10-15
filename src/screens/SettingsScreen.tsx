@@ -7,6 +7,7 @@ import { isValidClassicAddress } from 'ripple-address-codec';
 import Constants from 'expo-constants';
 import { useApp } from '../state';
 import { useNav } from '../nav';
+import { useAddressScanner } from '../ui/ScanView';
 import { Button, Card, Field, ListItem, Logo, Notice, Screen, Section, Segmented, Txt, toast } from '../ui/components';
 import { C, SP } from '../ui/theme';
 import { FIATS, Fiat } from '../core/market';
@@ -276,6 +277,7 @@ export default function SettingsScreen() {
 export function ContactsScreen() {
   const app = useApp();
   const nav = useNav();
+  const scanner = useAddressScanner();
   const [label, setLabel] = useState('');
   const [addr, setAddr] = useState('');
   const [tag, setTag] = useState('');
@@ -289,20 +291,20 @@ export function ContactsScreen() {
           onChangeText={setAddr}
           placeholder="r…"
           right={
-            <Pressable
-              style={{ padding: 6 }}
-              onPress={() =>
-                nav.push('scan', {
-                  purpose: 'address',
-                  onAddress: (a: string, t?: string) => {
+            <>
+              <Pressable
+                style={{ padding: 6 }}
+                onPress={() =>
+                  scanner.open((a: string, t?: string) => {
                     setAddr(a);
                     if (t) setTag(t);
-                  },
-                })
-              }
-            >
-              <Feather name="maximize" size={18} color={C.green} />
-            </Pressable>
+                  })
+                }
+              >
+                <Feather name="maximize" size={18} color={C.green} />
+              </Pressable>
+              {scanner.modal}
+            </>
           }
         />
         <Field label="Destination tag (opcional)" value={tag} onChangeText={setTag} keyboardType="number-pad" />

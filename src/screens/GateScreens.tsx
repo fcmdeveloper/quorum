@@ -127,7 +127,8 @@ export function useAppLock(enabled: boolean, ready: boolean, graceSec = 0, suspe
       }, 800);
     }
   };
-  return { locked, unlock };
+  // Al abrir la app el bloqueo vale desde el primer dibujo (el efecto de arriba llega un cuadro tarde).
+  return { locked: locked || (ready && enabled && !lockedAtLaunch.current), unlock };
 }
 
 export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<void>) => void }) {

@@ -16,7 +16,7 @@ export type Route =
   | { name: 'addDevice'; params: { kind: 'tangem' | 'ledger' | 'xaman' } }
   | { name: 'proposal'; params: { id: string } }
   | { name: 'showQr'; params: { id: string } }
-  | { name: 'scan'; params: { purpose: 'any' | 'address'; onAddress?: (a: string, tag?: string) => void } }
+  | { name: 'scan'; params: { purpose: 'any' } }
   | { name: 'contacts'; params: {} }
   | { name: 'about'; params: {} }
   | { name: 'verify'; params: {} }

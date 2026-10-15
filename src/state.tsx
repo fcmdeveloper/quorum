@@ -72,7 +72,7 @@ interface AppCtx {
   deviceFor: (address: string) => SignerDevice | undefined;
   accountFor: (net: NetworkId, address: string) => Account | undefined;
   createProposal: (a: Account, tx: TxJson, opts?: { mode?: 'multi' | 'single'; note?: string }) => Promise<Proposal>;
-  importQr: (text: string) => Promise<{ proposal: Proposal; added: number; isNew: boolean }>;
+  importQr: (text: string, meta?: { from?: string; note?: string }) => Promise<{ proposal: Proposal; added: number; isNew: boolean }>;
   signProposal: (id: string, device: SignerDevice) => Promise<void>;
   /** Firma simple con los números secretos de una bóveda creada en Quorum (no se guardan). */
   signProposalWithSecret: (id: string, rows: string[]) => Promise<void>;
@@ -424,7 +424,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const importQr = useCallback(
-    async (text: string) => {
+    async (text: string, meta?: { from?: string; note?: string }) => {
       const d = decodeProposalQr(text);
       const existing = pRef.current.find((p) => p.id === d.id);
       const acc = accounts.find((a) => a.network === d.network && a.address === d.tx.Account);
@@ -435,7 +435,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const before = existing.signatures.length;
         const sigs = mergeSigs(existing.signatures, d.signatures);
         const status = existing.status === 'submitted' ? 'submitted' : statusFor(existing, sigs);
-        const upd: Proposal = { ...existing, signatures: sigs, status };
+        const upd: Proposal = { ...existing, signatures: sigs, status, sharedFrom: existing.sharedFrom ?? meta?.from, sharedNote: existing.sharedNote ?? meta?.note };
         await persistProposals(pRef.current.map((p) => (p.id === existing.id ? upd : p)));
         return { proposal: upd, added: sigs.length - before, isNew: false };
       }
@@ -448,6 +448,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         tx: d.tx,
         signatures: d.signatures,
         status: 'collecting',
+        sharedFrom: meta?.from,
+        sharedNote: meta?.note,
       };
       const p = { ...base, status: statusFor(base, d.signatures) };
       await persistProposals([p, ...pRef.current]);

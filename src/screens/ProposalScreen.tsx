@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { t } from '../i18n';
-import { Alert, Linking, View } from 'react-native';
+import { Alert, Linking, Share, View } from 'react-native';
 import { useApp, signedWeight } from '../state';
 import { useNav } from '../nav';
 import { useMoney } from '../ui/money';
-import { Badge, BusySheet, Button, Card, Check, ListItem, Notice, QuorumRing, Row, Screen, Txt, success, warnBuzz } from '../ui/components';
+import { Badge, BusySheet, Button, Card, Check, Field, ListItem, Notice, QuorumRing, Row, Screen, Txt, success, warnBuzz } from '../ui/components';
+import { QUORUM } from '../config';
+import { encodeProposalQr } from '../core/qr';
+import { MAX_FROM, MAX_NOTE, proposalLink, shareMessage } from '../core/share';
 import { C, SP } from '../ui/theme';
 import { describeTx } from '../core/tx';
 import { NETWORKS, currentLedger } from '../core/network';
@@ -59,6 +62,7 @@ export default function ProposalScreen({ id }: { id: string }) {
   const p = app.proposals.find((x) => x.id === id);
   const [err, setErr] = useState<string | null>(null);
   const [left, setLeft] = useState<number | null>(null); // minutos aprox. antes de vencer
+  const [shareNote, setShareNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!p?.tx.LastLedgerSequence || !(p.status === 'collecting' || p.status === 'ready')) return;
@@ -160,6 +164,25 @@ export default function ProposalScreen({ id }: { id: string }) {
       },
     ]);
 
+  const share = async () => {
+    const qr = encodeProposalQr(p.network, p.tx, p.signatures);
+    const note = shareNote ?? p.sharedNote ?? (p.note && p.note !== p.sharedNote ? t(p.note) : undefined);
+    const shared = { qr, from: app.settings.shareName, note };
+    const link = proposalLink(QUORUM.website, shared);
+    const details = d.lines
+      .filter(([k]) => k === 'Destino' || k === 'Monto' || k === 'NFT' || k === 'Quórum')
+      .map(([k, v]) => [t(k), /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(v) ? `${v.slice(0, 6)}…${v.slice(-4)}` : v] as [string, string]);
+    const message = shareMessage(
+      shared,
+      { title: t(d.title), details, account: acc?.label ?? `${p.account.slice(0, 6)}…${p.account.slice(-4)}`, testnet: p.network === 'testnet', signed: weight, needed: quorum, minutesLeft: left },
+      link,
+      t,
+    );
+    try {
+      await Share.share({ message });
+    } catch {}
+  };
+
   return (
     <Screen title="Operación" onBack={nav.pop}>
       <BusySheet visible={!!app.busy} text={app.busy ?? ''} />
@@ -179,6 +202,14 @@ export default function ProposalScreen({ id }: { id: string }) {
           {p.network === 'testnet' && <Badge text="Testnet" color={C.test} />}
         </View>
       </View>
+
+      {p.sharedNote || p.sharedFrom ? (
+        <Notice kind="info">
+          {p.sharedNote ? t('Motivo: «{x}»', { x: p.sharedNote }) + '\n' : ''}
+          {p.sharedFrom ? t('Enviada por «{x}».', { x: p.sharedFrom }) + ' ' : ''}
+          {t('Es una nota de quien la compartió y no está verificada: revisa abajo qué hace la operación antes de firmar.')}
+        </Notice>
+      ) : null}
 
       {p.tx.TransactionType === 'Payment' && typeof p.tx.Amount === 'string' && (
         <Card style={{ alignItems: 'center' }}>
@@ -241,11 +272,28 @@ export default function ProposalScreen({ id }: { id: string }) {
         <Card style={{ marginTop: SP.md }}>
           <Txt v="h3">¿Un firmante está en otro teléfono?</Txt>
           <Txt v="small" style={{ marginTop: 4 }}>
-            Muéstrale este QR. Quorum en ese teléfono lo escanea, firma con su dispositivo y te muestra otro QR con su firma: escanéalo aquí. Sin internet y sin servidores.
+            En persona: muéstrale el QR. A distancia: compártela por WhatsApp, Telegram o correo. En su Quorum la abre, firma con su dispositivo y te devuelve su firma de la misma forma. Sin servidores: el enlace solo lleva la operación y firmas públicas.
           </Txt>
           <View style={{ flexDirection: 'row', gap: SP.md }}>
             <Button title="Mostrar QR" icon="grid" kind="secondary" style={{ flex: 1 }} onPress={() => nav.push('showQr', { id: p.id })} />
             <Button title="Escanear firma" icon="maximize" kind="secondary" style={{ flex: 1 }} onPress={() => nav.push('scan', { purpose: 'any' })} />
+          </View>
+          <View style={{ marginTop: SP.lg }}>
+            <Field
+              label="Tu nombre (opcional)"
+              value={app.settings.shareName ?? ''}
+              onChangeText={(v) => app.updateSettings({ shareName: v.slice(0, MAX_FROM) })}
+              placeholder="Felipe"
+              autoCapitalize="words"
+            />
+            <Field
+              label="Motivo (opcional)"
+              value={shareNote ?? p.sharedNote ?? (p.note && p.note !== p.sharedNote ? t(p.note) : '')}
+              onChangeText={(v) => setShareNote(v.slice(0, MAX_NOTE))}
+              placeholder={t('Pago proveedor de octubre')}
+              autoCapitalize="sentences"
+            />
+            <Button title="Compartir para firmar" icon="share-2" onPress={share} />
           </View>
         </Card>
       )}

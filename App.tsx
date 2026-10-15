@@ -19,6 +19,7 @@ import { patchAlert } from './src/i18n/alert';
 patchAlert();
 import { ToastHost, tap } from './src/ui/components';
 import { OfflineBanner } from './src/ui/OfflineBanner';
+import { useIncomingProposalLinks } from './src/ui/incomingLinks';
 import { Glass, hasGlass, setNativeSelectors } from './src/ui/Glass';
 import HomeScreen from './src/screens/HomeScreen';
 import AccountScreen from './src/screens/AccountScreen';
@@ -252,6 +253,8 @@ function Shell() {
   const app = useApp();
   const nav = useNav();
   const lock = useAppLock(app.settings.lockEnabled && app.settings.onboarded, app.ready, app.settings.lockAfterSec ?? 0, !!app.busy);
+  // Operaciones compartidas por enlace: se abren cuando la app está lista y el aviso aceptado.
+  useIncomingProposalLinks(app.ready && app.settings.onboarded && (app.settings.termsAccepted ?? 0) >= TERMS_VERSION);
   // Las pantallas siguen montadas bajo el bloqueo: al desbloquear se actualizan los saldos.
   const wasLocked = React.useRef(false);
   React.useEffect(() => {

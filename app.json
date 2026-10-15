@@ -25,6 +25,9 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
+      "associatedDomains": [
+        "applinks:quorumxrpl.com"
+      ],
       "entitlements": {
         "com.apple.developer.nfc.readersession.formats": [
           "TAG"

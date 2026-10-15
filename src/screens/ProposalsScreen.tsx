@@ -2,7 +2,10 @@ import React from 'react';
 import { View } from 'react-native';
 import { useApp, signedWeight } from '../state';
 import { useNav } from '../nav';
-import { Badge, Button, Card, Empty, ListItem, Screen, Section, Txt } from '../ui/components';
+import { Badge, Button, Card, Empty, ListItem, Screen, Section, Txt, toast } from '../ui/components';
+import * as Clipboard from 'expo-clipboard';
+import { t } from '../i18n';
+import { parseSharedProposal } from '../core/share';
 import { C, SP } from '../ui/theme';
 import { describeTx } from '../core/tx';
 import { STATUS } from './ProposalScreen';
@@ -31,15 +34,31 @@ export default function ProposalsScreen() {
     );
   };
 
+  // Operación compartida por mensaje: se copia el enlace (o el mensaje completo) y se pega aquí.
+  const paste = async () => {
+    const s = parseSharedProposal(await Clipboard.getStringAsync().catch(() => ''));
+    if (!s) return toast('No hay un enlace de operación de Quorum copiado', 'warn');
+    try {
+      const r = await app.importQr(s.qr, { from: s.from, note: s.note });
+      toast(r.isNew ? 'Operación recibida' : r.added > 0 ? r.added > 1 ? t('{n} firmas agregadas', { n: r.added }) : t('1 firma agregada') : 'Sin firmas nuevas', r.added > 0 || r.isNew ? 'ok' : 'warn');
+      nav.push('proposal', { id: r.proposal.id });
+    } catch (e: any) {
+      toast(e?.message ?? String(e), 'bad');
+    }
+  };
+
   return (
     <Screen>
       <Txt v="h1" style={{ marginBottom: SP.sm }}>
         Firmas
       </Txt>
       <Txt v="small" style={{ marginBottom: SP.lg }}>
-        Operaciones de tus bóvedas que esperan firmas. Para firmar algo que viene de otro teléfono, escanea su QR.
+        Operaciones de tus bóvedas que esperan firmas. Para firmar algo que viene de otro teléfono, escanea su QR o abre el enlace que te enviaron.
       </Txt>
-      <Button title="Escanear QR de operación" icon="maximize" onPress={() => nav.push('scan', { purpose: 'any' })} />
+      <View style={{ flexDirection: 'row', gap: SP.md }}>
+        <Button title="Escanear QR" icon="maximize" style={{ flex: 1 }} onPress={() => nav.push('scan', { purpose: 'any' })} />
+        <Button title="Pegar enlace" icon="clipboard" kind="secondary" style={{ flex: 1 }} onPress={paste} />
+      </View>
       {pending.length === 0 ? (
         <Empty icon="check-circle" title="Nada pendiente" text="Cuando una bóveda necesite firmas, aparecerá aquí." />
       ) : (

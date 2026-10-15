@@ -73,6 +73,8 @@ export interface Settings {
   /** Último respaldo exportado (ms) y huella de la configuración en ese momento. */
   backupAt?: number;
   backupHash?: string;
+  /** Nombre que aparece al compartir una operación por mensaje (opcional, solo en este teléfono). */
+  shareName?: string;
 }
 
 export type ProposalStatus = 'collecting' | 'ready' | 'submitted' | 'failed' | 'expired';
@@ -92,6 +94,9 @@ export interface Proposal {
   /** Mensaje del nodo cuando la red la rechazó sin validarla. */
   resultMessage?: string;
   note?: string;
+  /** Recibida por enlace: quién la compartió y su motivo, tal como los escribió esa persona (no verificados). */
+  sharedFrom?: string;
+  sharedNote?: string;
 }
 
 const K = {

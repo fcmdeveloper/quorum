@@ -306,6 +306,12 @@ export default function AccountScreen({ id }: { id: string }) {
         </Card>
       )}
 
+      {isVault && list && !list.entries.some((e) => app.deviceFor(e.account)) && (
+        <Card style={{ marginTop: SP.lg }}>
+          <ListItem icon="eye" title="Solo lectura" subtitle="Ninguno de sus firmantes está en este teléfono. Puedes ver la bóveda y recibir; para firmar, registra aquí uno de sus dispositivos." />
+        </Card>
+      )}
+
       {!isVault && (
         <Card style={{ marginTop: SP.lg }}>
           <ListItem

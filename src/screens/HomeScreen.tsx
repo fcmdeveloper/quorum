@@ -319,6 +319,8 @@ function VaultCard({ a }: { a: Account }) {
   const c = accountColor(a.color);
   const bal = useBalance(a);
   const pend = app.proposals.filter((p) => p.account === a.address && p.network === a.network && p.status === 'collecting');
+  // Cuántos de sus firmantes están en este teléfono (0: solo lectura, como una cuenta sin llave).
+  const here = list ? list.entries.filter((e) => app.deviceFor(e.account)).length : app.deviceFor(a.address) ? 1 : 0;
   return (
     <Card onPress={() => nav.push('account', { id: a.id })} style={{ padding: SP.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.lg }}>
@@ -343,6 +345,9 @@ function VaultCard({ a }: { a: Account }) {
             {list ? <Txt v="small">{t('{n} de {m} firmas', { n: minSigners(list), m: list.entries.length })}</Txt> : null}
             {pend.length ? <Badge text={t('{n} por firmar', { n: pend.length })} color={C.warn} icon="edit-3" /> : null}
           </View>
+          {st ? (
+            <Txt v="small">{here === 0 ? 'Solo lectura' : list ? t('Firmantes en este teléfono: {n} de {m}', { n: here, m: list.entries.length }) : null}</Txt>
+          ) : null}
         </View>
       </View>
     </Card>

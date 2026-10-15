@@ -138,6 +138,9 @@ export default function AboutScreen() {
       <Txt v="small" style={{ textAlign: 'center', marginTop: SP.xl }}>
         Hecho en Chile por {QUORUM.publisher}.
       </Txt>
+      <Txt v="small" style={{ textAlign: 'center', marginTop: SP.sm, fontSize: 12 }}>
+        {t('Quorum no está afiliado a Ripple, la XRPL Foundation, Tangem, Ledger ni Xaman; sus nombres y marcas pertenecen a sus dueños. El símbolo de XRP es de uso libre para la comunidad.')}
+      </Txt>
     </Screen>
   );
 }

@@ -1213,4 +1213,5 @@ export const EN: Record<string, string> = {
   "Cuenta agregada": "Account added",
   "Bóveda creada": "Vault created",
   "iOS no pudo cambiar el ícono ahora. Intenta de nuevo en un momento; si sigue, reinicia el teléfono.": "iOS couldn't change the icon right now. Try again in a moment; if it persists, restart your phone.",
+  "Quorum no está afiliado a Ripple, la XRPL Foundation, Tangem, Ledger ni Xaman; sus nombres y marcas pertenecen a sus dueños. El símbolo de XRP es de uso libre para la comunidad.": "Quorum is not affiliated with Ripple, the XRPL Foundation, Tangem, Ledger or Xaman; their names and marks belong to their owners. The XRP symbol is free for the community to use.",
 };

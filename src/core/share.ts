@@ -1,7 +1,7 @@
 /**
  * Compartir una operación por WhatsApp, Telegram, correo, etc. (además del QR en persona).
  *
- * El enlace lleva la operación DESPUÉS del `#`: https://quorumxrpl.com/p#q=QRM1…&f=Felipe&n=Pago
+ * El enlace lleva la operación DESPUÉS del `#`: https://quorumxrpl.com/p#q=QRM1…&f=Alex&n=Pago
  * Lo que va tras el `#` no se envía al servidor (el navegador no lo manda): la web solo ofrece
  * "Abrir en Quorum". La app abre el mismo enlace (enlace universal) o `quorum://p#…`.
  *

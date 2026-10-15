@@ -295,7 +295,7 @@ export default function ProposalScreen({ id }: { id: string }) {
               label="Tu nombre (opcional)"
               value={app.settings.shareName ?? ''}
               onChangeText={(v) => app.updateSettings({ shareName: v.slice(0, MAX_FROM) })}
-              placeholder="Felipe"
+              placeholder="Alex"
               autoCapitalize="words"
             />
             <Field

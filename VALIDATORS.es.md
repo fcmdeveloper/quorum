@@ -147,7 +147,7 @@ Cada validador de la comunidad con una validación **correcta** recibe el NFT **
 - **No se pueden transferir y no tienen valor monetario.** Solo pueden volver a la galería, nunca venderse. Quorum no paga a los validadores: es un proyecto gratuito y sin fines de lucro.
 - **Minify no se entrega insignias a sí mismo.** Las cuentas del desarrollador nunca reciben insignia.
 
-⚠️ Si tu cuenta bloquea las ofertas de NFT entrantes (una de las protecciones que Quorum ofrece para las bóvedas), la oferta no te llega. Valida desde una cuenta normal.
+⚠️ Si tu cuenta bloquea las ofertas de NFT entrantes (una de las protecciones que Quorum ofrece para las bóvedas), la oferta no te llega. Valida desde una cuenta normal o, desde Quorum 1.0.1, permite *Ofertas de NFT* en *Seguridad › Protecciones* de la bóveda hasta aceptar la insignia y vuelve a bloquearlas.
 
 Las imágenes y los datos de las insignias se publican en [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.0.json), no en IPFS.
 

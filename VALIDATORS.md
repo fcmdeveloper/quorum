@@ -147,7 +147,7 @@ Every community validator with a **correct** attestation receives a **Quorum Val
 - **Non-transferable and without monetary value.** It can only go back to the gallery, never be sold. Quorum doesn't pay validators: it's a free, non-profit project.
 - **Minify doesn't award itself.** The developer's own accounts never receive badges.
 
-⚠️ If your account blocks incoming NFT offers (one of the protections Quorum offers for vaults), the offer can't reach you. Validate from a regular account.
+⚠️ If your account blocks incoming NFT offers (one of the protections Quorum offers for vaults), the offer can't reach you. Validate from a regular account, or, from Quorum 1.0.1, allow *NFT offers* in the vault's *Security › Protections* until you accept the badge, then block them again.
 
 The badge images and metadata are published on [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.0.json), not on IPFS.
 

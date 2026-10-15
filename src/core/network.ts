@@ -221,7 +221,9 @@ export function describeActivity(account: string, tx: any, meta: any, closeIso?:
       else if (tx.ClearFlag === 4) title = 'Master key reactivada';
       else {
         const h = HARDENING.find((x) => x.asf === tx.SetFlag);
+        const c = HARDENING.find((x) => x.asf === tx.ClearFlag);
         if (h) title = h.label;
+        else if (c) title = c.allow;
       }
       return { ...base, kind: 'config', title };
     }

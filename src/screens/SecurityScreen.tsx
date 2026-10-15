@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { t } from '../i18n';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, Pressable, Switch, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../state';
 import { useNav } from '../nav';
@@ -9,7 +9,7 @@ import { proposalFailed } from '../ui/proposalError';
 import { Badge, Button, Card, ListItem, Notice, QuorumRing, Screen, Section, Txt, toast } from '../ui/components';
 import { C, SP } from '../ui/theme';
 import { HealthCheck, lossTolerance, minSigners, vaultHealth } from '../core/health';
-import { buildDisableMaster, buildRemoveRegularKey, buildSetFlag, buildTicketCreate } from '../core/tx';
+import { HARDENING, buildDisableMaster, buildHardening, buildRemoveRegularKey, buildSetFlag, buildTicketCreate } from '../core/tx';
 
 export default function SecurityScreen({ id }: { id: string }) {
   const app = useApp();
@@ -43,6 +43,29 @@ export default function SecurityScreen({ id }: { id: string }) {
     if (created > 1) toast(t('{n} operaciones creadas', { n: created }));
     if (created < txs.length) toast(t('Faltan {n}: vuelve a Resolver después de enviar esta', { n: txs.length - created }), 'warn');
     if (first) nav.push('proposal', { id: first });
+  };
+
+  // operación pendiente que cambia esta protección (para no crear otra encima)
+  const pendingFlag = (asf: number) =>
+    app.proposals.find(
+      (p) =>
+        p.account === a.address &&
+        p.network === a.network &&
+        (p.status === 'collecting' || p.status === 'ready') &&
+        p.tx.TransactionType === 'AccountSet' &&
+        (p.tx.SetFlag === asf || p.tx.ClearFlag === asf),
+    );
+
+  const toggleFlag = (asf: number, on: boolean) => {
+    const h = HARDENING.find((x) => x.asf === asf)!;
+    const pend = pendingFlag(asf);
+    if (pend) return nav.push('proposal', { id: pend.id });
+    if (!list) return Alert.alert('Primero la multifirma', 'Configura la lista de firmantes antes de cambiar las protecciones.');
+    if (on) return propose(`flag${asf}`, [buildHardening(a.address, asf, true)]);
+    Alert.alert(t(h.allow), `${t(h.what)}\n\n${t('Se crea una operación que firma el quórum. Puedes volver a bloquearlo cuando quieras.')}`, [
+      { text: t('Cancelar'), style: 'cancel' },
+      { text: t('Crear operación'), onPress: () => propose(`flag${asf}`, [buildHardening(a.address, asf, false)]) },
+    ]);
   };
 
   const fix = (c: HealthCheck) => {
@@ -134,6 +157,44 @@ export default function SecurityScreen({ id }: { id: string }) {
         </Card>
         <Button title={list ? 'Cambiar firmantes o quórum' : 'Configurar firmantes'} kind="secondary" icon="users" onPress={() => nav.push('vaultWizard', { id: a.id })} />
       </Section>
+
+      {st?.exists !== false && (
+        <Section title="Protecciones">
+          <Card style={{ paddingVertical: 4 }}>
+            <Txt v="small" style={{ paddingTop: SP.sm }}>
+              {t('Bloquean lo que terceros pueden enviar a esta bóveda sin tu permiso. Cada cambio es una operación firmada por el quórum.')}
+            </Txt>
+            {HARDENING.map((h) => {
+              const on = !!st?.hardening.find((x) => x.asf === h.asf)?.on;
+              const pend = pendingFlag(h.asf);
+              return (
+                <ListItem
+                  key={h.asf}
+                  icon={on ? 'shield' : 'shield-off'}
+                  iconColor={on ? C.green : C.warn}
+                  title={t(h.name)}
+                  subtitle={pend ? t('Cambio pendiente de firmas · toca para verlo') : on ? t('Bloqueado') : t('Permitido')}
+                  onPress={pend ? () => nav.push('proposal', { id: pend.id }) : undefined}
+                  right={
+                    busy === `flag${h.asf}` ? (
+                      <Badge text="…" />
+                    ) : (
+                      <Switch
+                        value={on}
+                        disabled={!!busy || !!pend || !st}
+                        onValueChange={(v) => toggleFlag(h.asf, v)}
+                        trackColor={{ true: C.greenDeep, false: C.line }}
+                        thumbColor={C.text}
+                        accessibilityLabel={t(h.label)}
+                      />
+                    )
+                  }
+                />
+              );
+            })}
+          </Card>
+        </Section>
+      )}
 
       <Section title="Firmas en paralelo">
         <Card>

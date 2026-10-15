@@ -39,12 +39,51 @@ export const ACCOUNT_SET = {
 } as const;
 
 /** Banderas que bloquean todo lo entrante salvo pagos: el endurecimiento de una bóveda. */
-export const HARDENING: { asf: number; lsf: number; label: string }[] = [
-  { asf: ACCOUNT_SET.asfDisallowIncomingTrustline, lsf: ACCOUNT_FLAGS.lsfDisallowIncomingTrustline, label: 'Bloquear líneas de confianza entrantes' },
-  { asf: ACCOUNT_SET.asfDisallowIncomingCheck, lsf: ACCOUNT_FLAGS.lsfDisallowIncomingCheck, label: 'Bloquear cheques entrantes' },
-  { asf: ACCOUNT_SET.asfDisallowIncomingNFTokenOffer, lsf: ACCOUNT_FLAGS.lsfDisallowIncomingNFTokenOffer, label: 'Bloquear ofertas de NFT entrantes' },
-  { asf: ACCOUNT_SET.asfDisallowIncomingPayChan, lsf: ACCOUNT_FLAGS.lsfDisallowIncomingPayChan, label: 'Bloquear canales de pago entrantes' },
+/**
+ * Protecciones de la bóveda. Cada una se activa (SetFlag) o se quita (ClearFlag) por separado,
+ * con una operación firmada por el quórum. `name` es el nombre corto para el interruptor,
+ * `allow` el título de la operación que la quita y `what` lo que deja pasar si se quita.
+ */
+export const HARDENING: { asf: number; lsf: number; label: string; allow: string; name: string; what: string }[] = [
+  {
+    asf: ACCOUNT_SET.asfDisallowIncomingTrustline,
+    lsf: ACCOUNT_FLAGS.lsfDisallowIncomingTrustline,
+    label: 'Bloquear líneas de confianza entrantes',
+    allow: 'Permitir líneas de confianza entrantes',
+    name: 'Líneas de confianza',
+    what: 'Otros podrán abrir líneas de tokens hacia esta cuenta (necesario para algunos emisores).',
+  },
+  {
+    asf: ACCOUNT_SET.asfDisallowIncomingCheck,
+    lsf: ACCOUNT_FLAGS.lsfDisallowIncomingCheck,
+    label: 'Bloquear cheques entrantes',
+    allow: 'Permitir cheques entrantes',
+    name: 'Cheques',
+    what: 'Otros podrán enviarle cheques a esta cuenta.',
+  },
+  {
+    asf: ACCOUNT_SET.asfDisallowIncomingNFTokenOffer,
+    lsf: ACCOUNT_FLAGS.lsfDisallowIncomingNFTokenOffer,
+    label: 'Bloquear ofertas de NFT entrantes',
+    allow: 'Permitir ofertas de NFT entrantes',
+    name: 'Ofertas de NFT',
+    what: 'Otros podrán ofrecerle NFTs a esta cuenta (por ejemplo, para recibir uno). También puede llegar spam.',
+  },
+  {
+    asf: ACCOUNT_SET.asfDisallowIncomingPayChan,
+    lsf: ACCOUNT_FLAGS.lsfDisallowIncomingPayChan,
+    label: 'Bloquear canales de pago entrantes',
+    allow: 'Permitir canales de pago entrantes',
+    name: 'Canales de pago',
+    what: 'Otros podrán abrir canales de pago hacia esta cuenta.',
+  },
 ];
+
+/** Operación que activa o quita una protección. */
+export function buildHardening(account: string, asf: number, on: boolean): TxJson {
+  if (!HARDENING.some((h) => h.asf === asf)) throw new Error('Protección desconocida');
+  return on ? buildSetFlag(account, asf) : buildClearFlag(account, asf);
+}
 
 export function buildSetFlag(account: string, asf: number): TxJson {
   assertAddress(account, 'Cuenta');
@@ -424,7 +463,12 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
       else if (tx.ClearFlag === ACCOUNT_SET.asfDisableMaster) title = 'Reactivar master key';
       else {
         const h = HARDENING.find((x) => x.asf === tx.SetFlag);
+        const c = HARDENING.find((x) => x.asf === tx.ClearFlag);
         if (h) title = h.label;
+        else if (c) {
+          title = c.allow;
+          lines.push(['Efecto', t(c.what)]);
+        }
       }
       break;
     }

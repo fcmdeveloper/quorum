@@ -10,6 +10,10 @@ import { useApp } from '../state';
 import { Button, Logo, Txt, hapticsEnabled, tap } from '../ui/components';
 import { C, SP } from '../ui/theme';
 import { QuorumMorph, QuorumMorphHandle } from '../ui/QuorumMorph';
+import { PinPad, errorBuzz, shake } from '../ui/PinPad';
+import { checkPin, lockoutMs } from '../core/appPin';
+import { loadPinFails, loadPinRecord, savePinFails } from '../store';
+import { t } from '../i18n';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -103,21 +107,34 @@ export function useAppLock(enabled: boolean, ready: boolean, graceSec = 0, suspe
     return () => sub.remove();
   }, [enabled, graceSec]);
 
-  /** `opening`: animación que corre tras el Face ID correcto y antes de mostrar la app. */
-  const unlock = async (opening?: () => Promise<void>) => {
+  /** Deja pasar la app: animación (como máximo 3 s, nunca la traba) y vibración de éxito. */
+  const finish = async (opening?: () => Promise<void>) => {
+    if (opening) await Promise.race([opening().catch(() => {}), sleep(3000)]);
+    setLocked(false);
+    // Durante el giro iOS suele no permitir vibrar todavía (vuelve de Face ID); al aparecer la app ya está activa.
+    if (hapticsEnabled()) setTimeout(() => whenActive(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 3000), 60);
+  };
+
+  /**
+   * Face ID con dos intentos: si el primero no reconoce la cara, se avisa (`onFail`: vibración de
+   * "no" y el botón se sacude) y se intenta de nuevo; el segundo intento ofrece el código del teléfono.
+   * Cancelar no cuenta como intento fallido.
+   */
+  const unlock = async (opening?: () => Promise<void>, onFail?: () => void) => {
     if (authing.current) return;
     authing.current = true;
     try {
       await untilActive();
-      const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Desbloquear Quorum', cancelLabel: 'Cancelar' });
-      if (r.success) {
-        // la animación nunca puede dejar la app trabada: como máximo 2,5 s
-        if (opening) await Promise.race([opening().catch(() => {}), sleep(3000)]);
-        setLocked(false);
-        // Vibración al abrirse la app. Durante el giro iOS suele no permitirla todavía
-        // (sigue volviendo de Face ID); al aparecer la app ya está activa.
-        if (hapticsEnabled()) setTimeout(() => whenActive(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 3000), 60);
-      }
+      const cancelled = (e?: string) => e === 'user_cancel' || e === 'system_cancel' || e === 'app_cancel';
+      const r1 = await LocalAuthentication.authenticateAsync({ promptMessage: 'Desbloquear Quorum', cancelLabel: 'Cancelar', disableDeviceFallback: true });
+      if (r1.success) return await finish(opening);
+      if (cancelled((r1 as any).error)) return;
+      onFail?.();
+      await sleep(650);
+      await untilActive();
+      const r2 = await LocalAuthentication.authenticateAsync({ promptMessage: 'Desbloquear Quorum', cancelLabel: 'Cancelar', fallbackLabel: 'Usar código del teléfono', disableDeviceFallback: false });
+      if (r2.success) return await finish(opening);
+      if (!cancelled((r2 as any).error)) onFail?.();
     } catch {
       // si Face ID falla por cualquier motivo, se queda bloqueada y el botón sigue disponible
     } finally {
@@ -129,19 +146,28 @@ export function useAppLock(enabled: boolean, ready: boolean, graceSec = 0, suspe
     }
   };
   // Al abrir la app el bloqueo vale desde el primer dibujo (el efecto de arriba llega un cuadro tarde).
-  return { locked: locked || (ready && enabled && !lockedAtLaunch.current), unlock };
+  return { locked: locked || (ready && enabled && !lockedAtLaunch.current), unlock, finish };
 }
 
-export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<void>) => void }) {
+export function LockScreen({
+  onUnlock,
+  onFinish,
+  method = 'faceid',
+}: {
+  onUnlock: (opening?: () => Promise<void>, onFail?: () => void) => void;
+  /** Con código: ya verificado, solo falta abrir. */
+  onFinish: (opening?: () => Promise<void>) => void;
+  method?: 'faceid' | 'pin';
+}) {
   const morph = useRef<QuorumMorphHandle>(null);
   const fade = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
+  const btnX = useRef(new Animated.Value(0)).current;
+  const [hint, setHint] = useState<string | null>(null);
+  const [blockedUntil, setBlockedUntil] = useState(0);
 
-  // Tras el Face ID: la rueda gira a la derecha como la cerradura de una caja fuerte,
-  // con "clics" hápticos, y la pantalla se desvanece hacia la app.
-  // La rueda empieza a girar al instante; las vibraciones se acomodan solas a cuando
-  // iOS las permite (ver whenActive), sin esperas fijas.
-  // Luego la bóveda se abre y se transforma en la X de XRP, y aparece la app.
+  // Tras desbloquear: la rueda gira como la cerradura de una caja fuerte, la bóveda se abre
+  // y se transforma en la X de XRP, y la pantalla se desvanece hacia la app.
   const opening = async () => {
     await (morph.current?.unlock() ?? Promise.resolve());
     await new Promise<void>((resolve) =>
@@ -153,12 +179,46 @@ export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<vo
     );
   };
 
-  const tryUnlock = () => onUnlock(opening);
+  // Face ID no reconoció: vibración de "no" y el botón se sacude; se intenta otra vez.
+  const failed = () => {
+    errorBuzz();
+    shake(btnX);
+    setHint(t('No se reconoció. Intenta de nuevo.'));
+  };
+  const tryUnlock = () => {
+    setHint(null);
+    onUnlock(opening, failed);
+  };
+
+  // Código propio: se compara con la huella guardada; tras varios errores hay que esperar.
+  useEffect(() => {
+    if (method === 'pin') loadPinFails().then((f) => setBlockedUntil(f.until));
+  }, [method]);
+  const checkCode = async (pin: string) => {
+    const f = await loadPinFails();
+    if (f.until > Date.now()) {
+      setBlockedUntil(f.until);
+      return false;
+    }
+    const rec = await loadPinRecord();
+    if (rec && checkPin(pin, rec)) {
+      await savePinFails({ n: 0, until: 0 });
+      onFinish(opening);
+      return true;
+    }
+    const n = f.n + 1;
+    const until = Date.now() + lockoutMs(n);
+    await savePinFails({ n, until });
+    setBlockedUntil(until);
+    setHint(n >= 3 ? t('Código incorrecto ({n} intentos)', { n }) : t('Código incorrecto'));
+    return false;
+  };
 
   // Pide Face ID solo: al aparecer la pantalla y cada vez que la app vuelve a primer plano
   // estando bloqueada. Una sola vez por cada regreso (el cuadro de Face ID no cuenta como salir).
   const askedThisVisit = useRef(false);
   useEffect(() => {
+    if (method !== 'faceid') return;
     const ask = () => {
       if (askedThisVisit.current) return;
       askedThisVisit.current = true;
@@ -170,19 +230,32 @@ export function LockScreen({ onUnlock }: { onUnlock: (opening?: () => Promise<vo
       if (st === 'active') ask();
     });
     return () => sub.remove();
-  }, []);
+  }, [method]);
+
   return (
     <Animated.View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: SP.xl, opacity: fade }}>
       <Animated.View style={{ transform: [{ scale }] }}>
-        <QuorumMorph ref={morph} size={88} />
+        <QuorumMorph ref={morph} size={method === 'pin' ? 64 : 88} />
       </Animated.View>
-      <Txt v="h1" style={{ marginTop: SP.xl }}>
+      <Txt v="h1" style={{ marginTop: method === 'pin' ? SP.md : SP.xl }}>
         Quorum
       </Txt>
-      <Txt v="small" style={{ marginTop: 4 }}>
-        Bloqueado
-      </Txt>
-      <Button title="Desbloquear" icon="unlock" onPress={tryUnlock} style={{ alignSelf: 'stretch', marginTop: SP.xxl }} />
+      {method === 'pin' ? (
+        <View style={{ marginTop: SP.xl }}>
+          <PinPad title={t('Ingresa tu código')} hint={hint} onComplete={checkCode} blockedUntil={blockedUntil} />
+          {/* Si olvidaste el código (o se perdió al cambiar de teléfono): Face ID o el código del teléfono */}
+          <Button title="Usar Face ID o el código del teléfono" kind="ghost" onPress={tryUnlock} style={{ marginTop: SP.lg }} />
+        </View>
+      ) : (
+        <>
+          <Txt v="small" style={{ marginTop: 4 }} color={hint ? C.warn : C.dim}>
+            {hint ?? t('Bloqueado')}
+          </Txt>
+          <Animated.View style={{ alignSelf: 'stretch', marginTop: SP.xxl, transform: [{ translateX: btnX }] }}>
+            <Button title="Desbloquear" icon="unlock" onPress={tryUnlock} />
+          </Animated.View>
+        </>
+      )}
     </Animated.View>
   );
 }

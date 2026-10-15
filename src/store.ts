@@ -5,6 +5,7 @@ import { clearSavedTangemCodes } from '../modules/tangem-nfc';
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import type { PinRecord } from './core/appPin';
 import { SignerDevice } from './signers/types';
 import { NetworkId } from './core/network';
 import { TxJson, SignerSig } from './core/tx';
@@ -54,6 +55,8 @@ export interface Settings {
   lockEnabled: boolean;
   /** Segundos fuera de la app antes de pedir Face ID de nuevo (0 = siempre). */
   lockAfterSec: number;
+  /** Cómo se desbloquea: Face ID (o el código del teléfono) o un código de 4 dígitos propio de Quorum. */
+  lockMethod?: 'faceid' | 'pin';
   /** Vibraciones de la app (toques, confirmaciones, desbloqueo). */
   haptics: boolean;
   /** Apariencia: sistema, oscuro o claro. */
@@ -110,6 +113,8 @@ const K = {
   contacts: 'q.contacts.v1',
   proposals: 'q.proposals.v1',
   xaman: 'q.xaman.v1',
+  pin: 'q.pin.v1',
+  pinFails: 'q.pinfails.v1',
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -172,11 +177,41 @@ export async function saveXamanCreds(c: XamanCreds | null) {
   });
 }
 
+/** Huella del código de 4 dígitos de la app (nunca el código). Solo este teléfono, fuera de respaldos. */
+export async function loadPinRecord(): Promise<PinRecord | null> {
+  try {
+    const v = await SecureStore.getItemAsync(K.pin);
+    return v ? (JSON.parse(v) as PinRecord) : null;
+  } catch {
+    return null;
+  }
+}
+export async function savePinRecord(r: PinRecord | null) {
+  if (!r) {
+    await SecureStore.deleteItemAsync(K.pinFails).catch(() => {});
+    return SecureStore.deleteItemAsync(K.pin);
+  }
+  return SecureStore.setItemAsync(K.pin, JSON.stringify(r), { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+}
+/** Errores seguidos del código y hasta cuándo hay que esperar (sobrevive a cerrar la app). */
+export async function loadPinFails(): Promise<{ n: number; until: number }> {
+  try {
+    const v = await SecureStore.getItemAsync(K.pinFails);
+    return v ? JSON.parse(v) : { n: 0, until: 0 };
+  } catch {
+    return { n: 0, until: 0 };
+  }
+}
+export const savePinFails = (f: { n: number; until: number }) =>
+  SecureStore.setItemAsync(K.pinFails, JSON.stringify(f), { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+
 export async function wipeAll() {
   await AsyncStorage.multiRemove(Object.values(K));
   clearSavedTangemCodes();
   try {
     await SecureStore.deleteItemAsync(K.xaman);
+    await SecureStore.deleteItemAsync(K.pin);
+    await SecureStore.deleteItemAsync(K.pinFails);
   } catch {}
 }
 

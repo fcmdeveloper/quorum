@@ -18,6 +18,8 @@ import { lookalikeOf, trustedAddresses } from '../core/lookalike';
 import { useBackupState } from './ReviewScreens';
 import { hasGlass } from '../ui/Glass';
 import { AppIconPicker } from '../ui/AppIconPicker';
+import { PinSheet } from '../ui/PinSheet';
+import { savePinRecord } from '../store';
 
 export default function SettingsScreen() {
   const app = useApp();
@@ -26,18 +28,40 @@ export default function SettingsScreen() {
   const xOk = sessionValid(app.xaman);
   const xHours = app.xaman ? Math.max(0, Math.round((app.xaman.exp - Date.now()) / 3_600_000)) : 0;
 
-  const toggleLock = async (v: boolean) => {
-    if (v) {
-      const ok = (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
-      if (!ok) return Alert.alert('Face ID', 'Configura Face ID o un código en el teléfono primero.');
-      // confirma que funciona antes de activarlo (y obtiene el permiso de Face ID)
-      const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Activar bloqueo de Quorum' });
-      if (!r.success) return;
-    } else {
-      const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Desactivar bloqueo de Quorum' });
-      if (!r.success) return;
+  // Bloqueo de la app: desactivado, Face ID (o el código del teléfono) o un código propio de 4 dígitos.
+  type LockChoice = 'off' | 'faceid' | 'pin';
+  const lockNow: LockChoice = !app.settings.lockEnabled ? 'off' : app.settings.lockMethod === 'pin' ? 'pin' : 'faceid';
+  const [pinSheet, setPinSheet] = useState<null | { mode: 'create' | 'verify'; then: () => void }>(null);
+
+  /** Confirma que es la persona dueña antes de cambiar o quitar el bloqueo. */
+  const confirmCurrent = (then: () => void) => {
+    if (lockNow === 'pin') return setPinSheet({ mode: 'verify', then });
+    if (lockNow === 'faceid') {
+      LocalAuthentication.authenticateAsync({ promptMessage: 'Cambiar el bloqueo de Quorum' }).then((r) => r.success && then());
+      return;
     }
-    app.updateSettings({ lockEnabled: v });
+    then();
+  };
+
+  const chooseLock = (v: LockChoice) => {
+    if (v === lockNow) return;
+    confirmCurrent(async () => {
+      if (v === 'off') {
+        await savePinRecord(null);
+        return app.updateSettings({ lockEnabled: false });
+      }
+      if (v === 'faceid') {
+        const ok = (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
+        if (!ok) return Alert.alert('Face ID', 'Configura Face ID o un código en el teléfono primero.');
+        // confirma que funciona antes de activarlo (y obtiene el permiso de Face ID)
+        const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Activar bloqueo de Quorum' });
+        if (!r.success) return;
+        await savePinRecord(null);
+        return app.updateSettings({ lockEnabled: true, lockMethod: 'faceid' });
+      }
+      // código propio: se define dos veces
+      setPinSheet({ mode: 'create', then: () => app.updateSettings({ lockEnabled: true, lockMethod: 'pin' }) });
+    });
   };
 
   return (
@@ -116,12 +140,30 @@ export default function SettingsScreen() {
 
       <Section title="Seguridad">
         <Card style={{ paddingVertical: 4 }}>
-          <ListItem
-            icon="lock"
-            title="Bloqueo con Face ID"
-            subtitle="Al abrir Quorum y al volver a la app"
-            right={<Switch value={app.settings.lockEnabled} onValueChange={toggleLock} trackColor={{ true: C.greenDeep, false: C.line }} thumbColor={C.text} />}
-          />
+          <View style={{ paddingVertical: SP.sm }}>
+            <Txt v="body" style={{ marginBottom: 6 }}>
+              {t('Bloqueo de la app')}
+            </Txt>
+            <Segmented<LockChoice>
+              value={lockNow}
+              onChange={chooseLock}
+              options={[
+                { value: 'off', label: 'Sin bloqueo' },
+                { value: 'faceid', label: 'Face ID' },
+                { value: 'pin', label: 'Código' },
+              ]}
+            />
+            <Txt v="small" style={{ marginTop: -4 }}>
+              {lockNow === 'pin'
+                ? t('Código de 4 dígitos solo de Quorum. Si lo olvidas, entra con Face ID o el código del teléfono y crea uno nuevo.')
+                : lockNow === 'faceid'
+                  ? t('Al abrir Quorum y al volver a la app. Si Face ID falla dos veces, puedes usar el código del teléfono.')
+                  : t('Cualquiera con tu teléfono desbloqueado puede ver tus cuentas (no mover fondos).')}
+            </Txt>
+            {lockNow === 'pin' && (
+              <Button title="Cambiar código" kind="ghost" icon="key" onPress={() => setPinSheet({ mode: 'verify', then: () => setPinSheet({ mode: 'create', then: () => {} }) })} style={{ marginTop: SP.sm }} />
+            )}
+          </View>
           <ListItem
             icon="activity"
             title="Vibraciones"
@@ -140,7 +182,7 @@ export default function SettingsScreen() {
           {app.settings.lockEnabled && (
             <View style={{ paddingVertical: SP.sm }}>
               <Txt v="small" style={{ marginBottom: 6 }}>
-                Pedir Face ID al volver
+                {lockNow === 'pin' ? t('Pedir el código al volver') : 'Pedir Face ID al volver'}
               </Txt>
               <Segmented
                 value={String(app.settings.lockAfterSec ?? 0)}
@@ -289,6 +331,17 @@ export default function SettingsScreen() {
           }
         />
       </Section>
+      {pinSheet && (
+        <PinSheet
+          mode={pinSheet.mode}
+          onCancel={() => setPinSheet(null)}
+          onDone={() => {
+            const next = pinSheet.then;
+            setPinSheet(null);
+            setTimeout(next, 350);
+          }}
+        />
+      )}
     </Screen>
   );
 }

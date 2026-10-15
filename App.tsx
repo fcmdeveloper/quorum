@@ -295,7 +295,7 @@ function Shell() {
   const hidden = lock.locked ? { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const } : {};
   const lockLayer = (
     <Modal visible={lock.locked} transparent animationType="none" statusBarTranslucent onRequestClose={() => {}}>
-      {lock.locked ? <LockScreen onUnlock={lock.unlock} /> : null}
+      {lock.locked ? <LockScreen onUnlock={lock.unlock} onFinish={lock.finish} method={app.settings.lockMethod ?? 'faceid'} /> : null}
     </Modal>
   );
   if ((app.settings.termsAccepted ?? 0) < TERMS_VERSION) return <View key={uiKey} style={{ flex: 1 }}>{bar}<View style={{ flex: 1 }} {...hidden}><TermsScreen /></View>{lockLayer}</View>;

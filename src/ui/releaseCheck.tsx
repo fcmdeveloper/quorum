@@ -95,7 +95,7 @@ export function ReleaseBanner({ onOpen }: { onOpen: () => void }) {
     <Pressable
       onPress={onOpen}
       accessibilityRole="button"
-      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flexDirection: 'row', gap: 10, alignItems: 'flex-start', padding: SP.md, borderRadius: R.sm, borderWidth: 1, backgroundColor: color + '14', borderColor: color + '40' })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, marginBottom: SP.lg, flexDirection: 'row', gap: 10, alignItems: 'flex-start', padding: SP.md, borderRadius: R.sm, borderWidth: 1, backgroundColor: color + '14', borderColor: color + '40' })}
     >
       <Feather name={x.bad ? 'alert-octagon' : 'alert-triangle'} size={18} color={color} style={{ marginTop: 2 }} />
       <View style={{ flex: 1, gap: 2 }}>

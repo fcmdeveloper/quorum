@@ -532,7 +532,28 @@ export function buildTrustSet(account: string, token: { currency: string; issuer
   };
 }
 
-/** Quitar un token (solo si el saldo es 0): límite 0. */
+/** Campos que pone la preparación (turno, plazo, comisión, firmas): no cambian lo que hace la operación. */
+const PREP_FIELDS = new Set(['Sequence', 'TicketSequence', 'LastLedgerSequence', 'Fee', 'SigningPubKey', 'TxnSignature', 'Signers', 'NetworkID']);
+
+function stable(v: any): string {
+  if (Array.isArray(v)) return `[${v.map(stable).join(',')}]`;
+  if (v && typeof v === 'object') {
+    return `{${Object.keys(v)
+      // lo guardado pierde los campos vacíos, y Flags 0 es lo mismo que no tenerlo
+      .filter((k) => !PREP_FIELDS.has(k) && v[k] !== undefined && v[k] !== null && !(k === 'Flags' && v[k] === 0))
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stable(v[k])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(v);
+}
+
+/** ¿Hacen lo mismo? (misma operación, aunque tengan otro turno, plazo o comisión). Evita duplicados por doble toque. */
+export function sameIntent(a: TxJson, b: TxJson): boolean {
+  return stable(a) === stable(b);
+}
+
+/** Quitar un token (solo si el saldo es 0): límite 0. Con NoRipple (su estado por defecto), la línea se borra y libera la reserva. */
 export function buildRemoveTrust(account: string, token: { currency: string; issuer: string }): TxJson {
   return { ...buildTrustSet(account, token, '0') };
 }

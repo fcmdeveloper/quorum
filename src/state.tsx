@@ -4,7 +4,7 @@ import { hashes } from 'xrpl';
 import { AccountState, NetworkId, currentLedger, fetchAccountState, findTxBySequence, prepareForSigning, submitBlob } from './core/network';
 import { TURN_USED, classifyUsedTurn } from './core/usedTurn';
 import { PriceQuote, fetchXrpPrice } from './core/market';
-import { combineSignatures, SignerSig, TxJson } from './core/tx';
+import { combineSignatures, sameIntent, SignerSig, TxJson } from './core/tx';
 import { decodeProposalQr, mergeSigs, proposalIdFor } from './core/qr';
 import { celebrate } from './ui/Celebrate';
 import { t } from './i18n';
@@ -376,8 +376,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [accounts],
   );
 
-  const createProposal = useCallback(
+  // Una creación a la vez: un segundo toque espera al primero y así ve la operación que ya se creó.
+  const createChain = useRef<Promise<unknown>>(Promise.resolve());
+  const createProposalNow = useCallback(
     async (a: Account, tx: TxJson, opts: { mode?: 'multi' | 'single'; note?: string } = {}) => {
+      // Ya hay una pendiente que hace exactamente lo mismo (doble toque, o se repitió): se usa esa.
+      const twin = pRef.current.find(
+        (p) => p.account === a.address && p.network === a.network && (p.status === 'collecting' || p.status === 'ready') && (!opts.mode || p.mode === opts.mode) && sameIntent(p.tx, tx),
+      );
+      if (twin) return twin;
       const st = await refreshAccount(a);
       if (!st) throw new Error('No se pudo leer la cuenta en la red');
       if (!st.exists) throw new Error('La cuenta aún no existe en la red: envíale XRP para activarla');
@@ -435,6 +442,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return p;
     },
     [accounts, refreshAccount, settings.validityMinutes, persistProposals],
+  );
+  const createProposal = useCallback(
+    (a: Account, tx: TxJson, opts: { mode?: 'multi' | 'single'; note?: string } = {}) => {
+      const run = createChain.current.then(() => createProposalNow(a, tx, opts));
+      createChain.current = run.catch(() => {});
+      return run;
+    },
+    [createProposalNow],
   );
 
   const statusFor = (p: Proposal, sigs: SignerSig[]): Proposal['status'] => {

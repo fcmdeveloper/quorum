@@ -13,7 +13,8 @@ import { minSigners, lossTolerance, vaultHealth } from '../core/health';
 import { ActivityItem, NETWORKS, fetchActivity, fundTestnet } from '../core/network';
 import { KIND_LABEL } from '../signers/types';
 import { KNOWN_TOKENS } from '../core/assets';
-import { buildTrustSet } from '../core/tx';
+import { buildRemoveTrust, buildTrustSet, TxJson } from '../core/tx';
+import { XrpLoader } from '../ui/XrpLoader';
 import { buildPinNft, canPin } from '../core/pin';
 import { isPreparing } from '../core/seedVault';
 import { ActivityRow } from './ActivityScreen';
@@ -29,6 +30,8 @@ export default function AccountScreen({ id }: { id: string }) {
   const [name, setName] = useState(a?.label ?? '');
   const [picking, setPicking] = useState(false);
   const [pinBusy, setPinBusy] = useState(false);
+  // Token que se está habilitando o quitando: mientras, no se aceptan más toques.
+  const [tokenBusy, setTokenBusy] = useState<string | null>(null);
 
   const load = async () => {
     if (!a) return;
@@ -59,6 +62,45 @@ export default function AccountScreen({ id }: { id: string }) {
   // Bóveda creada en Quorum sin terminar: solo se permiten los pasos de configuración.
   const preparing = isPreparing(a, st);
   const canSign = preparing ? false : isVault ? !!list || (!!dev && !st?.masterDisabled) : !!dev;
+
+  const tokenTx = async (key: string, tx: TxJson) => {
+    if (tokenBusy) return;
+    setTokenBusy(key);
+    try {
+      const p = await app.createProposal(a, tx);
+      nav.push('proposal', { id: p.id });
+    } catch (e: any) {
+      proposalFailed('No se pudo', e, nav);
+    } finally {
+      setTokenBusy(null);
+    }
+  };
+  const removeToken = (key: string, sym: string, token: { currency: string; issuer: string }) =>
+    Alert.alert(t('Quitar {x}', { x: sym }), t('Se borra la línea de confianza y se libera la reserva de 0,2 XRP. Puedes volver a habilitarlo cuando quieras.'), [
+      { text: t('Cancelar'), style: 'cancel' },
+      {
+        text: t('Quitar'),
+        style: 'destructive',
+        onPress: () => tokenTx(key, buildRemoveTrust(a.address, token)),
+      },
+    ]);
+  // Saldo del token y, si está en 0 y se puede firmar, la opción de quitarlo.
+  const tokenRight = (key: string, sym: string, token: { currency: string; issuer: string }, balance: string) => (
+    <View style={{ alignItems: 'flex-end' }}>
+      <Txt v="h3">{m.balXrp(balance)}</Txt>
+      {canSign && Number(balance) === 0 ? (
+        tokenBusy === key ? (
+          <XrpLoader size={20} delay={0} />
+        ) : (
+          <Pressable hitSlop={8} disabled={!!tokenBusy} onPress={() => removeToken(key, sym, token)}>
+            <Txt v="label" color={C.dim}>
+              Quitar
+            </Txt>
+          </Pressable>
+        )
+      ) : null}
+    </View>
+  );
 
   // NFT fijado en el XRP Ledger (core/pin.ts): visible para cualquiera con Quorum.
   const pinnedId = st?.walletLocator ?? null;
@@ -105,7 +147,10 @@ export default function AccountScreen({ id }: { id: string }) {
     Alert.alert(a.label, undefined, [
       { text: 'Cambiar nombre', onPress: () => setEditing(true) },
       { text: 'Cambiar color e ícono', onPress: () => setPicking(true) },
-      { text: 'Ver en el explorador', onPress: () => Linking.openURL(`${NETWORKS[a.network].explorer}/accounts/${a.address}`) },
+      {
+        text: 'Ver en el explorador',
+        onPress: () => Linking.openURL(`${NETWORKS[a.network].explorer}/accounts/${a.address}`),
+      },
       {
         text: 'Quitar de Quorum',
         style: 'destructive',
@@ -145,12 +190,26 @@ export default function AccountScreen({ id }: { id: string }) {
           <View style={{ marginBottom: SP.lg, gap: SP.md, alignItems: 'center' }}>
             <Txt v="label">Color</Txt>
             <ColorPicker value={a.color} onChange={(c) => app.updateAccount(a.id, { color: c })} />
-            <Txt v="label" style={{ marginTop: SP.sm }}>Ícono</Txt>
+            <Txt v="label" style={{ marginTop: SP.sm }}>
+              Ícono
+            </Txt>
             <IconPicker value={a.nft ? undefined : a.icon} color={a.color} onChange={(ic) => app.updateAccount(a.id, { icon: ic, nft: undefined })} />
-            <Txt v="label" style={{ marginTop: SP.sm }}>NFT</Txt>
+            <Txt v="label" style={{ marginTop: SP.sm }}>
+              NFT
+            </Txt>
             <Pressable
               onPress={() => nav.push('pickNft', { id: a.id })}
-              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: SP.lg, height: 40, borderRadius: 20, borderWidth: 1, borderColor: a.nft ? C.green : C.lineStrong, opacity: pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingHorizontal: SP.lg,
+                height: 40,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: a.nft ? C.green : C.lineStrong,
+                opacity: pressed ? 0.7 : 1,
+              })}
             >
               <Feather name="image" size={16} color={a.nft ? C.green : C.dim} />
               <Txt v="label" color={a.nft ? C.green : C.text}>
@@ -158,7 +217,14 @@ export default function AccountScreen({ id }: { id: string }) {
               </Txt>
             </Pressable>
             {canSign && st?.exists && (a.nft || pinnedId) ? (
-              <View style={{ alignItems: 'center', gap: 6, marginTop: SP.xs, paddingHorizontal: SP.lg }}>
+              <View
+                style={{
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: SP.xs,
+                  paddingHorizontal: SP.lg,
+                }}
+              >
                 {pinnedHere ? (
                   <Txt v="small" color={C.green} style={{ textAlign: 'center' }}>
                     {t('Fijado en el XRP Ledger: se ve igual en cualquier teléfono')}
@@ -168,19 +234,34 @@ export default function AccountScreen({ id }: { id: string }) {
                 ) : null}
                 {pinnedId ? (
                   <Pressable onPress={unpin} hitSlop={10} disabled={pinBusy}>
-                    <Txt v="label" color={C.dim}>{t('Quitar del XRP Ledger')}</Txt>
+                    <Txt v="label" color={C.dim}>
+                      {t('Quitar del XRP Ledger')}
+                    </Txt>
                   </Pressable>
                 ) : null}
               </View>
             ) : null}
             <View style={{ flexDirection: 'row', gap: SP.xl, marginTop: SP.sm }}>
               {a.icon || a.color || a.nft ? (
-                <Pressable onPress={() => app.updateAccount(a.id, { icon: undefined, color: undefined, nft: undefined })} hitSlop={10}>
-                  <Txt v="label" color={C.dim}>Volver al original</Txt>
+                <Pressable
+                  onPress={() =>
+                    app.updateAccount(a.id, {
+                      icon: undefined,
+                      color: undefined,
+                      nft: undefined,
+                    })
+                  }
+                  hitSlop={10}
+                >
+                  <Txt v="label" color={C.dim}>
+                    Volver al original
+                  </Txt>
                 </Pressable>
               ) : null}
               <Pressable onPress={() => setPicking(false)} hitSlop={10}>
-                <Txt v="label" color={C.green}>Listo</Txt>
+                <Txt v="label" color={C.green}>
+                  Listo
+                </Txt>
               </Pressable>
             </View>
           </View>
@@ -191,7 +272,15 @@ export default function AccountScreen({ id }: { id: string }) {
               value={name}
               onChangeText={setName}
               autoFocus
-              style={{ fontFamily: F.semibold, fontSize: 18, color: C.text, borderBottomWidth: 1, borderColor: C.green, minWidth: 160, paddingVertical: 4 }}
+              style={{
+                fontFamily: F.semibold,
+                fontSize: 18,
+                color: C.text,
+                borderBottomWidth: 1,
+                borderColor: C.green,
+                minWidth: 160,
+                paddingVertical: 4,
+              }}
               onSubmitEditing={async () => {
                 if (name.trim()) await app.updateAccount(a.id, { label: name.trim() });
                 setEditing(false);
@@ -207,9 +296,25 @@ export default function AccountScreen({ id }: { id: string }) {
         <View style={{ marginTop: 6 }}>
           <Address value={a.address} short />
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: SP.lg }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            marginTop: SP.lg,
+          }}
+        >
           <XrpMark size={30} color={C.text} />
-          <Text style={{ fontFamily: F.bold, fontSize: 42, color: C.text, letterSpacing: -1.4 }}>{st ? m.balXrp(st.balanceXrp) : '…'}</Text>
+          <Text
+            style={{
+              fontFamily: F.bold,
+              fontSize: 42,
+              color: C.text,
+              letterSpacing: -1.4,
+            }}
+          >
+            {st ? m.balXrp(st.balanceXrp) : '…'}
+          </Text>
         </View>
         <Txt v="body" color={C.dim}>
           {st ? m.balFiatOf(st.balanceXrp, a.network) : ''}
@@ -223,7 +328,9 @@ export default function AccountScreen({ id }: { id: string }) {
             Cuenta sin activar: envíale al menos 1 XRP de reserva para que exista en la red.
           </Txt>
         ) : app.errors[`${a.network}:${a.address}`] ? (
-          <Txt v="small" color={C.bad}>{app.errors[`${a.network}:${a.address}`]}</Txt>
+          <Txt v="small" color={C.bad}>
+            {app.errors[`${a.network}:${a.address}`]}
+          </Txt>
         ) : null}
       </View>
 
@@ -278,7 +385,10 @@ export default function AccountScreen({ id }: { id: string }) {
               <Txt v="h3">{h.summary}</Txt>
               <Txt v="small">
                 {list
-                  ? t('Se necesitan {n} dispositivos · tolera perder {m}', { n: minSigners(list), m: lossTolerance(list) })
+                  ? t('Se necesitan {n} dispositivos · tolera perder {m}', {
+                      n: minSigners(list),
+                      m: lossTolerance(list),
+                    })
                   : 'Aún no tiene firmantes. Configúrala para protegerla.'}
               </Txt>
               <Txt v="label" color={C.green}>
@@ -287,7 +397,14 @@ export default function AccountScreen({ id }: { id: string }) {
             </View>
           </View>
           {list && (
-            <View style={{ marginTop: SP.md, borderTopWidth: 1, borderColor: C.line, paddingTop: SP.sm }}>
+            <View
+              style={{
+                marginTop: SP.md,
+                borderTopWidth: 1,
+                borderColor: C.line,
+                paddingTop: SP.sm,
+              }}
+            >
               {list.entries.map((e) => {
                 const d = app.deviceFor(e.account);
                 return (
@@ -308,7 +425,11 @@ export default function AccountScreen({ id }: { id: string }) {
 
       {isVault && list && !list.entries.some((e) => app.deviceFor(e.account)) && (
         <Card style={{ marginTop: SP.lg }}>
-          <ListItem icon="share-2" title="Firmas en otros teléfonos" subtitle="Ninguno de sus firmantes está en este teléfono. Puedes proponer operaciones y compartirlas por QR para que las firmen; los fondos solo se mueven cuando firma el quórum." />
+          <ListItem
+            icon="share-2"
+            title="Firmas en otros teléfonos"
+            subtitle="Ninguno de sus firmantes está en este teléfono. Puedes proponer operaciones y compartirlas por QR para que las firmen; los fondos solo se mueven cuando firma el quórum."
+          />
         </Card>
       )}
 
@@ -326,7 +447,12 @@ export default function AccountScreen({ id }: { id: string }) {
         <Section title="Por firmar">
           {pend.map((p) => (
             <Card key={p.id} onPress={() => nav.push('proposal', { id: p.id })}>
-              <ListItem icon="edit-3" iconColor={C.warn} title={p.tx.TransactionType === 'Payment' ? 'Envío' : p.tx.TransactionType} subtitle={p.status === 'ready' ? 'Lista para enviar' : (p.signatures.length === 1 ? t('1 firma') : t('{n} firmas', { n: p.signatures.length }))} />
+              <ListItem
+                icon="edit-3"
+                iconColor={C.warn}
+                title={p.tx.TransactionType === 'Payment' ? 'Envío' : p.tx.TransactionType}
+                subtitle={p.status === 'ready' ? 'Lista para enviar' : p.signatures.length === 1 ? t('1 firma') : t('{n} firmas', { n: p.signatures.length })}
+              />
             </Card>
           ))}
         </Section>
@@ -335,12 +461,7 @@ export default function AccountScreen({ id }: { id: string }) {
       {st?.exists && (
         <Section title="Activos">
           <Card style={{ paddingVertical: 4 }}>
-            <ListItem
-              glyph={<XrpMark size={17} color={C.green} />}
-              title="XRP"
-              subtitle={m.balFiatOf(st.balanceXrp, a.network)}
-              right={<Txt v="h3">{m.balXrp(st.balanceXrp)}</Txt>}
-            />
+            <ListItem glyph={<XrpMark size={17} color={C.green} />} title="XRP" subtitle={m.balFiatOf(st.balanceXrp, a.network)} right={<Txt v="h3">{m.balXrp(st.balanceXrp)}</Txt>} />
             {KNOWN_TOKENS[a.network].map((k) => {
               const line = st.tokens.find((t) => t.currency === k.currency && t.issuer === k.issuer);
               if (line) {
@@ -351,7 +472,7 @@ export default function AccountScreen({ id }: { id: string }) {
                     iconColor={k.color}
                     title={k.symbol}
                     subtitle={m.tokenFiat(Number(line.balance), { currency: k.currency, issuer: k.issuer }, a.network) || k.name}
-                    right={<Txt v="h3">{m.balXrp(line.balance)}</Txt>}
+                    right={tokenRight(k.symbol, k.symbol, { currency: k.currency, issuer: k.issuer }, line.balance)}
                   />
                 );
               }
@@ -364,21 +485,27 @@ export default function AccountScreen({ id }: { id: string }) {
                   subtitle={t('{x} · no habilitado', { x: k.name })}
                   right={
                     canSign ? (
-                      <Pressable
-                        hitSlop={8}
-                        onPress={async () => {
-                          try {
-                            const p = await app.createProposal(a, buildTrustSet(a.address, { currency: k.currency, issuer: k.issuer }));
-                            nav.push('proposal', { id: p.id });
-                          } catch (e: any) {
-                            proposalFailed('No se pudo', e, nav);
+                      tokenBusy === k.symbol ? (
+                        <XrpLoader size={20} delay={0} />
+                      ) : (
+                        <Pressable
+                          hitSlop={8}
+                          disabled={!!tokenBusy}
+                          onPress={() =>
+                            tokenTx(
+                              k.symbol,
+                              buildTrustSet(a.address, {
+                                currency: k.currency,
+                                issuer: k.issuer,
+                              }),
+                            )
                           }
-                        }}
-                      >
-                        <Txt v="label" color={C.green}>
-                          Habilitar
-                        </Txt>
-                      </Pressable>
+                        >
+                          <Txt v="label" color={C.green}>
+                            Habilitar
+                          </Txt>
+                        </Pressable>
+                      )
                     ) : undefined
                   }
                 />
@@ -393,11 +520,11 @@ export default function AccountScreen({ id }: { id: string }) {
                   iconColor={C.dim}
                   title={t.label}
                   subtitle={`${tr('No verificado')} · ${t.issuer.slice(0, 6)}…${t.issuer.slice(-4)}`}
-                  right={<Txt v="h3">{m.balXrp(t.balance)}</Txt>}
+                  right={tokenRight(t.currency + t.issuer, t.label, { currency: t.currency, issuer: t.issuer }, t.balance)}
                 />
               ))}
           </Card>
-          <Txt v="small">Habilitar un token reserva 0,2 XRP de la cuenta mientras la línea exista.</Txt>
+          <Txt v="small">Habilitar un token reserva 0,2 XRP de la cuenta mientras la línea exista. Con saldo 0 puedes quitarlo y recuperar esa reserva.</Txt>
         </Section>
       )}
 
@@ -431,7 +558,10 @@ export default function AccountScreen({ id }: { id: string }) {
             onPress={() =>
               Alert.alert(
                 'Convertir en bóveda',
-                t('“{a}” pasará a ser una bóveda: eliges los firmantes y el quórum, y al final se puede desactivar la clave de {d}. Hazlo primero en testnet.', { a: a.label, d: app.deviceFor(a.address)!.label }),
+                t('“{a}” pasará a ser una bóveda: eliges los firmantes y el quórum, y al final se puede desactivar la clave de {d}. Hazlo primero en testnet.', {
+                  a: a.label,
+                  d: app.deviceFor(a.address)!.label,
+                }),
                 [
                   { text: 'Cancelar', style: 'cancel' },
                   {

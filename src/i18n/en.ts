@@ -175,7 +175,7 @@ export const EN: Record<string, string> = {
   "Activos": "Assets",
   "No se pudo": "Couldn't do it",
   "Habilitar": "Enable",
-  "Habilitar un token reserva 0,2 XRP de la cuenta mientras la línea exista.": "Enabling a token reserves 0.2 XRP of the account while the trust line exists.",
+  "Habilitar un token reserva 0,2 XRP de la cuenta mientras la línea exista. Con saldo 0 puedes quitarlo y recuperar esa reserva.": "Enabling a token reserves 0.2 XRP of the account while the trust line exists. With a 0 balance you can remove it and get that reserve back.",
   "Seguridad de la bóveda": "Vault security",
   "Convertir en bóveda": "Turn into a vault",
   "Misma dirección y fondos, protegida con multifirma": "Same address and funds, protected with multisig",
@@ -1261,4 +1261,5 @@ export const EN: Record<string, string> = {
   "Ya firmé en Quorum y te la devuelvo": "I signed in Quorum and I'm sending it back to you",
   "Ya tiene todas las firmas. Ábrela en Quorum y envíala a la red: {x}": "It has all the signatures. Open it in Quorum and submit it to the network: {x}",
   "Ábrela en Quorum para sumar esta firma (si te falta firmar, firma también): {x}": "Open it in Quorum to add this signature (if you haven't signed yet, sign too): {x}",
+  "Se borra la línea de confianza y se libera la reserva de 0,2 XRP. Puedes volver a habilitarlo cuando quieras.": "The trust line is deleted and the 0.2 XRP reserve is released. You can enable it again any time.",
 };

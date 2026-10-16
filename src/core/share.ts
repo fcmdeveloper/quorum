@@ -79,13 +79,24 @@ export interface ShareSummary {
   signed: number;
   needed: number;
   minutesLeft: number | null;
+  /** Se devuelve con la firma propia a quien la envió (o al siguiente firmante). */
+  reply?: boolean;
 }
 
 /** Mensaje listo para compartir. `tr` traduce los textos fijos (español es la clave). */
 export function shareMessage(s: SharedProposal, sum: ShareSummary, link: string, tr: (k: string, v?: Record<string, string | number>) => string): string {
   const from = cleanText(s.from, MAX_FROM);
   const note = cleanText(s.note, MAX_NOTE);
-  const lines = [from ? tr('{x} te pide firmar en Quorum', { x: from }) : tr('Te piden firmar en Quorum')];
+  const complete = sum.signed >= sum.needed;
+  const lines = [
+    sum.reply
+      ? from
+        ? tr('{x} ya firmó en Quorum y te la devuelve', { x: from })
+        : tr('Ya firmé en Quorum y te la devuelvo')
+      : from
+        ? tr('{x} te pide firmar en Quorum', { x: from })
+        : tr('Te piden firmar en Quorum'),
+  ];
   lines.push(`${sum.title} · ${sum.account}${sum.testnet ? ' (testnet)' : ''}`);
   for (const [k, v] of sum.details) lines.push(`${k}: ${v}`);
   if (note) lines.push(tr('Motivo: {x}', { x: note }));
@@ -93,6 +104,12 @@ export function shareMessage(s: SharedProposal, sum: ShareSummary, link: string,
   if (sum.minutesLeft !== null && sum.minutesLeft > 0) status.push(tr('vence en ~{x} min', { x: sum.minutesLeft }));
   lines.push(status.join(' · '));
   lines.push('');
-  lines.push(tr('Ábrela en Quorum, revisa la operación y firma: {x}', { x: link }));
+  lines.push(
+    sum.reply
+      ? complete
+        ? tr('Ya tiene todas las firmas. Ábrela en Quorum y envíala a la red: {x}', { x: link })
+        : tr('Ábrela en Quorum para sumar esta firma (si te falta firmar, firma también): {x}', { x: link })
+      : tr('Ábrela en Quorum, revisa la operación y firma: {x}', { x: link }),
+  );
   return lines.join('\n');
 }

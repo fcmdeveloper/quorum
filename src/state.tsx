@@ -5,7 +5,9 @@ import { AccountState, NetworkId, currentLedger, fetchAccountState, findTxBySequ
 import { TURN_USED, classifyUsedTurn } from './core/usedTurn';
 import { PriceQuote, fetchXrpPrice } from './core/market';
 import { combineSignatures, SignerSig, TxJson } from './core/tx';
-import { decodeProposalQr, ledgerTxProposalId, mergeSigs, proposalIdFor } from './core/qr';
+import { decodeProposalQr, mergeSigs, proposalIdFor } from './core/qr';
+import { celebrate } from './ui/Celebrate';
+import { t } from './i18n';
 import { signAsMaster, signAsMultisigner } from './signers/sign';
 import { signWithSecret } from './core/seedVault';
 import { SignerDevice } from './signers/types';
@@ -261,6 +263,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       let changed = false;
       const next: Proposal[] = [];
       const updated = new Map<string, Proposal>();
+      const sentNow: Proposal[] = [];
       for (const p of pRef.current) {
         if (p.network !== net || p.account !== st.address || !(p.status === 'collecting' || p.status === 'ready')) {
           next.push(p);
@@ -271,9 +274,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const ticketUsed = !!p.tx.TicketSequence && !st.tickets.includes(p.tx.TicketSequence);
         if (seqUsed || ticketUsed) {
           // Su secuencia o ticket ya se usó: puede ser esta misma operación, enviada desde otro teléfono.
-          const found = p.mode === 'multi' ? await findTxBySequence(net, st.address, { sequence: p.tx.TicketSequence ? undefined : p.tx.Sequence, ticket: p.tx.TicketSequence }).catch(() => null) : null;
+          let found: { tx: any; hash: string; result: string } | null = null;
+          if (p.mode === 'multi') {
+            try {
+              found = await findTxBySequence(net, st.address, { sequence: p.tx.TicketSequence ? undefined : p.tx.Sequence, ticket: p.tx.TicketSequence });
+            } catch {
+              // Sin respuesta de la red: no se puede saber si la envió otro teléfono. Se revisa en la próxima vuelta.
+              next.push(p);
+              continue;
+            }
+          }
           changed = true;
-          const u: Proposal = found && ledgerTxProposalId(found.tx) === p.id ? { ...p, status: found.result === 'tesSUCCESS' ? 'submitted' : 'failed', hash: found.hash, result: found.result } : { ...p, status: 'expired' };
+          const used = classifyUsedTurn(p.id, found);
+          const u: Proposal =
+            used.kind === 'elsewhere'
+              ? { ...p, status: used.result === 'tesSUCCESS' ? 'submitted' : 'failed', hash: used.hash, result: used.result, resultMessage: undefined, sentElsewhere: true }
+              : { ...p, status: 'expired' };
+          if (used.kind === 'elsewhere' && used.result === 'tesSUCCESS') sentNow.push(u);
           updated.set(p.id, u);
           next.push(u);
           continue;
@@ -289,6 +306,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       // las operaciones pudieron cambiar mientras se consultaba el ledger: solo se actualizan las revisadas
       if (changed) await persistProposals(pRef.current.map((p) => updated.get(p.id) ?? p));
+      // Aviso en este teléfono: otro juntó las firmas y la envió.
+      if (sentNow.length > 0) celebrate(sentNow.length > 1 ? t('{n} operaciones enviadas desde otro teléfono', { n: sentNow.length }) : 'Ya la envió otro teléfono');
     },
     [persistProposals],
   );
@@ -449,6 +468,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         tx: d.tx,
         signatures: d.signatures,
         status: 'collecting',
+        received: true,
         sharedFrom: meta?.from,
         sharedNote: meta?.note,
       };

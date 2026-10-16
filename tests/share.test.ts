@@ -36,3 +36,16 @@ test('anything that is not a Quorum operation is ignored', () => {
   assert.strictEqual(parseSharedProposal('hola'), null);
   assert.strictEqual(parseSharedProposal(null), null);
 });
+
+test('a reply says it was signed and asks to add the signature, or to submit when complete', () => {
+  const tr = (k: string, v?: Record<string, string | number>) => k.replace(/\{(\w+)\}/g, (_, n) => String(v?.[n] ?? ''));
+  const base = { title: 'Pago', details: [] as [string, string][], account: 'Bóveda', testnet: false, signed: 1, needed: 3, minutesLeft: null, reply: true };
+  const msg = shareMessage({ qr: 'x', from: 'Ana' }, base, 'https://quorumxrpl.com/p#q=x', tr);
+  assert.match(msg, /^Ana ya firmó en Quorum y te la devuelve/);
+  assert.match(msg, /sumar esta firma/);
+  const done = shareMessage({ qr: 'x' }, { ...base, signed: 3 }, 'L', tr);
+  assert.match(done, /^Ya firmé en Quorum y te la devuelvo/);
+  assert.match(done, /envíala a la red: L$/);
+  const ask = shareMessage({ qr: 'x', from: 'Ana' }, { ...base, reply: undefined }, 'L', tr);
+  assert.match(ask, /^Ana te pide firmar en Quorum/);
+});

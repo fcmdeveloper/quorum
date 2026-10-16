@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../i18n';
 import { Alert, Linking, Share, View } from 'react-native';
 import { useApp, signedWeight } from '../state';
@@ -65,6 +65,9 @@ export default function ProposalScreen({ id }: { id: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [left, setLeft] = useState<number | null>(null); // minutos aprox. antes de vencer
   const [shareNote, setShareNote] = useState<string | null>(null);
+  // Recién firmada aquí: se ofrece devolverla a quien la envió.
+  const [justSigned, setJustSigned] = useState(false);
+  const shareRef = useRef<((reply?: boolean) => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (!p?.tx.LastLedgerSequence || !(p.status === 'collecting' || p.status === 'ready')) return;
@@ -95,6 +98,18 @@ export default function ProposalScreen({ id }: { id: string }) {
     const iv = setInterval(check, 20_000);
     return () => clearInterval(iv);
   }, [p?.id, p?.status, acc?.id]);
+
+  // Justo después de firmar: si aún faltan firmas, se pide devolverla (si no, nadie se entera de esta firma).
+  useEffect(() => {
+    if (!justSigned || !p) return;
+    setJustSigned(false);
+    if (p.status !== 'collecting') return;
+    const to = p.sharedFrom ?? t('quien te la envió');
+    Alert.alert(t('Firmaste'), t('Todavía faltan firmas. Devuélvesela a {x} para que sume tu firma y la pueda enviar.', { x: to }), [
+      { text: t('Después'), style: 'cancel' },
+      { text: t('Devolver ahora'), onPress: () => shareRef.current?.(true) },
+    ]);
+  }, [justSigned, p?.status, p?.signatures.length]);
 
   const rows = useMemo(() => {
     if (!p) return [];
@@ -131,6 +146,7 @@ export default function ProposalScreen({ id }: { id: string }) {
     try {
       await app.signProposal(p.id, dev);
       success();
+      if (p.received && p.mode === 'multi') setJustSigned(true);
     } catch (e: any) {
       warnBuzz();
       setErr(e?.message ?? String(e));
@@ -176,9 +192,9 @@ export default function ProposalScreen({ id }: { id: string }) {
       },
     ]);
 
-  const share = async () => {
+  const share = async (reply = false) => {
     const qr = encodeProposalQr(p.network, p.tx, p.signatures);
-    const note = shareNote ?? p.sharedNote ?? (p.note && p.note !== p.sharedNote ? t(p.note) : undefined);
+    const note = reply ? undefined : shareNote ?? p.sharedNote ?? (p.note && p.note !== p.sharedNote ? t(p.note) : undefined);
     const shared = { qr, from: app.settings.shareName, note };
     const link = proposalLink(QUORUM.website, shared);
     const details = d.lines
@@ -186,7 +202,7 @@ export default function ProposalScreen({ id }: { id: string }) {
       .map(([k, v]) => [t(k), /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(v) ? `${v.slice(0, 6)}…${v.slice(-4)}` : v] as [string, string]);
     const message = shareMessage(
       shared,
-      { title: t(d.title), details, account: acc?.label ?? `${p.account.slice(0, 6)}…${p.account.slice(-4)}`, testnet: p.network === 'testnet', signed: weight, needed: quorum, minutesLeft: left },
+      { title: t(d.title), details, account: acc?.label ?? `${p.account.slice(0, 6)}…${p.account.slice(-4)}`, testnet: p.network === 'testnet', signed: weight, needed: quorum, minutesLeft: left, reply },
       link,
       t,
     );
@@ -194,6 +210,12 @@ export default function ProposalScreen({ id }: { id: string }) {
       await Share.share({ message });
     } catch {}
   };
+  shareRef.current = share;
+
+  // Firmó aquí, llegó de otro teléfono y aún faltan firmas: hay que devolverla para que alguien las junte.
+  const mySigned = rows.some((r) => r.signed && r.device);
+  const giveBack = active && p.mode === 'multi' && !!p.received && mySigned && p.status === 'collecting';
+  const backTo = p.sharedFrom ?? t('quien te la envió');
 
   return (
     <Screen title="Operación" onBack={nav.pop}>
@@ -280,11 +302,22 @@ export default function ProposalScreen({ id }: { id: string }) {
       )}
       {p.status === 'ready' && <Button title="Enviar a la red" icon="send" onPress={submit} />}
 
+      {giveBack && (
+        <Card style={{ marginTop: SP.md, borderColor: C.green, borderWidth: 1 }}>
+          <Txt v="h3">Devuélvela con tu firma</Txt>
+          <Txt v="small" style={{ marginTop: 4 }}>
+            {t('Ya firmaste, pero faltan firmas (peso {a} de {b}). Nadie se entera de tu firma hasta que la devuelvas: envíasela a {x} para que junte las firmas, o pásala al siguiente firmante.', { a: weight, b: quorum, x: backTo })}
+          </Txt>
+          <Button title={t('Devolver a {x}', { x: backTo })} icon="corner-up-left" onPress={() => share(true)} />
+          <Button title="Mostrar QR" icon="grid" kind="ghost" onPress={() => nav.push('showQr', { id: p.id })} />
+        </Card>
+      )}
+
       {active && p.mode === 'multi' && (
         <Card style={{ marginTop: SP.md }}>
           <Txt v="h3">¿Un firmante está en otro teléfono?</Txt>
           <Txt v="small" style={{ marginTop: 4 }}>
-            En persona: muéstrale el QR. A distancia: compártela por WhatsApp, Telegram o correo. En su Quorum la abre, firma con su dispositivo y te devuelve su firma de la misma forma. Sin servidores: el enlace solo lleva la operación y firmas públicas.
+            En persona: muéstrale el QR. A distancia: compártela por WhatsApp, Telegram o correo. En su Quorum la abre, firma con su dispositivo y te la devuelve de la misma forma (Quorum se lo pide al firmar). Sin servidores: el enlace solo lleva la operación y firmas públicas.
           </Txt>
           <View style={{ flexDirection: 'row', gap: SP.md }}>
             <Button title="Mostrar QR" icon="grid" kind="secondary" style={{ flex: 1 }} onPress={() => nav.push('showQr', { id: p.id })} />
@@ -305,7 +338,7 @@ export default function ProposalScreen({ id }: { id: string }) {
               placeholder={t('Pago proveedor de octubre')}
               autoCapitalize="sentences"
             />
-            <Button title="Compartir para firmar" icon="share-2" onPress={share} />
+            <Button title="Compartir para firmar" icon="share-2" onPress={() => share()} />
           </View>
         </Card>
       )}

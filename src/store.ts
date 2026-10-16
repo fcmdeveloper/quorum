@@ -102,7 +102,9 @@ export interface Proposal {
   /** Recibida por enlace: quién la compartió y su motivo, tal como los escribió esa persona (no verificados). */
   sharedFrom?: string;
   sharedNote?: string;
-  /** Otro teléfono la envió primero (se reconoció en el ledger al intentar enviarla aquí). */
+  /** Llegó de otro teléfono (QR o enlace): después de firmar hay que devolverla. */
+  received?: boolean;
+  /** Otro teléfono la envió primero (se reconoció en el ledger). */
   sentElsewhere?: boolean;
 }
 

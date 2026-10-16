@@ -35,7 +35,7 @@ cd quorum
 ### 2. Find the release
 
 Each release is announced in [Discussions › Announcements](https://github.com/fcmdeveloper/quorum/discussions/categories/announcements) with:
-- its **tag** (for example `v1.0.0`) and **commit**;
+- its **tag** (for example `v1.0.1`) and **commit**;
 - its **app code fingerprint** (`sha256:…`);
 - the **TestFlight link** to install it;
 - the transaction that registered it on the XRP Ledger.
@@ -46,19 +46,19 @@ The registry account is **Quorum Releases**: [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S
 
 ```bash
 git fetch --tags
-scripts/verify-release.sh v1.0.0
+scripts/verify-release.sh v1.0.1
 ```
 
 The script checks out that tag in a clean temporary folder, installs the exact dependencies (`npm ci`), bundles the app code with the same settings as the iOS release build, compiles it to Hermes bytecode and prints:
 
 ```
-Quorum 1.0.0 (1)
-commit    bdc12e1308fcd7c8e57820cd0ed999cbe5604c37
-app code  sha256:42d967643abc58e130fefb109e55f6f9e9139984c4b084ca9ac05a56ba9045da
-js source sha256:b391463d9c7dc4f294389a01fc775fcca664273444ffaf923ee145072d7127c4
+Quorum 1.0.1 (2)
+commit    fd2e085c7fdb1f5d344f4a732d65d7948d86e1b8
+app code  sha256:1b0b6bbde3e456e87da73b732b52f31db6d6f40a4114d3eed0f5743b48d0f5e7
+js source sha256:c7bacc434d0a71ddd2aedc619bc6c397e405eb4da1a6427d87cd332ca48e1f15
 ```
 
-*(Real output for 1.0.0. Run it yourself: your numbers are the ones that count.)*
+*(Real output for 1.0.1. Run it yourself: your numbers are the ones that count.)*
 
 It takes a few minutes the first time. The script only reads the repository; it doesn't touch your other files.
 
@@ -102,13 +102,13 @@ On testnet, with no real funds:
 Send **1 drop (0.000001 XRP)** to the Quorum Releases account with this **memo**, as plain text:
 
 ```
-quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:42d96764","result":"pass"}
+quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1b0b6bbd","result":"pass"}
 ```
 
 - `commit` and `app`: the first characters are enough (7 for the commit, 8 for the hash).
 - If something didn't match or didn't work, record it as well. **A fail is as valuable as a pass:**
   ```
-  quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
+  quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
   ```
   Then open a thread in [Discussions › Validators](https://github.com/fcmdeveloper/quorum/discussions/categories/validators) with your output so others can reproduce it.
 
@@ -141,7 +141,7 @@ Council members sign with the Quorum app (Tangem, Ledger or Xaman), exactly like
 
 Every community validator with a **correct** attestation receives a **Quorum Validator** NFT for that release.
 
-- **One collection, one edition per release.** All badges belong to the *Quorum Validators* collection, issued by the Quorum gallery account `rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE` (taxon 2026). Each release has its own color; **1.0.0 is the Genesis edition**.
+- **One collection, one edition per release.** All badges belong to the *Quorum Validators* collection, issued by the Quorum gallery account `rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE` (taxon 2026). Each release has its own color; **1.0.0 is the Genesis edition** (green) and **1.0.1 is blue**.
 - **Minted on demand.** There's no pre-minted stock: one badge is minted for each correct attestation, so the total always equals the real number of validations.
 - **Delivered as a free offer.** The gallery mints the badge and offers it for 0 XRP to your address only. You accept it from your wallet (on the XRP Ledger nobody can send you an NFT without your consent). Then you can use it as an account image in Quorum.
 - **Non-transferable and without monetary value.** It can only go back to the gallery, never be sold. Quorum doesn't pay validators: it's a free, non-profit project.
@@ -149,7 +149,7 @@ Every community validator with a **correct** attestation receives a **Quorum Val
 
 ⚠️ If your account blocks incoming NFT offers (one of the protections Quorum offers for vaults), the offer can't reach you. Validate from a regular account, or, from Quorum 1.0.1, allow *NFT offers* in the vault's *Security › Protections* until you accept the badge, then block them again.
 
-The badge images and metadata are published on [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.0.json), not on IPFS.
+The badge images and metadata are published on [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.1.json), not on IPFS.
 
 ## Questions
 

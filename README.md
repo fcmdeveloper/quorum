@@ -11,10 +11,12 @@ Sitio: https://quorumxrpl.com
 ## Qué hace
 
 - **Bóvedas multifirma:** asistente para crearlas (firmantes con pesos, quórum, tickets para firmar en paralelo), panel de seguridad y destinos permitidos.
-- **Firmas entre teléfonos por QR:** la operación y sus firmas viajan en un código QR; cada teléfono verifica todo.
+- **Firmas entre teléfonos por QR o enlace:** la operación y sus firmas viajan en un código QR o en un enlace (WhatsApp, Telegram, correo); quien firma la devuelve con su firma y cada teléfono verifica todo.
 - **Enviar y recibir** XRP y tokens, con contactos, escáner y aviso de direcciones parecidas (address poisoning).
 - **Patrimonio** en USD o EUR, actividad, NFTs, tokens, DEX y swaps.
-- **Respaldo** exportable (cifrado con contraseña si quieres), Face ID, español e inglés, modo claro y oscuro.
+- **Protecciones** de la bóveda una por una (líneas de confianza, cheques, ofertas de NFT, canales de pago).
+- **NFT como imagen** de cada cuenta, que se puede fijar en el XRP Ledger para que se vea en otros teléfonos.
+- **Respaldo** exportable (cifrado con contraseña si quieres), bloqueo con Face ID o código propio de 4 dígitos, español e inglés, modo claro y oscuro.
 
 ## Compilar tu propia versión
 
@@ -96,7 +98,7 @@ tests/                  pruebas (npm test)
 Cada versión de Quorum se puede reconstruir desde este repositorio y comparar con la app publicada: el código de la app da la misma huella (SHA-256) en cualquier Mac o Linux.
 
 ```bash
-scripts/verify-release.sh v1.0.0
+scripts/verify-release.sh v1.0.1
 ```
 
 Validadores independientes hacen esta comprobación antes de cada publicación y registran su resultado en el XRP Ledger. Cualquiera puede sumarse: [VALIDATORS.es.md](VALIDATORS.es.md) · formato de los registros: [RELEASES.es.md](RELEASES.es.md).
@@ -118,6 +120,16 @@ Si encuentras una vulnerabilidad, escribe a contact@quorumxrpl.com con el asunto
 Quorum is a free, open-source mobile app (Expo / React Native) to create and use **multisig vaults** and accounts on the XRP Ledger, signing with **Tangem** (NFC), **Ledger** (Bluetooth) and **Xaman**.
 
 Quorum is a **coordinator**: it never sees or stores private keys. It builds each operation, each device signs it on its own, and the app **verifies every signature** against the exact transaction before combining and submitting them. There are no servers and no database: everything stays on the phone and the app talks directly to the XRP Ledger.
+
+### What it does
+
+- **Multisig vaults:** a wizard to create them (weighted signers, quorum, tickets to sign in parallel), a security panel and allowed destinations.
+- **Signing across phones by QR or link:** the operation and its signatures travel in a QR code or a link (WhatsApp, Telegram, email); whoever signs sends it back with their signature and every phone verifies everything.
+- **Send and receive** XRP and tokens, with contacts, a scanner and a lookalike-address warning (address poisoning).
+- **Net worth** in USD or EUR, activity, NFTs, tokens, DEX and swaps.
+- **Protections** of the vault one by one (trust lines, checks, NFT offers, payment channels).
+- **NFT as the picture** of each account, which can be pinned on the XRP Ledger so other phones see it.
+- **Exportable backup** (password-encrypted if you like), Face ID or a 4-digit Quorum code lock, Spanish and English, light and dark mode.
 
 ### Build your own version
 
@@ -152,7 +164,7 @@ The first time, open `ios/` in Xcode, pick your development team under *Signing 
 Every Quorum release can be rebuilt from this repository and compared with the published app: the app code gives the same fingerprint (SHA-256) on any Mac or Linux machine.
 
 ```bash
-scripts/verify-release.sh v1.0.0
+scripts/verify-release.sh v1.0.1
 ```
 
 Independent validators run this check before every release and record their result on the XRP Ledger. Anyone can join: [VALIDATORS.md](VALIDATORS.md) · record format: [RELEASES.md](RELEASES.md).

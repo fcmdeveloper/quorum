@@ -35,7 +35,7 @@ cd quorum
 ### 2. Encontrar la versión
 
 Cada versión se anuncia en [Discussions › Announcements](https://github.com/fcmdeveloper/quorum/discussions/categories/announcements) con:
-- su **tag** (por ejemplo `v1.0.0`) y su **commit**;
+- su **tag** (por ejemplo `v1.0.1`) y su **commit**;
 - la **huella del código de la app** (`sha256:…`);
 - el **enlace de TestFlight** para instalarla;
 - la transacción que la registró en el XRP Ledger.
@@ -46,19 +46,19 @@ La cuenta de registro es **Quorum Releases**: [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84
 
 ```bash
 git fetch --tags
-scripts/verify-release.sh v1.0.0
+scripts/verify-release.sh v1.0.1
 ```
 
 El script baja ese tag en una carpeta temporal limpia, instala las dependencias exactas (`npm ci`), empaqueta el código con la misma configuración del build de iOS, lo compila a bytecode de Hermes y muestra:
 
 ```
-Quorum 1.0.0 (1)
-commit    bdc12e1308fcd7c8e57820cd0ed999cbe5604c37
-app code  sha256:42d967643abc58e130fefb109e55f6f9e9139984c4b084ca9ac05a56ba9045da
-js source sha256:b391463d9c7dc4f294389a01fc775fcca664273444ffaf923ee145072d7127c4
+Quorum 1.0.1 (2)
+commit    fd2e085c7fdb1f5d344f4a732d65d7948d86e1b8
+app code  sha256:1b0b6bbde3e456e87da73b732b52f31db6d6f40a4114d3eed0f5743b48d0f5e7
+js source sha256:c7bacc434d0a71ddd2aedc619bc6c397e405eb4da1a6427d87cd332ca48e1f15
 ```
 
-*(Salida real de la 1.0.0. Córrelo tú: los números que valen son los tuyos.)*
+*(Salida real de la 1.0.1. Córrelo tú: los números que valen son los tuyos.)*
 
 La primera vez toma unos minutos. El script solo lee el repositorio; no toca tus otros archivos.
 
@@ -102,13 +102,13 @@ En testnet, sin fondos reales:
 Envía **1 drop (0,000001 XRP)** a la cuenta Quorum Releases con este **memo**, como texto:
 
 ```
-quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:42d96764","result":"pass"}
+quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1b0b6bbd","result":"pass"}
 ```
 
 - `commit` y `app`: bastan los primeros caracteres (7 del commit, 8 de la huella).
 - Si algo no coincidió o no funcionó, regístralo igual. **Un fail vale tanto como un pass:**
   ```
-  quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
+  quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
   ```
   Después abre un hilo en [Discussions › Validators](https://github.com/fcmdeveloper/quorum/discussions/categories/validators) con tu salida para que otros puedan reproducirlo.
 
@@ -141,7 +141,7 @@ Los miembros del Consejo firman con la app Quorum (Tangem, Ledger o Xaman), igua
 
 Cada validador de la comunidad con una validación **correcta** recibe el NFT **Quorum Validator** de esa versión.
 
-- **Una colección, una edición por versión.** Todas las insignias son de la colección *Quorum Validators*, emitida por la cuenta de la galería de Quorum `rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE` (taxon 2026). Cada versión tiene su color; **la 1.0.0 es la edición Génesis**.
+- **Una colección, una edición por versión.** Todas las insignias son de la colección *Quorum Validators*, emitida por la cuenta de la galería de Quorum `rfrn8qHd6qrYXokM1du4vEFF8qUin9kirE` (taxon 2026). Cada versión tiene su color; **la 1.0.0 es la edición Génesis** (verde) y **la 1.0.1, la azul**.
 - **Se acuñan a pedido.** No hay stock por adelantado: se acuña una insignia por cada validación correcta, así que el total siempre es el número real de validaciones.
 - **Se entregan como oferta gratis.** La galería acuña la insignia y la ofrece por 0 XRP solo a tu dirección. La aceptas desde tu billetera (en el XRP Ledger nadie puede enviarte un NFT sin tu consentimiento) y después puedes usarla como imagen de una cuenta en Quorum.
 - **No se pueden transferir y no tienen valor monetario.** Solo pueden volver a la galería, nunca venderse. Quorum no paga a los validadores: es un proyecto gratuito y sin fines de lucro.
@@ -149,7 +149,7 @@ Cada validador de la comunidad con una validación **correcta** recibe el NFT **
 
 ⚠️ Si tu cuenta bloquea las ofertas de NFT entrantes (una de las protecciones que Quorum ofrece para las bóvedas), la oferta no te llega. Valida desde una cuenta normal o, desde Quorum 1.0.1, permite *Ofertas de NFT* en *Seguridad › Protecciones* de la bóveda hasta aceptar la insignia y vuelve a bloquearlas.
 
-Las imágenes y los datos de las insignias se publican en [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.0.json), no en IPFS.
+Las imágenes y los datos de las insignias se publican en [quorumxrpl.com/nft/](https://quorumxrpl.com/nft/validator-1.0.1.json), no en IPFS.
 
 ## Preguntas
 

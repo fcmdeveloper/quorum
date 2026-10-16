@@ -3,7 +3,7 @@
     "name": "Quorum",
     "slug": "quorum",
     "scheme": "quorum",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -33,7 +33,7 @@
           "TAG"
         ]
       },
-      "buildNumber": "1"
+      "buildNumber": "2"
     },
     "android": {
       "package": "cl.minify.quorum",

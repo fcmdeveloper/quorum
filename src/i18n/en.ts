@@ -1358,4 +1358,8 @@ export const EN: Record<string, string> = {
   "{x} te pide {a} {s}": "{x} asks you for {a} {s}",
   "Te piden {a} {s}": "You're asked for {a} {s}",
   "(equivale a {v} {f} al momento del pedido)": "(worth {v} {f} when requested)",
+  "= {x} XRP con 1 XRP = {p}. Ese monto en XRP queda fijo en el pedido.": "= {x} XRP with 1 XRP = {p}. That XRP amount is fixed in the request.",
+  "Actualizar precio": "Update price",
+  "Actualizar precio (ahora {p})": "Update price (now {p})",
+  "≈ {v} al precio tomado al pedir": "≈ {v} at the price taken when requesting",
 };

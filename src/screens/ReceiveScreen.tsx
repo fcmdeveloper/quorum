@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Share, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as Clipboard from 'expo-clipboard';
@@ -12,7 +12,7 @@ import { QUORUM } from '../config';
 import { MAX_FROM, MAX_NOTE } from '../core/share';
 import { normalizeXrpAmount, payLink, payMessage, PayRequest } from '../core/payRequest';
 import { KNOWN_TOKENS } from '../core/assets';
-import { FIATS, fiatToXrp, formatFiat } from '../core/market';
+import { FIATS, formatFiat } from '../core/market';
 
 export default function ReceiveScreen({ id }: { id: string }) {
   const app = useApp();
@@ -34,15 +34,19 @@ export default function ReceiveScreen({ id }: { id: string }) {
   const [unit, setUnit] = useState<'xrp' | 'fiat'>('xrp');
   const inFiat = fiatOk && unit === 'fiat';
   const fiatLabel = FIATS.find((f) => f.value === m.fiat)?.label ?? 'USD';
+  // El precio se congela al empezar a pedir en divisa: así el QR no cambia solo cada minuto
+  // (lo que se ve es exactamente lo que se cobra). "Actualizar precio" lo vuelve a tomar.
+  const [lockedPrice, setLockedPrice] = useState<number | null>(null);
+  useEffect(() => {
+    if (inFiat && lockedPrice === null && m.price) setLockedPrice(m.price);
+    if (!inFiat && lockedPrice !== null) setLockedPrice(null);
+  }, [inFiat, m.price]);
   const typed = normalizeXrpAmount(amountText);
   let amount: string | null = typed;
   if (typed && inFiat) {
-    try {
-      amount = normalizeXrpAmount(fiatToXrp(Number(typed), m.fiat, app.price!));
-    } catch {
-      amount = null;
-    }
+    amount = lockedPrice ? normalizeXrpAmount((Math.floor((Number(typed) / lockedPrice) * 1e6) / 1e6).toFixed(6)) : null;
   }
+  const priceMoved = inFiat && lockedPrice && m.price ? Math.abs(m.price / lockedPrice - 1) >= 0.001 : false;
   const badAmount = !!amountText && !amount;
   const req: PayRequest | null =
     asking && amount
@@ -83,7 +87,7 @@ export default function ReceiveScreen({ id }: { id: string }) {
             <Txt v="h2">{t('Pides {x} {s}', { x: m.xrp(Number(req.amount)), s: symbol })}</Txt>
             {req.fiatValue ? (
               <Txt v="small" color={C.dim}>
-                {t('≈ {v} al precio de ahora', { v: formatFiat(Number(req.fiatValue), m.fiat) })}
+                {t('≈ {v} al precio tomado al pedir', { v: formatFiat(Number(req.fiatValue), m.fiat) })}
               </Txt>
             ) : null}
             {req.note ? (
@@ -145,7 +149,7 @@ export default function ReceiveScreen({ id }: { id: string }) {
             hint={
               amount
                 ? inFiat
-                  ? t('= {x} XRP al precio de ahora. El monto en XRP queda fijo en el pedido.', { x: m.xrp(Number(amount)) })
+                  ? t('= {x} XRP con 1 XRP = {p}. Ese monto en XRP queda fijo en el pedido.', { x: m.xrp(Number(amount)), p: formatFiat(lockedPrice ?? 0, m.fiat) })
                   : token
                     ? m.tokenFiat(Number(amount), { currency: token.currency, issuer: token.issuer }, a.network) || undefined
                     : a.network === 'mainnet'
@@ -154,6 +158,15 @@ export default function ReceiveScreen({ id }: { id: string }) {
                 : undefined
             }
           />
+          {inFiat ? (
+            <Button
+              title={priceMoved ? t('Actualizar precio (ahora {p})', { p: formatFiat(m.price ?? 0, m.fiat) }) : t('Actualizar precio')}
+              kind="ghost"
+              icon="refresh-cw"
+              disabled={!priceMoved}
+              onPress={() => setLockedPrice(m.price ?? null)}
+            />
+          ) : null}
           <Field label="Motivo (opcional)" value={note} onChangeText={(v) => setNote(v.slice(0, MAX_NOTE))} placeholder={t('Almuerzo del viernes')} autoCapitalize="sentences" />
           <Field
             label="Tu nombre (opcional)"

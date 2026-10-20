@@ -584,23 +584,24 @@ export function AmountInput({
   error?: boolean;
 }) {
   const len = Math.max(1, value.length);
-  const size = len <= 7 ? 40 : len <= 10 ? 32 : len <= 13 ? 26 : 22;
+  const size = len <= 7 ? 40 : len <= 10 ? 34 : len <= 13 ? 28 : 24;
+  // El campo ocupa todo el ancho y centra el texto: en iOS un TextInput de ancho automático no se
+  // re-mide bien cuando el valor cambia por código (Máx, cambio XRP ↔ divisa) y se veía cortado o corrido.
+  // La unidad va en su propia línea, así no depende de cuánto mida el número.
   return (
     <View style={[st.card, { paddingVertical: SP.xl, borderColor: error ? C.bad : C.line }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', alignSelf: 'stretch' }}>
-        <TextInput
-          value={value}
-          onChangeText={(t) => onChange(t.replace(/[^0-9.,]/g, ''))}
-          keyboardType="decimal-pad"
-          placeholder="0"
-          placeholderTextColor={C.faint}
-          selectionColor={C.green}
-          maxLength={18}
-          style={{ fontFamily: F.bold, fontSize: size, color: error ? C.bad : C.text, textAlign: 'right', minWidth: 40, maxWidth: '75%', padding: 0 }}
-          accessibilityLabel="Monto"
-        />
-        <Text style={{ fontFamily: F.semibold, fontSize: Math.round(size * 0.5), color: C.dim, marginLeft: 8 }}>{unit}</Text>
-      </View>
+      <TextInput
+        value={value}
+        onChangeText={(t) => onChange(t.replace(/[^0-9.,]/g, ''))}
+        keyboardType="decimal-pad"
+        placeholder="0"
+        placeholderTextColor={C.faint}
+        selectionColor={C.green}
+        maxLength={18}
+        style={{ alignSelf: 'stretch', fontFamily: F.bold, fontSize: size, lineHeight: Math.round(size * 1.2), height: 52, color: error ? C.bad : C.text, textAlign: 'center', padding: 0 }}
+        accessibilityLabel="Monto"
+      />
+      <Text style={{ fontFamily: F.semibold, fontSize: 16, color: C.dim, textAlign: 'center', marginTop: 2 }}>{unit}</Text>
       {sub ? (
         <Text style={{ fontFamily: F.medium, fontSize: 14, color: C.dim, textAlign: 'center', marginTop: 6 }} numberOfLines={1}>
           {tr(sub)}

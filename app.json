@@ -79,6 +79,7 @@
         {
           "ios": {
             "deploymentTarget": "16.4",
+            "usePrecompiledModules": false,
             "extraPods": [
               {
                 "name": "TangemSdk",
@@ -118,6 +119,7 @@
       ],
       "./plugins/withSceneLifecycle",
       "./plugins/withReproducibleHermes",
+      "./plugins/withSwift64InterfaceFix",
       [
         "expo-alternate-app-icons",
         [

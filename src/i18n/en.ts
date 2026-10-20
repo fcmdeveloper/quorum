@@ -1313,4 +1313,8 @@ export const EN: Record<string, string> = {
   "Guardar cambios": "Save changes",
   "Contacto actualizado": "Contact updated",
   "Cancelar edición": "Cancel editing",
+  "El gráfico y su variación muestran solo tus XRP: el historial de las stablecoins no se puede reconstruir. El total de arriba y la composición sí las incluyen, igual que Inicio.": "The chart and its change show only your XRP: stablecoin history can't be rebuilt. The total above and the breakdown do include them, like Home.",
+  "Total": "Total",
+  "Tus XRP en esa fecha": "Your XRP on that date",
+  "Composición": "Breakdown",
 };

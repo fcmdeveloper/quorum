@@ -197,13 +197,16 @@ function DragRow({
             </View>
           </View>
         </Pressable>
-        <Switch
-          value={!a.hidden}
-          onValueChange={onToggle}
-          trackColor={{ true: C.greenDeep, false: C.line }}
-          thumbColor={C.text}
-          accessibilityLabel={t('Mostrar {x} en Inicio', { x: a.label })}
-        />
+        {/* caja de tamaño fijo: en iOS 26+ el interruptor nativo no se centra solo dentro de la fila */}
+        <View style={{ width: 64, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+          <Switch
+            value={!a.hidden}
+            onValueChange={onToggle}
+            trackColor={{ true: C.greenDeep, false: C.line }}
+            thumbColor={C.text}
+            accessibilityLabel={t('Mostrar {x} en Inicio', { x: a.label })}
+          />
+        </View>
       </View>
     </Animated.View>
   );

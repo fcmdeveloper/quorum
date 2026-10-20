@@ -14,6 +14,7 @@ import { C, F, SP } from '../ui/theme';
 import { FIATS, fetchXrpHistory, formatFiat, PricePoint, Range } from '../core/market';
 import { BalanceHistory, fetchBalanceHistory, portfolioSeries } from '../core/history';
 import { XrpLoader } from '../ui/XrpLoader';
+import { assetSymbol } from '../core/assets';
 
 export type ChartView = 'portfolio' | 'market';
 
@@ -76,15 +77,27 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
   );
   const mainnet = useMemo(() => allMain.filter((a) => included.has(a.address)), [allMain, included]);
   const nowXrp = mainnet.reduce((s, a) => s + Number(app.stateOf(a)?.balanceXrp ?? 0), 0);
-  const stableFiat = useMemo(() => {
-    let v = 0;
+  // Stablecoins de las cuentas que suman, agrupadas por moneda (las mismas que suma Inicio).
+  const stables = useMemo(() => {
+    const by = new Map<string, { sym: string; amount: number; fiat: number }>();
     for (const a of mainnet) {
       for (const tk of app.stateOf(a)?.tokens ?? []) {
-        v += m.tokenFiatValue(Number(tk.balance), { currency: tk.currency, issuer: tk.issuer }, a.network) ?? 0;
+        const amount = Number(tk.balance);
+        const v = m.tokenFiatValue(amount, { currency: tk.currency, issuer: tk.issuer }, a.network);
+        if (!v && v !== 0) continue; // sin precio (otros tokens): no suman, como en Inicio
+        if (amount <= 0) continue;
+        const k = `${tk.currency}:${tk.issuer}`;
+        const cur = by.get(k) ?? { sym: assetSymbol({ currency: tk.currency, issuer: tk.issuer }, a.network), amount: 0, fiat: 0 };
+        cur.amount += amount;
+        cur.fiat += v;
+        by.set(k, cur);
       }
     }
-    return v;
+    return [...by.values()].sort((x, y) => y.fiat - x.fiat);
   }, [mainnet, app.states, m.price]);
+  const stableFiat = stables.reduce((s, x) => s + x.fiat, 0);
+  // Total de hoy: igual que en Inicio (XRP + stablecoins)
+  const totalNow = m.price ? nowXrp * m.price + stableFiat : null;
 
   // Precio del rango
   useEffect(() => {
@@ -156,14 +169,16 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
         ]}
       />
 
-      <Txt v="label">{view === 'portfolio' ? 'Valor de tus cuentas' : t('Precio de XRP ({x})', { x: fiat.toUpperCase() })}</Txt>
+      <Txt v="label">
+        {view === 'portfolio' ? (sel !== null ? t('Tus XRP en esa fecha') : 'Valor de tus cuentas') : t('Precio de XRP ({x})', { x: fiat.toUpperCase() })}
+      </Txt>
       <Text style={{ fontFamily: F.bold, fontSize: 40, color: C.text, letterSpacing: -1.2, marginTop: 2 }}>
-        {shown ? (view === 'market' ? priceFmt(shown.v) : money(shown.v)) : '—'}
+        {view === 'portfolio' && sel === null && totalNow !== null ? money(totalNow) : shown ? (view === 'market' ? priceFmt(shown.v) : money(shown.v)) : '—'}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4, minHeight: 24 }}>
         {shown && first && pct !== null ? (
           <Badge
-            text={`${up ? '+' : ''}${pct.toFixed(2)}%${view === 'portfolio' && !hidden ? `  ${up ? '+' : '−'}${formatFiat(Math.abs(delta), fiat)}` : ''}`}
+            text={`${view === 'portfolio' && stableFiat > 0 ? 'XRP ' : ''}${up ? '+' : ''}${pct.toFixed(2)}%${view === 'portfolio' && !hidden ? `  ${up ? '+' : '−'}${formatFiat(Math.abs(delta), fiat)}` : ''}`}
             color={color}
             icon={up ? 'trending-up' : 'trending-down'}
           />
@@ -207,13 +222,25 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
             </>
           ) : (
             <>
-              <Row k={t('Saldo en XRP')} v={hidden ? '••••' : `${m.xrp(shown?.xrp ?? 0)} XRP`} />
+              {sel !== null ? <Row k={t('Saldo en XRP')} v={hidden ? '••••' : `${m.xrp(shown?.xrp ?? 0)} XRP`} /> : null}
               <Row k={t('Máximo del periodo')} v={money(hi)} />
               <Row k={t('Mínimo del periodo')} v={money(lo)} />
               <Row k={t('Cuentas incluidas')} v={String(mainnet.length)} />
             </>
           )}
         </Card>
+      ) : null}
+
+      {view === 'portfolio' && mainnet.length > 0 ? (
+        <Section title="Composición">
+          <Card>
+            <Row k="XRP" v={hidden ? '••••' : `${m.xrp(nowXrp)} XRP${m.price ? ` · ${formatFiat(nowXrp * m.price, fiat)}` : ''}`} />
+            {stables.map((x) => (
+              <Row key={x.sym} k={x.sym} v={hidden ? '••••' : `${m.xrp(x.amount)} · ${formatFiat(x.fiat, fiat)}`} />
+            ))}
+            {totalNow !== null ? <Row k={t('Total')} v={money(totalNow)} /> : null}
+          </Card>
+        </Section>
       ) : null}
 
       {view === 'portfolio' && <IncludedAccounts />}
@@ -224,7 +251,9 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
             <Txt v="small">
               Se calcula con el saldo de XRP de tus cuentas de mainnet en cada momento y el precio de XRP de ese momento. Las cuentas de testnet no se incluyen.
             </Txt>
-            {stableFiat > 0 ? <Txt v="small">No incluye stablecoins ni otros tokens.</Txt> : null}
+            {stableFiat > 0 ? (
+              <Txt v="small">{t('El gráfico y su variación muestran solo tus XRP: el historial de las stablecoins no se puede reconstruir. El total de arriba y la composición sí las incluyen, igual que Inicio.')}</Txt>
+            ) : null}
             {partial ? <Txt v="small">Alguna cuenta tiene muchas transacciones: el historial más antiguo es aproximado.</Txt> : null}
           </>
         ) : null}
@@ -262,17 +291,19 @@ function IncludedAccounts() {
                   {a.hidden ? t('Oculta en Inicio · no suma') : a.excluded ? t('No suma al total') : v != null ? m.fiatRaw(v) : st ? `${m.xrp(st.balanceXrp)} XRP` : '…'}
                 </Txt>
               </View>
-              <Switch
-                value={!a.excluded && !a.hidden}
-                disabled={!!a.hidden}
-                onValueChange={(on) => {
-                  tap();
-                  app.updateAccount(a.id, { excluded: on ? undefined : true });
-                }}
-                trackColor={{ true: C.greenDeep, false: C.line }}
-                thumbColor={C.text}
-                accessibilityLabel={t('Sumar {x} al patrimonio', { x: a.label })}
-              />
+              <View style={{ width: 64, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+                <Switch
+                  value={!a.excluded && !a.hidden}
+                  disabled={!!a.hidden}
+                  onValueChange={(on) => {
+                    tap();
+                    app.updateAccount(a.id, { excluded: on ? undefined : true });
+                  }}
+                  trackColor={{ true: C.greenDeep, false: C.line }}
+                  thumbColor={C.text}
+                  accessibilityLabel={t('Sumar {x} al patrimonio', { x: a.label })}
+                />
+              </View>
             </View>
           );
         })}

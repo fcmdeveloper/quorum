@@ -18,7 +18,7 @@ import { FIATS, fiatToXrp, formatFiat } from '../core/market';
 
 const KNOWN_EXCHANGE_HINT = 'Si envías a un exchange, el destination tag es obligatorio.';
 
-export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: string; to?: string; tag?: string; asset?: string }) {
+export default function SendScreen({ id, to, tag: tag0, asset: asset0, amount: amount0 }: { id: string; to?: string; tag?: string; asset?: string; amount?: string }) {
   const app = useApp();
   const nav = useNav();
   const scanner = useAddressScanner();
@@ -27,7 +27,7 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: s
   const st = app.stateOf(a);
   const [dest, setDest] = useState(to ?? '');
   const [tag, setTag] = useState(tag0 ?? '');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(amount0 ?? '');
   const [unit, setUnit] = useState<'xrp' | 'fiat'>('xrp');
   const [memo, setMemo] = useState('');
   const [busy, setBusy] = useState(false);
@@ -131,9 +131,14 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0 }: { id: s
               style={{ padding: 6 }}
               accessibilityLabel="Escanear"
               onPress={() =>
-                scanner.open((addr: string, t?: string) => {
+                scanner.open((addr: string, t?: string, amt?: string) => {
                   setDest(addr);
                   if (t) setTag(t);
+                  if (amt) {
+                    setAmount(amt);
+                    setUnit('xrp');
+                    setAssetKey('XRP');
+                  }
                 })
               }
             >

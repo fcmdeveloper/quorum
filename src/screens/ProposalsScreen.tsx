@@ -6,6 +6,7 @@ import { Badge, Button, Card, Empty, ListItem, Screen, Section, Txt, toast } fro
 import * as Clipboard from 'expo-clipboard';
 import { t } from '../i18n';
 import { parseSharedProposal } from '../core/share';
+import { parsePayRequest } from '../core/payRequest';
 import { C, SP } from '../ui/theme';
 import { describeTx } from '../core/tx';
 import { STATUS } from './ProposalScreen';
@@ -36,7 +37,10 @@ export default function ProposalsScreen() {
 
   // Operación compartida por mensaje: se copia el enlace (o el mensaje completo) y se pega aquí.
   const paste = async () => {
-    const s = parseSharedProposal(await Clipboard.getStringAsync().catch(() => ''));
+    const text = await Clipboard.getStringAsync().catch(() => '');
+    const req = parsePayRequest(text);
+    if (req) return nav.push('payRequest', { req });
+    const s = parseSharedProposal(text);
     if (!s) return toast('No hay un enlace de operación de Quorum copiado', 'warn');
     try {
       const r = await app.importQr(s.qr, { from: s.from, note: s.note });

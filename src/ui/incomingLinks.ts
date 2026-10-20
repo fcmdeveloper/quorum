@@ -7,15 +7,18 @@ import * as Linking from 'expo-linking';
 import { useApp } from '../state';
 import { useNav } from '../nav';
 import { parseSharedProposal, SharedProposal } from '../core/share';
+import { parsePayRequest, PayRequest } from '../core/payRequest';
 import { t } from '../i18n';
 import { toast } from './components';
 
 export function useIncomingProposalLinks(ready: boolean) {
   const app = useApp();
   const nav = useNav();
-  const pending = useRef<SharedProposal | null>(null);
+  const pending = useRef<SharedProposal | PayRequest | null>(null);
 
-  const open = async (s: SharedProposal) => {
+  const open = async (s: SharedProposal | PayRequest) => {
+    // pedido de pago: elegir desde qué cuenta pagar
+    if ('to' in s) return nav.push('payRequest', { req: s });
     try {
       const r = await app.importQr(s.qr, { from: s.from, note: s.note });
       toast(r.isNew ? 'Operación recibida' : r.added > 0 ? r.added > 1 ? t('{n} firmas agregadas', { n: r.added }) : t('1 firma agregada') : 'Sin firmas nuevas', r.added > 0 || r.isNew ? 'ok' : 'warn');
@@ -28,7 +31,7 @@ export function useIncomingProposalLinks(ready: boolean) {
   // Enlace con el que se abrió la app y los que llegan mientras está abierta.
   useEffect(() => {
     const take = (url: string | null) => {
-      const s = parseSharedProposal(url);
+      const s = parseSharedProposal(url) ?? parsePayRequest(url);
       if (s) pending.current = s;
     };
     Linking.getInitialURL().then(take).catch(() => {});

@@ -10,6 +10,7 @@ import { t } from '../i18n';
 import { Button, Empty, Screen, Txt, success, warnBuzz } from './components';
 import { C, R, SP } from './theme';
 import { isProposalQr, parseAddressQr } from '../core/qr';
+import { parsePayRequest } from '../core/payRequest';
 
 export function ScanView({
   title,
@@ -87,7 +88,7 @@ export function ScanView({
   );
 }
 
-type OnAddress = (address: string, tag?: string) => void;
+type OnAddress = (address: string, tag?: string, amount?: string) => void;
 
 /**
  * Escáner de direcciones para formularios. Se abre como ventana encima de la pantalla actual,
@@ -110,10 +111,12 @@ export function useAddressScanner() {
           onClose={close}
           onScan={(data) => {
             if (isProposalQr(data)) throw new Error(t('Este QR es una operación, no una dirección'));
-            const addr = parseAddressQr(data);
+            // un pedido de pago trae también monto (y quizás tag)
+            const req = parsePayRequest(data);
+            const addr = req ? { address: req.to, tag: req.tag } : parseAddressQr(data);
             if (!addr) throw new Error(t('QR no reconocido'));
             success();
-            onAddress(addr.address, addr.tag);
+            onAddress(addr.address, addr.tag, req?.amount);
             close();
           }}
         />

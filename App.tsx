@@ -38,6 +38,7 @@ import { AddDeviceScreen, DevicesScreen } from './src/screens/DevicesScreen';
 import AddAccountScreen from './src/screens/AddAccountScreen';
 import SettingsScreen, { ContactsScreen } from './src/screens/SettingsScreen';
 import AboutScreen, { DonateScreen } from './src/screens/AboutScreen';
+import PayRequestScreen from './src/screens/PayRequestScreen';
 import VerifyScreen from './src/screens/VerifyScreen';
 import RegisterReleaseScreen from './src/screens/RegisterReleaseScreen';
 import BadgesScreen from './src/screens/BadgesScreen';
@@ -63,6 +64,8 @@ function RouteView({ r }: { r: Route }) {
       return <SendScreen {...r.params} />;
     case 'receive':
       return <ReceiveScreen id={r.params.id} />;
+    case 'payRequest':
+      return <PayRequestScreen req={r.params.req} />;
     case 'nfts':
       return <NftsScreen id={r.params.id} />;
     case 'swap':

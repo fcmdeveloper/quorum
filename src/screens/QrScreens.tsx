@@ -8,6 +8,7 @@ import { Badge, Button, Notice, Screen, Txt, success, toast } from '../ui/compon
 import { ScanView } from '../ui/ScanView';
 import { C, R, SP } from '../ui/theme';
 import { encodeProposalQr, isProposalQr, parseAddressQr } from '../core/qr';
+import { parsePayRequest } from '../core/payRequest';
 import { describeTx } from '../core/tx';
 
 export function ShowQrScreen({ id }: { id: string }) {
@@ -51,6 +52,12 @@ export function ScanScreen({ purpose }: { purpose: 'any' }) {
           success();
           toast(r.isNew ? 'Operación recibida' : r.added > 0 ? r.added > 1 ? t('{n} firmas agregadas', { n: r.added }) : t('1 firma agregada') : 'Sin firmas nuevas', r.added > 0 || r.isNew ? 'ok' : 'warn');
           nav.replace('proposal', { id: r.proposal.id });
+          return;
+        }
+        const req = parsePayRequest(data);
+        if (req) {
+          success();
+          nav.replace('payRequest', { req });
           return;
         }
         const addr = parseAddressQr(data);

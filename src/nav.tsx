@@ -1,10 +1,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, BackHandler, Dimensions, Easing, PanResponder } from 'react-native';
 import { themeName } from './ui/theme';
+import type { PayRequest } from './core/payRequest';
 
 export type Route =
   | { name: 'account'; params: { id: string } }
-  | { name: 'send'; params: { id: string; to?: string; tag?: string; asset?: string } }
+  | { name: 'send'; params: { id: string; to?: string; tag?: string; asset?: string; amount?: string } }
+  | { name: 'payRequest'; params: { req: PayRequest } }
   | { name: 'receive'; params: { id: string } }
   | { name: 'nfts'; params: { id: string } }
   | { name: 'swap'; params: { id: string } }

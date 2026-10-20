@@ -36,6 +36,8 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0, amount: a
 
   const tokenOpts = (st?.tokens ?? []).filter((t) => Number(t.balance) > 0);
   const token = assetKey === 'XRP' ? null : tokenOpts.find((t) => `${t.currency}:${t.issuer}` === assetKey) ?? null;
+  // se pidió un token (p. ej. desde un pedido de pago) que esta cuenta no tiene: nunca caer a XRP en silencio
+  const missingToken = assetKey !== 'XRP' && !token;
   const asset: Asset = token ? { currency: token.currency, issuer: token.issuer } : XRP;
   const sym = assetSymbol(asset, a.network);
 
@@ -63,7 +65,7 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0, amount: a
   const over = xrpAmount && st ? Number(xrpAmount) > available : false;
 
   const review = async () => {
-    if (!xrpAmount) return;
+    if (!xrpAmount || missingToken) return;
     let tx;
     try {
       const rate = token ? await fetchTransferRate(a.network, token.issuer) : 1;
@@ -249,7 +251,10 @@ export default function SendScreen({ id, to, tag: tag0, asset: asset0, amount: a
       {a.kind === 'vault' && destOk && !allowed && <Notice>Este destino no está entre tus cuentas ni destinos permitidos.</Notice>}
       {a.network === 'testnet' && <Badge text="Testnet: XRP sin valor" color={C.test} />}
 
-      <Button title="Revisar envío" onPress={review} busy={busy} disabled={!destOk || !xrpAmount || !!over} style={{ marginTop: SP.lg }} />
+      {missingToken ? (
+        <Notice kind="bad">{t('Esta cuenta no tiene saldo de {x}. Elige otra cuenta o pide que te cobren en XRP.', { x: assetSymbol({ currency: assetKey.split(':')[0], issuer: assetKey.split(':')[1] }, a.network) })}</Notice>
+      ) : null}
+      <Button title="Revisar envío" onPress={review} busy={busy} disabled={!destOk || !xrpAmount || !!over || missingToken} style={{ marginTop: SP.lg }} />
     </Screen>
   );
 }

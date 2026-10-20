@@ -18,14 +18,29 @@ export interface PayRequest {
   /** Dirección que recibe. */
   to: string;
   network: NetworkId;
-  /** Monto en XRP como texto decimal (punto), p. ej. "25" o "0.5". Sin monto: lo escribe quien paga. */
+  /** Monto como texto decimal (punto), p. ej. "25" o "0.5", en XRP o en el token. Sin monto: lo escribe quien paga. */
   amount?: string;
+  /** Token pedido (p. ej. una stablecoin); sin esto, XRP. Código de 3 letras o hex de 40, y su emisor. */
+  currency?: string;
+  issuer?: string;
+  /** Solo informativo: el monto en divisa con que se pidió (p. ej. "20" y "usd"); el XRP se fijó al pedir. */
+  fiatValue?: string;
+  fiat?: string;
   /** Destination tag. */
   tag?: string;
   /** Motivo (lo escribe quien pide; no verificado). */
   note?: string;
   /** Quién pide (lo escribe esa persona; no verificado). */
   from?: string;
+}
+
+/** Código de moneda de un token del XRP Ledger (no XRP): 3 caracteres o hex de 40. */
+export function normalizeCurrency(v: string | undefined | null): string | null {
+  if (!v) return null;
+  const s = String(v).trim();
+  if (/^[0-9A-Fa-f]{40}$/.test(s)) return /^0{40}$/.test(s) ? null : s.toUpperCase();
+  if (/^[A-Za-z0-9?!@#$%^&*<>(){}[\]|]{3}$/.test(s) && s.toUpperCase() !== 'XRP') return s;
+  return null;
 }
 
 const MAX_XRP = 100_000_000_000; // suministro total: nada razonable lo supera
@@ -64,6 +79,10 @@ export function payFragment(r: PayRequest): string {
   const note = cleanText(r.note, MAX_NOTE);
   const from = cleanText(r.from, MAX_FROM);
   if (amount) parts.push(`a=${amount}`);
+  const currency = normalizeCurrency(r.currency);
+  if (currency && r.issuer && isValidClassicAddress(r.issuer)) parts.push(`c=${currency}`, `i=${r.issuer}`);
+  const fv = normalizeXrpAmount(r.fiatValue);
+  if (!currency && fv && r.fiat && /^[a-z]{3}$/.test(r.fiat)) parts.push(`fv=${fv}`, `fc=${r.fiat}`);
   if (tag) parts.push(`t=${tag}`);
   if (note) parts.push(`n=${encodeURIComponent(note)}`);
   if (from) parts.push(`f=${encodeURIComponent(from)}`);
@@ -98,6 +117,21 @@ function build(to: string, p: Map<string, string>, network: NetworkId): PayReque
   if (rawTag !== undefined && rawTag !== '' && !tag) return null;
   const r: PayRequest = { to, network };
   if (amount) r.amount = amount;
+  // token: los dos datos juntos y válidos, o ninguno (uno a medias se rechaza)
+  const rawC = p.get('c');
+  const rawI = p.get('i');
+  if (rawC !== undefined || rawI !== undefined) {
+    const currency = normalizeCurrency(rawC);
+    if (!currency || !rawI || !isValidClassicAddress(rawI)) return null;
+    r.currency = currency;
+    r.issuer = rawI;
+  }
+  const fv = normalizeXrpAmount(p.get('fv'));
+  const fc = (p.get('fc') ?? '').toLowerCase();
+  if (!r.currency && fv && /^[a-z]{3}$/.test(fc)) {
+    r.fiatValue = fv;
+    r.fiat = fc;
+  }
   if (tag) r.tag = tag;
   const note = cleanText(p.get('n'), MAX_NOTE);
   const from = cleanText(p.get('f'), MAX_FROM);
@@ -129,19 +163,20 @@ export function parsePayRequest(text: string | null | undefined): PayRequest | n
 }
 
 /** Mensaje listo para compartir. `tr` traduce los textos fijos (español es la clave). */
-export function payMessage(r: PayRequest, link: string, tr: (k: string, v?: Record<string, string | number>) => string): string {
+export function payMessage(r: PayRequest, link: string, tr: (k: string, v?: Record<string, string | number>) => string, symbol = 'XRP'): string {
   const from = cleanText(r.from, MAX_FROM);
   const note = cleanText(r.note, MAX_NOTE);
   const amount = normalizeXrpAmount(r.amount);
   const lines = [
     amount
       ? from
-        ? tr('{x} te pide {a} XRP', { x: from, a: amount })
-        : tr('Te piden {a} XRP', { a: amount })
+        ? tr('{x} te pide {a} {s}', { x: from, a: amount, s: symbol })
+        : tr('Te piden {a} {s}', { a: amount, s: symbol })
       : from
         ? tr('{x} te comparte su dirección para pagarle', { x: from })
         : tr('Dirección para pagar'),
   ];
+  if (amount && r.fiatValue && r.fiat) lines.push(tr('(equivale a {v} {f} al momento del pedido)', { v: r.fiatValue, f: r.fiat.toUpperCase() }));
   if (note) lines.push(tr('Motivo: {x}', { x: note }));
   lines.push(`${r.to}${r.network === 'testnet' ? ' (testnet)' : ''}`);
   if (r.tag) lines.push(tr('Destination tag: {x}', { x: r.tag }));

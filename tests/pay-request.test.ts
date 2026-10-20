@@ -43,3 +43,26 @@ test('names and notes are one clean line with a length limit', () => {
   assert.ok(!/[‮\n]/.test(r.from!));
   assert.ok(r.from!.length <= 40);
 });
+
+test('a stablecoin request carries currency and issuer together, or is rejected', () => {
+  const RL = '524C555344000000000000000000000000000000';
+  const IS = 'rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De';
+  const link = payLink('https://quorumxrpl.com', { to: TO, network: 'mainnet', amount: '20', currency: RL, issuer: IS });
+  assert.deepStrictEqual(parsePayRequest(link), { to: TO, network: 'mainnet', amount: '20', currency: RL, issuer: IS });
+  assert.match(payMessage(parsePayRequest(link)!, link, tr, 'RLUSD'), /^Te piden 20 RLUSD/);
+  assert.equal(parsePayRequest(`https://quorumxrpl.com/p#pay=${TO}&a=5&c=${RL}`), null);
+  assert.equal(parsePayRequest(`https://quorumxrpl.com/p#pay=${TO}&a=5&c=XRP&i=${IS}`), null);
+  assert.equal(parsePayRequest(`https://quorumxrpl.com/p#pay=${TO}&a=5&c=USD&i=rBad`), null);
+});
+
+test('an XRP request asked in dollars keeps the dollar figure only as a reference', () => {
+  const link = payLink('https://quorumxrpl.com', { to: TO, network: 'mainnet', amount: '25.316455', fiatValue: '20', fiat: 'usd' });
+  const r = parsePayRequest(link)!;
+  assert.equal(r.amount, '25.316455');
+  assert.equal(r.fiatValue, '20');
+  assert.equal(r.fiat, 'usd');
+  assert.match(payMessage(r, link, tr), /equivale a 20 USD/);
+  // con token no se agrega la referencia en divisa
+  const tok = payLink('https://quorumxrpl.com', { to: TO, network: 'mainnet', amount: '20', currency: 'USD', issuer: TO, fiatValue: '20', fiat: 'usd' });
+  assert.equal(parsePayRequest(tok)!.fiatValue, undefined);
+});

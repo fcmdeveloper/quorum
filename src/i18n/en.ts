@@ -1362,4 +1362,9 @@ export const EN: Record<string, string> = {
   "Actualizar precio": "Update price",
   "Actualizar precio (ahora {p})": "Update price (now {p})",
   "≈ {v} al precio tomado al pedir": "≈ {v} at the price taken when requesting",
+  "Gratis y sin valor, para ensayar. Las stablecoins llegan solo si el token está habilitado en esta cuenta: se copia la dirección y se abre la página del emisor para que la pegues.": "Free and worthless, for rehearsing. Stablecoins only arrive if the token is enabled on this account: the address is copied and the issuer's page opens so you can paste it.",
+  "Fondos de prueba": "Test funds",
+  "{x} de prueba": "Test {x}",
+  "Primero habilita {x}": "Enable {x} first",
+  "El faucet solo puede enviarte {x} si esta cuenta lo tiene habilitado. Tócalo en la lista de tokens (Habilitar) y firma; después vuelve aquí.": "The faucet can only send you {x} if this account has it enabled. Tap Enable in the token list and sign; then come back here.",
 };

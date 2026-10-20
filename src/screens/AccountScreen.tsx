@@ -7,12 +7,19 @@ import { useApp } from '../state';
 import { useNav } from '../nav';
 import { proposalFailed } from '../ui/proposalError';
 import { useMoney } from '../ui/money';
-import { Action, Address, Badge, Card, IconButton, ListItem, QuorumRing, Screen, Section, Txt, Button, AccountAvatar, ColorPicker, IconPicker, XrpMark, accountIcon } from '../ui/components';
+import { Action, Address, Badge, Card, IconButton, ListItem, QuorumRing, Screen, Section, Txt, Button, AccountAvatar, ColorPicker, IconPicker, XrpMark, accountIcon, toast } from '../ui/components';
 import { C, F, SP } from '../ui/theme';
 import { minSigners, lossTolerance, vaultHealth } from '../core/health';
 import { ActivityItem, NETWORKS, fetchActivity, fundTestnet } from '../core/network';
 import { KIND_LABEL } from '../signers/types';
 import { KNOWN_TOKENS } from '../core/assets';
+import * as Clipboard from 'expo-clipboard';
+
+/** Páginas oficiales para pedir stablecoins de prueba (testnet). */
+const TESTNET_FAUCETS: Record<string, string> = {
+  RLUSD: 'https://tryrlusd.com/',
+  USDC: 'https://faucet.circle.com/',
+};
 import { buildRemoveTrust, buildTrustSet, TxJson } from '../core/tx';
 import { XrpLoader } from '../ui/XrpLoader';
 import { buildPinNft, canPin } from '../core/pin';
@@ -355,22 +362,49 @@ export default function AccountScreen({ id }: { id: string }) {
         </Card>
       )}
 
-      {a.network === 'testnet' && st && Number(st.balanceXrp) < 20 && (
-        <Button
-          title="Recibir XRP de prueba"
-          kind="secondary"
-          icon="droplet"
-          onPress={async () => {
-            try {
-              await fundTestnet(a.address);
-              setTimeout(load, 5000);
-              Alert.alert('Faucet', 'Enviamos XRP de prueba. Se verán en unos segundos.');
-            } catch (e: any) {
-              Alert.alert('Faucet', e.message);
-            }
-          }}
-        />
-      )}
+      {a.network === 'testnet' && st ? (
+        <Card style={{ marginTop: SP.md }}>
+          <Txt v="h3">Fondos de prueba</Txt>
+          <Txt v="small" style={{ marginTop: 4, marginBottom: SP.sm }}>
+            {t('Gratis y sin valor, para ensayar. Las stablecoins llegan solo si el token está habilitado en esta cuenta: se copia la dirección y se abre la página del emisor para que la pegues.')}
+          </Txt>
+          <Button
+            title="XRP de prueba"
+            kind="secondary"
+            icon="droplet"
+            onPress={async () => {
+              try {
+                await fundTestnet(a.address);
+                setTimeout(load, 5000);
+                Alert.alert('Faucet', 'Enviamos XRP de prueba. Se verán en unos segundos.');
+              } catch (e: any) {
+                Alert.alert('Faucet', e.message);
+              }
+            }}
+          />
+          {KNOWN_TOKENS.testnet.map((k) => {
+            const has = st.tokens.some((tk) => tk.currency === k.currency && tk.issuer === k.issuer);
+            const url = TESTNET_FAUCETS[k.symbol];
+            if (!url) return null;
+            return (
+              <Button
+                key={k.symbol}
+                title={t('{x} de prueba', { x: k.symbol })}
+                kind="secondary"
+                icon="external-link"
+                onPress={async () => {
+                  if (!has) {
+                    return Alert.alert(t('Primero habilita {x}', { x: k.symbol }), t('El faucet solo puede enviarte {x} si esta cuenta lo tiene habilitado. Tócalo en la lista de tokens (Habilitar) y firma; después vuelve aquí.', { x: k.symbol }));
+                  }
+                  await Clipboard.setStringAsync(a.address);
+                  toast('Dirección copiada');
+                  Linking.openURL(url);
+                }}
+              />
+            );
+          })}
+        </Card>
+      ) : null}
 
       {isVault && (
         <Card onPress={() => nav.push('security', { id: a.id })} style={{ marginTop: SP.lg }}>

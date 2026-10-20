@@ -13,7 +13,8 @@ Sitio: https://quorumxrpl.com
 - **Bóvedas multifirma:** asistente para crearlas (firmantes con pesos, quórum, tickets para firmar en paralelo), panel de seguridad y destinos permitidos.
 - **Firmas entre teléfonos por QR o enlace:** la operación y sus firmas viajan en un código QR o en un enlace (WhatsApp, Telegram, correo); quien firma la devuelve con su firma y cada teléfono verifica todo.
 - **Enviar y recibir** XRP y tokens, con contactos, escáner y aviso de direcciones parecidas (address poisoning).
-- **Patrimonio** en USD o EUR, actividad, NFTs, tokens, DEX y swaps.
+- **Pedir un pago** con enlace o QR, en XRP (escrito en XRP, USD o EUR) o en RLUSD/USDC: quien paga solo elige desde qué cuenta y firma.
+- **Patrimonio** en USD o EUR con el detalle de cada moneda, orden y visibilidad de cuentas en Inicio, actividad, NFTs, tokens, DEX y swaps.
 - **Protecciones** de la bóveda una por una (líneas de confianza, cheques, ofertas de NFT, canales de pago).
 - **NFT como imagen** de cada cuenta, que se puede fijar en el XRP Ledger para que se vea en otros teléfonos.
 - **Respaldo** exportable (cifrado con contraseña si quieres), bloqueo con Face ID o código propio de 4 dígitos, español e inglés, modo claro y oscuro.
@@ -126,7 +127,8 @@ Quorum is a **coordinator**: it never sees or stores private keys. It builds eac
 - **Multisig vaults:** a wizard to create them (weighted signers, quorum, tickets to sign in parallel), a security panel and allowed destinations.
 - **Signing across phones by QR or link:** the operation and its signatures travel in a QR code or a link (WhatsApp, Telegram, email); whoever signs sends it back with their signature and every phone verifies everything.
 - **Send and receive** XRP and tokens, with contacts, a scanner and a lookalike-address warning (address poisoning).
-- **Net worth** in USD or EUR, activity, NFTs, tokens, DEX and swaps.
+- **Request a payment** with a link or QR, in XRP (typed in XRP, USD or EUR) or in RLUSD/USDC: the payer just picks the account and signs.
+- **Net worth** in USD or EUR with each currency broken down, account order and visibility on Home, activity, NFTs, tokens, DEX and swaps.
 - **Protections** of the vault one by one (trust lines, checks, NFT offers, payment channels).
 - **NFT as the picture** of each account, which can be pinned on the XRP Ledger so other phones see it.
 - **Exportable backup** (password-encrypted if you like), Face ID or a 4-digit Quorum code lock, Spanish and English, light and dark mode.

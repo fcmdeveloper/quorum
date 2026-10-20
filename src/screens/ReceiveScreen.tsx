@@ -165,15 +165,17 @@ export default function ReceiveScreen({ id }: { id: string }) {
               icon="refresh-cw"
               disabled={!priceMoved}
               onPress={() => setLockedPrice(m.price ?? null)}
+              style={{ marginBottom: SP.lg }}
             />
           ) : null}
-          <Field label="Motivo (opcional)" value={note} onChangeText={(v) => setNote(v.slice(0, MAX_NOTE))} placeholder={t('Almuerzo del viernes')} autoCapitalize="sentences" />
+          <Field label="Motivo (opcional)" value={note} onChangeText={(v) => setNote(v.slice(0, MAX_NOTE))} placeholder={t('Almuerzo del viernes')} autoCapitalize="sentences" style={{ height: 50, paddingVertical: 0 }} />
           <Field
             label="Tu nombre (opcional)"
             value={app.settings.shareName ?? ''}
             onChangeText={(v) => app.updateSettings({ shareName: v.slice(0, MAX_FROM) })}
             placeholder="Alex"
             autoCapitalize="words"
+            style={{ height: 50, paddingVertical: 0 }}
           />
           <Button
             title="Quitar el monto"

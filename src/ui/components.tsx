@@ -362,6 +362,8 @@ export function IconButton({ icon, onPress, label }: { icon: IconName; onPress: 
 export function Field(props: TextInputProps & { label: string; hint?: string; error?: string; right?: React.ReactNode }) {
   const { label, hint, error, right, style, ...rest } = props;
   const [focus, setFocus] = useState(false);
+  const ph = typeof rest.placeholder === 'string' ? t(rest.placeholder) : undefined;
+  const ownPh = !!ph && Platform.OS === 'ios' && 'value' in props;
   return (
     <View style={{ marginBottom: SP.lg }}>
       <Txt v="label" style={{ marginBottom: 6 }}>
@@ -372,12 +374,28 @@ export function Field(props: TextInputProps & { label: string; hint?: string; er
           placeholderTextColor={C.faint}
           autoCapitalize="none"
           autoCorrect={false}
-          onFocus={() => setFocus(true)}
-          onBlur={() => setFocus(false)}
-          style={[st.input, style]}
           {...rest}
-          placeholder={typeof rest.placeholder === 'string' ? t(rest.placeholder) : undefined}
+          onFocus={(e) => {
+            setFocus(true);
+            rest.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocus(false);
+            rest.onBlur?.(e);
+          }}
+          style={[st.input, style]}
+          // En iOS el placeholder nativo con Space Grotesk queda más abajo que el texto escrito.
+          // En los campos controlados se dibuja uno propio (abajo), con la misma fuente y centrado.
+          placeholder={ownPh ? undefined : ph}
+          accessibilityLabel={rest.accessibilityLabel ?? label}
         />
+        {ownPh && !rest.value ? (
+          <View pointerEvents="none" style={[st.phBox, right ? { right: 56 } : null, rest.multiline ? { justifyContent: 'flex-start', paddingTop: 14 } : null]}>
+            <Text numberOfLines={rest.multiline ? 3 : 1} style={st.ph}>
+              {ph}
+            </Text>
+          </View>
+        ) : null}
         {right}
       </View>
       {error ? (
@@ -854,6 +872,8 @@ const buildSt = () =>
     paddingRight: 8,
   },
   input: { flex: 1, color: C.text, fontFamily: F.regular, fontSize: 16, paddingHorizontal: 14, paddingVertical: 14 },
+  phBox: { position: 'absolute', left: 14, right: 8, top: 0, bottom: 0, justifyContent: 'center' },
+  ph: { fontFamily: F.regular, fontSize: 16, color: C.faint },
   seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: R.md, padding: 4, marginBottom: SP.lg },
   segItem: { flex: 1, paddingVertical: 10, borderRadius: R.sm + 2, alignItems: 'center' },
   segOn: { backgroundColor: C.green },

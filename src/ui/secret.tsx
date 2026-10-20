@@ -49,18 +49,71 @@ export function CheckRow({ on, onChange, text }: { on: boolean; onChange: (v: bo
   );
 }
 
-/** Las 8 filas, para anotarlas en papel. No se pueden seleccionar ni copiar. */
-export function SecretGrid({ rows }: { rows: string[] }) {
+/**
+ * Los números secretos de a una fila, como en Xaman: se ve solo la fila actual y las demás quedan
+ * tapadas (sus dígitos ni siquiera se dibujan). Se avanza de A a H; `onSeenAll` avisa cuando se
+ * llegó a la última, para no dejar continuar sin haberlas visto todas. No se pueden seleccionar ni copiar.
+ */
+export function SecretGrid({ rows, onSeenAll }: { rows: string[]; onSeenAll?: () => void }) {
+  const [cur, setCur] = useState(0);
+  const [maxSeen, setMaxSeen] = useState(0);
+  const last = rows.length - 1;
+  const go = (i: number) => {
+    const n = Math.max(0, Math.min(last, i));
+    setCur(n);
+    setMaxSeen((m) => Math.max(m, n));
+  };
   return (
-    <View style={{ borderWidth: 1, borderColor: C.lineStrong, borderRadius: R.md, padding: SP.md, gap: 6 }}>
-      {rows.map((r, i) => (
-        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: SP.md }}>
-          <Text style={{ fontFamily: F.semibold, fontSize: 16, color: C.dim, width: 22 }}>{ROW_LETTERS[i]}</Text>
-          <Text selectable={false} style={{ fontFamily: F.monoMedium, fontSize: 24, letterSpacing: 4, color: C.text }}>
-            {r.slice(0, 3)} {r.slice(3)}
-          </Text>
-        </View>
-      ))}
+    <View>
+      <Txt v="label" color={C.dim} style={{ marginBottom: SP.sm }}>
+        {t('Fila {a} de {b}', { a: cur + 1, b: rows.length })}
+      </Txt>
+      <View style={{ borderWidth: 1, borderColor: C.lineStrong, borderRadius: R.md, padding: SP.md, gap: 4 }}>
+        {rows.map((r, i) => {
+          const on = i === cur;
+          const seen = i <= maxSeen;
+          return (
+            <Pressable
+              key={i}
+              disabled={!seen || on}
+              onPress={() => go(i)}
+              accessibilityLabel={on ? t('Fila {x}', { x: ROW_LETTERS[i] }) : t('Fila {x}, oculta', { x: ROW_LETTERS[i] })}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SP.md,
+                paddingVertical: on ? 12 : 6,
+                paddingHorizontal: SP.sm,
+                borderRadius: R.sm,
+                backgroundColor: on ? C.greenGlow : 'transparent',
+                borderWidth: on ? 1 : 0,
+                borderColor: C.green,
+              }}
+            >
+              <Text style={{ fontFamily: F.semibold, fontSize: on ? 18 : 15, color: on ? C.green : C.faint, width: 22 }}>{ROW_LETTERS[i]}</Text>
+              {on ? (
+                <Text selectable={false} style={{ fontFamily: F.monoMedium, fontSize: 30, letterSpacing: 5, color: C.text }}>
+                  {r.slice(0, 3)} {r.slice(3)}
+                </Text>
+              ) : (
+                <Text selectable={false} style={{ fontFamily: F.monoMedium, fontSize: 18, letterSpacing: 5, color: C.faint, opacity: 0.45 }}>
+                  ••• •••
+                </Text>
+              )}
+              <View style={{ flex: 1 }} />
+              {!on && seen ? <Feather name="check" size={16} color={C.faint} /> : null}
+            </Pressable>
+          );
+        })}
+      </View>
+      <View style={{ flexDirection: 'row', gap: SP.md, marginTop: SP.md }}>
+        <Button title="Anterior" kind="secondary" icon="chevron-up" disabled={cur === 0} style={{ flex: 1 }} onPress={() => go(cur - 1)} />
+        {cur < last ? (
+          <Button title={t('Siguiente: {x}', { x: ROW_LETTERS[cur + 1] })} icon="chevron-down" style={{ flex: 1 }} onPress={() => go(cur + 1)} />
+        ) : (
+          <Button title="Listo, las anoté" icon="check" style={{ flex: 1 }} onPress={() => onSeenAll?.()} />
+        )}
+      </View>
     </View>
   );
 }
@@ -82,7 +135,8 @@ export function SecretEntrySheet({
   visible: boolean;
   /** Bóveda de testnet: se recuerda que los mismos números valen en mainnet. */
   testnet?: boolean;
-  address: string;
+  /** Dirección esperada. Sin ella (retomar una bóveda), basta con que las 8 filas sean válidas. */
+  address?: string;
   title: string;
   text: string;
   confirm: string;
@@ -103,7 +157,8 @@ export function SecretEntrySheet({
   let matches = false;
   if (complete) {
     try {
-      matches = addressFromSecret(rows) === address;
+      const derived = addressFromSecret(rows);
+      matches = address ? derived === address : true;
     } catch {
       matches = false;
     }
@@ -159,7 +214,7 @@ export function SecretEntrySheet({
               <Feather name={valid[i] ? 'check-circle' : r.length === 6 ? 'x-circle' : 'circle'} size={20} color={valid[i] ? C.green : r.length === 6 ? C.bad : C.faint} />
             </View>
           ))}
-          {complete && !matches && <Notice kind="bad">{t('Estos números no corresponden a esta bóveda ({a}…). Revisa que sean los de esta cuenta.', { a: address.slice(0, 8) })}</Notice>}
+          {complete && !matches && address ? <Notice kind="bad">{t('Estos números no corresponden a esta bóveda ({a}…). Revisa que sean los de esta cuenta.', { a: address.slice(0, 8) })}</Notice> : null}
           <Button
             title={confirm}
             icon="edit-3"

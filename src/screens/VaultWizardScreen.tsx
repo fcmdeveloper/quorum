@@ -50,6 +50,10 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
   const [ackWritten, setAckWritten] = useState(false);
   const [ackMinimum, setAckMinimum] = useState(false);
   const [ackNoReturn, setAckNoReturn] = useState(false);
+  // se mostraron las 8 filas (de a una) antes de poder continuar
+  const [seenAll, setSeenAll] = useState(false);
+  // retomar una bóveda sin terminar escribiendo sus números secretos
+  const [askResume, setAskResume] = useState(false);
   const [reserves, setReserves] = useState<Reserves | null>(null);
   useNoScreenCapture(step === 'secret', 'secret-show');
 
@@ -125,6 +129,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
       setAckWritten(false);
       setAckMinimum(false);
       setAckNoReturn(false);
+      setSeenAll(false);
       setStep('secret');
     } catch (e: any) {
       Alert.alert('No se pudo crear', e.message);
@@ -144,6 +149,61 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
     } catch (e: any) {
       Alert.alert('No se pudo crear', e.message);
     }
+  };
+
+  /**
+   * Retomar una bóveda creada en Quorum que quedó sin terminar (p. ej. se quitó del teléfono):
+   * con sus números secretos se calcula la dirección, se revisa en la red y se vuelve a agregar
+   * como bóveda en preparación. Los números no se guardan: solo se usa la dirección.
+   */
+  const resumeVault = async (address: string) => {
+    let st2;
+    try {
+      st2 = await fetchAccountState(network, address);
+    } catch (e: any) {
+      return Alert.alert('No se pudo revisar la cuenta', e?.message ?? String(e));
+    }
+    if (st2.exists && st2.masterDisabled) {
+      return Alert.alert(
+        'Esta bóveda ya está terminada',
+        t('Su master key ya está desactivada, así que los números secretos no sirven para firmar. Agrégala por su dirección ({a}…) y firma con el quórum.', { a: address.slice(0, 8) }),
+      );
+    }
+    const existing = app.accounts.find((a) => a.network === network && a.address === address);
+    const go = async () => {
+      try {
+        let acc: Account;
+        if (existing) {
+          acc = { ...existing, kind: 'vault', origin: 'quorum' };
+          await app.updateAccount(existing.id, { kind: 'vault', origin: 'quorum' });
+        } else {
+          acc = await app.addAccount({ label: name.trim() || 'Bóveda', kind: 'vault', network, address, allowed: [], origin: 'quorum' });
+        }
+        const fresh = await app.refreshAccount(acc);
+        toast('Bóveda recuperada');
+        // con firmantes ya configurados solo faltan la prueba y desactivar la master key
+        if (fresh?.signerList) return nav.replace('finishVault', { id: acc.id });
+        setVault(acc);
+        setStep('signers');
+      } catch (e: any) {
+        Alert.alert('No se pudo retomar', e?.message ?? String(e));
+      }
+    };
+    Alert.alert(
+      'Retomar esta bóveda',
+      [
+        address,
+        network === 'testnet' ? 'Testnet' : 'Mainnet',
+        '',
+        !st2.exists ? t('Todavía no existe en la red: envíale XRP para activarla.') : st2.signerList ? t('Ya tiene firmantes: faltan la prueba con multifirma y desactivar la master key.') : t('Aún no tiene firmantes: sigues desde elegirlos.'),
+        '',
+        t('Se tratará como bóveda creada en Quorum: al terminar no podrá volver a cuenta normal.'),
+      ].join('\n'),
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Retomar', onPress: go },
+      ],
+    );
   };
 
   /** Revisa en la red que cada firmante elegido pueda firmar de verdad. */
@@ -341,6 +401,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
               <Txt v="small" style={{ marginTop: 6 }}>
                 Quorum crea una cuenta nueva y te muestra sus números secretos para que los anotes. No los guarda: te los pedirá para configurar la bóveda y para desactivar su clave original. Sirve con cualquier firmante, incluido Xaman.
               </Txt>
+              <Button title="Ya tengo mis números secretos" kind="ghost" icon="rotate-ccw" onPress={() => setAskResume(true)} />
             </Card>
           ) : (
             <Txt v="small" style={{ marginBottom: SP.sm }}>
@@ -388,7 +449,12 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
           <Txt v="body" color={C.dim} style={{ marginTop: 6, marginBottom: SP.lg }}>
             Anótalos en papel, en orden. Son la clave de emergencia de esta bóveda. Quorum no los guarda: te los pedirá para configurarla y para desactivar su clave original.
           </Txt>
-          <SecretGrid rows={secret} />
+          <SecretGrid rows={secret} onSeenAll={() => setSeenAll(true)} />
+          {!seenAll ? (
+            <Txt v="small" style={{ marginTop: SP.sm }}>
+              {t('Anota cada fila y pasa a la siguiente. Al llegar a la H podrás continuar.')}
+            </Txt>
+          ) : null}
           {(vault?.network ?? network) === 'testnet' ? <TestnetSecretNotice /> : null}
           <Notice kind="bad">
             No les saques foto ni los guardes en el teléfono o en la nube. Cuando la bóveda esté lista no sirven para mover fondos, pero vuelven a valer si algún día se reactiva su master key.
@@ -404,7 +470,7 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
             onChange={setAckNoReturn}
             text="Entiendo que esta bóveda no podrá volver a cuenta normal en Quorum, y que para salir debo mover los fondos con multifirma."
           />
-          <Button title="Continuar" onPress={confirmSecret} disabled={!ackWritten || !ackMinimum || !ackNoReturn} />
+          <Button title="Continuar" onPress={confirmSecret} disabled={!seenAll || !ackWritten || !ackMinimum || !ackNoReturn} />
           <Button
             title="Volver"
             kind="ghost"
@@ -688,6 +754,26 @@ export default function VaultWizardScreen({ id }: { id?: string }) {
           }}
         />
       )}
+      <SecretEntrySheet
+        visible={askResume}
+        testnet={network === 'testnet'}
+        title="Retomar una bóveda"
+        text={t('Escribe los números secretos de una bóveda creada en Quorum que no terminaste. Se buscará en {n} (la red elegida arriba). No se guardan: solo se usa la dirección.', { n: network === 'testnet' ? 'Testnet' : 'Mainnet' })}
+        confirm="Buscar la bóveda"
+        onCancel={() => setAskResume(false)}
+        onSubmit={(rows) => {
+          setAskResume(false);
+          let address = '';
+          try {
+            address = addressFromSecret(rows);
+          } catch (e: any) {
+            return Alert.alert('Números no válidos', e?.message ?? String(e));
+          } finally {
+            rows.fill('');
+          }
+          resumeVault(address);
+        }}
+      />
     </Screen>
   );
 }

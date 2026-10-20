@@ -353,9 +353,51 @@ export function ContactsScreen() {
   const [label, setLabel] = useState('');
   const [addr, setAddr] = useState('');
   const [tag, setTag] = useState('');
+  // contacto que se está editando (el formulario de arriba sirve para agregar y para editar)
+  const [editing, setEditing] = useState<string | null>(null);
+  const clear = () => {
+    setLabel('');
+    setAddr('');
+    setTag('');
+    setEditing(null);
+  };
+  const menu = (c: (typeof app.contacts)[number]) =>
+    Alert.alert(c.label, undefined, [
+      {
+        text: 'Editar',
+        onPress: () => {
+          setLabel(c.label);
+          setAddr(c.address);
+          setTag(c.tag ?? '');
+          setEditing(c.id);
+        },
+      },
+      {
+        text: 'Quitar',
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert('Quitar contacto', t('¿Quitar «{x}» de tus contactos?', { x: c.label }), [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Quitar',
+              style: 'destructive',
+              onPress: () => {
+                if (editing === c.id) clear();
+                app.removeContact(c.id);
+              },
+            },
+          ]),
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   return (
-    <Screen title="Contactos" onBack={nav.pop}>
-      <Card>
+    <Screen title="Contactos" onBack={nav.pop} scrollKey={editing ?? ''}>
+      <Card style={editing ? { borderColor: C.green } : undefined}>
+        {editing ? (
+          <Txt v="label" color={C.green} style={{ marginBottom: SP.sm }}>
+            Editando contacto
+          </Txt>
+        ) : null}
         <Field label="Nombre" value={label} onChangeText={setLabel} placeholder="Exchange, socio…" />
         <Field
           label="Dirección"
@@ -381,18 +423,17 @@ export function ContactsScreen() {
         />
         <Field label="Destination tag (opcional)" value={tag} onChangeText={setTag} keyboardType="number-pad" />
         <Button
-          title="Guardar contacto"
-          disabled={!label.trim() || !isValidClassicAddress(addr.trim())}
+          title={editing ? 'Guardar cambios' : 'Guardar contacto'}
+          disabled={!label.trim() || !isValidClassicAddress(addr.trim()) || (!!tag.trim() && !/^\d{1,10}$/.test(tag.trim()))}
           onPress={() => {
             const save = async () => {
-              await app.saveContact({ id: newId(), label: label.trim(), address: addr.trim(), tag: tag.trim() || undefined });
-              setLabel('');
-              setAddr('');
-              setTag('');
-              toast('Contacto guardado');
+              await app.saveContact({ id: editing ?? newId(), label: label.trim(), address: addr.trim(), tag: tag.trim() || undefined });
+              toast(editing ? 'Contacto actualizado' : 'Contacto guardado');
+              clear();
             };
             // ¿se parece a una dirección de confianza sin serlo? (estafa de direcciones parecidas)
-            const twin = lookalikeOf(addr.trim(), trustedAddresses(app));
+            const prev = editing ? app.contacts.find((c) => c.id === editing) : undefined;
+            const twin = prev?.address === addr.trim() ? null : lookalikeOf(addr.trim(), trustedAddresses(app));
             if (!twin) return save();
             Alert.alert(
               'Dirección parecida, no igual',
@@ -407,6 +448,7 @@ export function ContactsScreen() {
             );
           }}
         />
+        {editing ? <Button title="Cancelar edición" kind="ghost" onPress={clear} /> : null}
       </Card>
       {app.contacts.map((c) => (
         <Card key={c.id} style={{ paddingVertical: 4 }}>
@@ -415,8 +457,8 @@ export function ContactsScreen() {
             title={c.label}
             subtitle={`${c.address.slice(0, 10)}…${c.address.slice(-6)}${c.tag ? ` · tag ${c.tag}` : ''}`}
             right={
-              <Pressable hitSlop={10} onPress={() => app.removeContact(c.id)}>
-                <Feather name="trash-2" size={18} color={C.faint} />
+              <Pressable hitSlop={10} onPress={() => menu(c)} accessibilityLabel={t('Opciones de {x}', { x: c.label })}>
+                <Feather name="more-horizontal" size={20} color={C.dim} />
               </Pressable>
             }
           />

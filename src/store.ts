@@ -33,6 +33,8 @@ export interface Account {
   nft?: { id: string; image: string; network: NetworkId; name?: string; gallery?: boolean; pinned?: boolean };
   /** true: no se suma al patrimonio total de Inicio ni al gráfico. */
   excluded?: boolean;
+  /** true: oculta en Inicio (y por eso tampoco suma al patrimonio ni al gráfico). Se muestra en Orden y visibilidad. */
+  hidden?: boolean;
   /** Solo bóvedas: destinos permitidos (fuera de esta lista la app exige confirmación reforzada). */
   allowed?: string[];
   /**

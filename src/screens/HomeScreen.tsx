@@ -41,8 +41,11 @@ export default function HomeScreen() {
   useGalleryPrefetch();
   usePinnedNftSync();
 
-  const vaults = app.accounts.filter((a) => a.kind === 'vault');
-  const wallets = app.accounts.filter((a) => a.kind === 'wallet');
+  // Las ocultas (Orden y visibilidad) no se muestran en Inicio ni suman al patrimonio.
+  const allVaults = app.accounts.filter((a) => a.kind === 'vault');
+  const allWallets = app.accounts.filter((a) => a.kind === 'wallet');
+  const vaults = allVaults.filter((a) => !a.hidden);
+  const wallets = allWallets.filter((a) => !a.hidden);
   const pending = app.proposals.filter((p) => p.status === 'collecting' || p.status === 'ready');
 
   const totals = useMemo(() => {
@@ -51,7 +54,7 @@ export default function HomeScreen() {
     let stableFiat = 0;
     const seen = new Set<string>(); // la misma dirección agregada dos veces se cuenta una vez
     for (const a of app.accounts) {
-      if (a.excluded) continue;
+      if (a.excluded || a.hidden) continue;
       const st = app.stateOf(a);
       if (!st) continue;
       const k = `${a.network}:${a.address}`;
@@ -80,7 +83,7 @@ export default function HomeScreen() {
   }, [app.settings.balanceUnit, app.settings.hideBalances]);
 
   const onlyTest = totals.main === 0 && totals.test > 0;
-  const excludedCount = app.accounts.filter((a) => a.excluded).length;
+  const excludedCount = app.accounts.filter((a) => a.excluded || a.hidden).length;
   const heroXrp = onlyTest ? totals.test : totals.main;
   // en XRP: saldo real de XRP; en divisa: XRP + stablecoins
   const inXrp = onlyTest || !m.price || app.settings.balanceUnit === 'xrp';
@@ -204,10 +207,10 @@ export default function HomeScreen() {
             title="Bóvedas"
             action={
               <View style={{ flexDirection: 'row', gap: 18 }}>
-                {vaults.length > 1 && (
+                {allVaults.length > 0 && (
                   <Pressable onPress={() => nav.push('reorder', { kind: 'vault' })} hitSlop={10}>
                     <Txt v="label" color={C.dim}>
-                      Ordenar
+                      Organizar
                     </Txt>
                   </Pressable>
                 )}
@@ -219,7 +222,7 @@ export default function HomeScreen() {
               </View>
             }
           >
-            {vaults.length === 0 ? (
+            {allVaults.length === 0 ? (
               <Card onPress={() => nav.push('vaultWizard', {})}>
                 <Txt v="body">Crea una bóveda multifirma</Txt>
                 <Txt v="small">Tus fondos de largo plazo, protegidos por varios dispositivos.</Txt>
@@ -227,16 +230,17 @@ export default function HomeScreen() {
             ) : (
               vaults.map((a) => <VaultCard key={a.id} a={a} />)
             )}
+            <HiddenNote n={allVaults.length - vaults.length} onPress={() => nav.push('reorder', { kind: 'vault' })} />
           </Section>
 
           <Section
             title="Cuentas"
             action={
               <View style={{ flexDirection: 'row', gap: 18 }}>
-                {wallets.length > 1 && (
+                {allWallets.length > 0 && (
                   <Pressable onPress={() => nav.push('reorder', { kind: 'wallet' })} hitSlop={10}>
                     <Txt v="label" color={C.dim}>
-                      Ordenar
+                      Organizar
                     </Txt>
                   </Pressable>
                 )}
@@ -248,7 +252,7 @@ export default function HomeScreen() {
               </View>
             }
           >
-            {wallets.length === 0 ? (
+            {allWallets.length === 0 ? (
               <Card onPress={() => nav.push('addAccount', {})}>
                 <Txt v="body">Agrega una cuenta de uso diario</Txt>
                 <Txt v="small">Firmada por un solo dispositivo, para pagos y movimientos.</Txt>
@@ -256,6 +260,7 @@ export default function HomeScreen() {
             ) : (
               wallets.map((a) => <WalletRow key={a.id} a={a} />)
             )}
+            <HiddenNote n={allWallets.length - wallets.length} onPress={() => nav.push('reorder', { kind: 'wallet' })} />
           </Section>
         </>
       )}
@@ -321,6 +326,19 @@ function useBalance(a: Account) {
     return { main: m.balXrp(st.balanceXrp), sub: a.network === 'testnet' ? t('XRP de prueba') : m.balFiatOf(st.balanceXrp, a.network), xrp: true };
   }
   return { main: m.balFiat(fiatV), sub: `${m.balXrp(st.balanceXrp)} XRP`, xrp: false };
+}
+
+/** Cuántas hay ocultas en Inicio, con acceso a Orden y visibilidad. */
+function HiddenNote({ n, onPress }: { n: number; onPress: () => void }) {
+  if (n <= 0) return null;
+  return (
+    <Pressable onPress={onPress} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}>
+      <Feather name="eye-off" size={14} color={C.faint} />
+      <Txt v="small" color={C.faint}>
+        {n === 1 ? t('1 oculta en Inicio') : t('{n} ocultas en Inicio', { n })}
+      </Txt>
+    </Pressable>
+  );
 }
 
 function VaultCard({ a }: { a: Account }) {

@@ -71,7 +71,7 @@ export default function ChartsScreen({ view: initial }: { view: ChartView }) {
     return app.accounts.filter((a) => a.network === 'mainnet' && !seen.has(a.address) && seen.add(a.address));
   }, [app.accounts.map((a) => `${a.network}:${a.address}`).join(',')]);
   const included = useMemo(
-    () => new Set(app.accounts.filter((a) => a.network === 'mainnet' && !a.excluded).map((a) => a.address)),
+    () => new Set(app.accounts.filter((a) => a.network === 'mainnet' && !a.excluded && !a.hidden).map((a) => a.address)),
     [app.accounts],
   );
   const mainnet = useMemo(() => allMain.filter((a) => included.has(a.address)), [allMain, included]);
@@ -251,7 +251,7 @@ function IncludedAccounts() {
           return (
             <View
               key={a.id}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderColor: C.line, opacity: a.excluded ? 0.55 : 1 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderColor: C.line, opacity: a.excluded || a.hidden ? 0.55 : 1 }}
             >
               <AccountAvatar color={a.color} icon={accountIcon(a, app.deviceFor(a.address))} nft={a.nft?.image} size={36} round={a.kind === 'vault'} />
               <View style={{ flex: 1 }}>
@@ -259,11 +259,12 @@ function IncludedAccounts() {
                   {a.label}
                 </Txt>
                 <Txt v="small" numberOfLines={1}>
-                  {a.excluded ? t('No suma al total') : v != null ? m.fiatRaw(v) : st ? `${m.xrp(st.balanceXrp)} XRP` : '…'}
+                  {a.hidden ? t('Oculta en Inicio · no suma') : a.excluded ? t('No suma al total') : v != null ? m.fiatRaw(v) : st ? `${m.xrp(st.balanceXrp)} XRP` : '…'}
                 </Txt>
               </View>
               <Switch
-                value={!a.excluded}
+                value={!a.excluded && !a.hidden}
+                disabled={!!a.hidden}
                 onValueChange={(on) => {
                   tap();
                   app.updateAccount(a.id, { excluded: on ? undefined : true });

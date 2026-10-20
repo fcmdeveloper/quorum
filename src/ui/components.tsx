@@ -111,7 +111,10 @@ export function Screen({
   padded = true,
   top,
   scrollKey,
+  scrollEnabled = true,
 }: {
+  /** false: la lista no se desplaza (p. ej. mientras se arrastra un elemento). */
+  scrollEnabled?: boolean;
   /** Al cambiar (p. ej. el paso de un asistente), la pantalla vuelve arriba. */
   scrollKey?: string | number;
   /** Encabezado propio fijo (reemplaza al título); el indicador de recarga aparece debajo. */
@@ -155,6 +158,7 @@ export function Screen({
       {scroll ? (
         <ScrollView
           ref={scrollRef}
+          scrollEnabled={scrollEnabled}
           contentContainerStyle={{ padding: padded ? SP.lg : 0, paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"

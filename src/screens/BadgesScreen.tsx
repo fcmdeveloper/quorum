@@ -12,7 +12,7 @@ import { Badge, Button, Card, Notice, Screen, Section, Txt } from '../ui/compone
 import { C, SP } from '../ui/theme';
 import { proposalFailed } from '../ui/proposalError';
 import { QUORUM } from '../config';
-import { fetchReleaseLog } from '../core/releases';
+import { fetchReleaseLog, platformLabel } from '../core/releases';
 import { BadgeRow, badgeRows, badgeUri, buildBadgeMint, buildBadgeOffer, fetchGalleryBadgeState } from '../core/badges';
 import { XrpLoader } from '../ui/XrpLoader';
 
@@ -59,13 +59,14 @@ export default function BadgesScreen({ id }: { id: string }) {
 
   const group = (state: BadgeRow['state']) => (rows ?? []).filter((r) => r.state === state);
   const row = (r: BadgeRow) => {
-    const key = `${r.release}:${r.to}`;
+    const key = `${r.release}:${r.platform}:${r.to}`;
+    const ver = `${r.release} ${platformLabel(r.platform)}`;
     return (
       <Card key={key}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
           <View style={{ flex: 1 }}>
             <Txt v="mono" color={C.text}>{short(r.to)}</Txt>
-            <Txt v="small">{t('Validó la versión {v}', { v: r.release })}</Txt>
+            <Txt v="small">{t('Validó la versión {v}', { v: ver })}</Txt>
           </View>
           {r.state === 'offered' && <Badge text="Ofrecida" color={C.warn} icon="clock" />}
           {r.state === 'delivered' && <Badge text="Entregada" icon="check" />}
@@ -76,7 +77,7 @@ export default function BadgesScreen({ id }: { id: string }) {
             icon="award"
             busy={busy === key}
             style={{ marginTop: SP.md }}
-            onPress={() => run(key, () => buildBadgeMint(a.address, r.release, r.to, badgeUri(QUORUM.website, r.release)), t('Insignia {v} para {a}', { v: r.release, a: short(r.to) }))}
+            onPress={() => run(key, () => buildBadgeMint(a.address, r.release, r.to, badgeUri(QUORUM.website, r.release), r.platform), t('Insignia {v} para {a}', { v: ver, a: short(r.to) }))}
           />
         )}
         {r.state === 'minted' && (
@@ -85,7 +86,7 @@ export default function BadgesScreen({ id }: { id: string }) {
             icon="gift"
             busy={busy === key}
             style={{ marginTop: SP.md }}
-            onPress={() => run(key, () => buildBadgeOffer(a.address, r.nftId!, r.to), t('Regalar insignia {v} a {a}', { v: r.release, a: short(r.to) }))}
+            onPress={() => run(key, () => buildBadgeOffer(a.address, r.nftId!, r.to), t('Regalar insignia {v} a {a}', { v: ver, a: short(r.to) }))}
           />
         )}
       </Card>

@@ -14,8 +14,8 @@ import { Button, Card, Notice, Screen, Section, Txt, tap, toast } from '../ui/co
 import { C, R, SP } from '../ui/theme';
 import { QUORUM } from '../config';
 import { NETWORKS } from '../core/network';
-import { appCodeHash } from '../ui/appHash';
-import { fetchReleaseLog, ReleaseStatus, releaseStatus } from '../core/releases';
+import { appCodeHash, thisPlatform } from '../ui/appHash';
+import { fetchReleaseLog, platformLabel, ReleaseStatus, releaseStatus } from '../core/releases';
 import { XrpLoader } from '../ui/XrpLoader';
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -35,7 +35,8 @@ function Row({ icon, color, title, text }: { icon: React.ComponentProps<typeof F
 export default function VerifyScreen() {
   const nav = useNav();
   const version = Constants.expoConfig?.version ?? '';
-  const build = Constants.expoConfig?.ios?.buildNumber ?? '';
+  const platform = thisPlatform();
+  const build = platform === 'android' ? String(Constants.expoConfig?.android?.versionCode ?? '') : (Constants.expoConfig?.ios?.buildNumber ?? '');
   const [hash, setHash] = useState<string | null | undefined>(undefined);
   const [status, setStatus] = useState<ReleaseStatus | null>(null);
   const [err, setErr] = useState(false);
@@ -51,7 +52,7 @@ export default function VerifyScreen() {
     setLoading(true);
     setErr(false);
     try {
-      setStatus(releaseStatus(await fetchReleaseLog('mainnet', registry), version, hash));
+      setStatus(releaseStatus(await fetchReleaseLog('mainnet', registry), version, hash, thisPlatform()));
     } catch {
       setErr(true);
     } finally {
@@ -96,10 +97,10 @@ export default function VerifyScreen() {
             icon="check-circle"
             color={C.green}
             title={t('Registrada en el XRP Ledger')}
-            text={t('Versión {v} · commit {c}', { v: release.v, c: release.commit.slice(0, 7) }) + (release.date ? ` · ${release.date.slice(0, 10)}` : '')}
+            text={t('Versión {v} · {p} · commit {c}', { v: release.v, p: platformLabel(release.platform), c: release.commit.slice(0, 7) }) + (release.date ? ` · ${release.date.slice(0, 10)}` : '')}
           />
         ) : sameVersionOther.length ? (
-          <Row icon="alert-octagon" color={C.bad} title={t('Esta app no coincide con el registro')} text={t('La versión {v} está registrada con otra huella. No uses esta app y avísanos.', { v: version })} />
+          <Row icon="alert-octagon" color={C.bad} title={t('Esta app no coincide con el registro')} text={t('La versión {v} para {p} está registrada con otra huella. No uses esta app y avísanos.', { v: version, p: platformLabel(platform) })} />
         ) : (
           <Row icon="help-circle" color={C.warn} title={t('Esta versión no está registrada')} text={t('Puede ser un build de prueba que aún no firma el Consejo. Las versiones de la App Store siempre están registradas.')} />
         )}
@@ -114,7 +115,7 @@ export default function VerifyScreen() {
         <Row
           icon="shield"
           color={pass.length ? C.green : C.dim}
-          title={pass.length === 1 ? t('1 validador confirmó esta versión') : t('{n} validadores confirmaron esta versión', { n: pass.length })}
+          title={pass.length === 1 ? t('1 validador confirmó esta versión en {p}', { p: platformLabel(platform) }) : t('{n} validadores confirmaron esta versión en {p}', { n: pass.length, p: platformLabel(platform) })}
           text={pass.length ? pass.map((a) => short(a.account)).join(' · ') : undefined}
         />
         {fail.length > 0 && (
@@ -138,7 +139,7 @@ export default function VerifyScreen() {
 
       <Section title="Esta app">
         <Card>
-          <Txt v="small">{build ? t('Versión {v} (build {b})', { v: version, b: String(build) }) : t('Versión {v}', { v: version })}</Txt>
+          <Txt v="small">{build ? t('Versión {v} para {p} (build {b})', { v: version, p: platformLabel(platform), b: String(build) }) : t('Versión {v} para {p}', { v: version, p: platformLabel(platform) })}</Txt>
           {hash === undefined ? (
             <View style={{ paddingVertical: SP.md }}><XrpLoader size={40} label={null} /></View>
           ) : hash === null ? (
@@ -173,7 +174,7 @@ export default function VerifyScreen() {
         <Card>
           <Txt v="body">Descarga el código y reconstruye esta versión en tu computador (Mac o Linux):</Txt>
           <View style={{ marginTop: SP.sm, padding: SP.md, borderRadius: R.md, backgroundColor: C.surface2 }}>
-            <Txt v="mono" color={C.text}>{`scripts/verify-release.sh v${version}`}</Txt>
+            <Txt v="mono" color={C.text}>{`scripts/verify-release.sh v${version} ${platform}`}</Txt>
           </View>
           <Txt v="small" style={{ marginTop: SP.sm }}>
             La línea “app code” debe ser idéntica a la huella de arriba. Si coincide, puedes registrar tu resultado en el XRP Ledger y sumarte como validador.

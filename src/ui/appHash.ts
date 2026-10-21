@@ -2,9 +2,16 @@
  * Huella (SHA-256) del código de esta app: el archivo main.jsbundle que va dentro de la app,
  * el mismo que reconstruye scripts/verify-release.sh. En un build de desarrollo no existe
  * (el código llega desde el computador) y se devuelve null.
+ * Android todavía no calcula su huella (el paquete va dentro del APK con otro nombre): devuelve
+ * null y la app se muestra como sin huella, nunca como una versión registrada.
  */
 import { File, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
+import { Platform } from 'react-native';
+import type { AppPlatform } from '../core/releases';
+
+/** Plataforma de esta app, para registrar y validar cada build por separado. */
+export const thisPlatform = (): AppPlatform => (Platform.OS === 'android' ? 'android' : 'ios');
 
 let cached: string | null | undefined;
 

@@ -33,3 +33,22 @@ test('estado de cada insignia sale del ledger', () => {
   const by = Object.fromEntries(rows.map((r) => [r.to, r.state]));
   assert.deepEqual(by, { rV1: 'todo', rV2: 'minted', rV3: 'offered', rV4: 'delivered' });
 });
+
+test('una insignia por plataforma: quien valida iOS y Android recibe dos', () => {
+  const AND = 'b'.repeat(64);
+  const attA = (acc: string) => ok({ TransactionType: 'Payment', Account: acc, Destination: REG, Amount: '1', Memos: [{ Memo: { MemoData: hex('quorum.attest {"release":"1.0.0","platform":"android","commit":"2c18196","app":"sha256:bbbbbbbb","result":"pass"}') } }] });
+  const log = readReleaseLog(REG, [
+    ok({ TransactionType: 'AccountSet', Account: REG, Memos: [{ Memo: { MemoData: hex(`quorum.release {"v":"1.0.0","commit":"${COMMIT}","app":"sha256:${APP}"}`) } }] }),
+    ok({ TransactionType: 'AccountSet', Account: REG, Memos: [{ Memo: { MemoData: hex(`quorum.release {"v":"1.0.0","platform":"android","commit":"${COMMIT}","app":"sha256:${AND}"}`) } }] }),
+    att('rV1'), attA('rV1'), attA('rV2'),
+  ]);
+  // la insignia de iOS de rV1 ya está entregada (memo sin plataforma, como las acuñadas antes)
+  const oldMint = ok({ ...buildBadgeMint(GAL, '1.0.0', 'rV1', 'https://x/y.json') }, { nftoken_id: 'N1' });
+  const andMint = ok(buildBadgeMint(GAL, '1.0.0', 'rV2', 'https://x/y.json', 'android'), { nftoken_id: 'N2' });
+  assert.ok(!hex('"platform"').length || !Buffer.from(oldMint.tx_json.Memos[0].Memo.MemoData, 'hex').toString().includes('platform'));
+  const mints = readBadgeMints(GAL, [oldMint, andMint]);
+  assert.deepEqual(mints.map((m) => m.platform), ['ios', 'android']);
+  const rows = badgeRows(log, mints, new Set(['N2']), [], new Set());
+  const by = Object.fromEntries(rows.map((r) => [`${r.to}:${r.platform}`, r.state]));
+  assert.deepEqual(by, { 'rV1:ios': 'delivered', 'rV1:android': 'todo', 'rV2:android': 'minted' });
+});

@@ -3,13 +3,14 @@
  * cada validador con una validación correcta (ver VALIDATORS.md).
  *
  * Todo el estado sale del ledger, sin listas guardadas:
- * - el NFTokenMint lleva el memo `quorum.badge {"release":…,"to":…}` (para quién es);
+ * - el NFTokenMint lleva el memo `quorum.badge {"release":…,"to":…}` (para quién es), con
+ *   `"platform":"android"` si es por una validación de Android (sin plataforma: iOS);
  * - si la galería todavía tiene el NFT y hay una oferta para esa dirección: ofrecida;
  * - si la galería ya no lo tiene: entregada (el validador la aceptó).
  */
 import { getClient, NetworkId } from './network';
 import { TxJson } from './tx';
-import { ReleaseLog, attestationMatches } from './releases';
+import { AppPlatform, ReleaseLog, attestationMatches, normPlatform } from './releases';
 
 /** Número de colección (taxon) de las insignias: todas las versiones en una sola colección. */
 export const BADGE_TAXON = 2026;
@@ -27,14 +28,16 @@ const hexToText = (h: string) => {
 export const badgeUri = (website: string, release: string) => `${website}/nft/validator-${release}.json`;
 
 /** Acuña la insignia (sin flag transferible: solo puede volver a la galería). */
-export function buildBadgeMint(gallery: string, release: string, to: string, uri: string): TxJson {
+export function buildBadgeMint(gallery: string, release: string, to: string, uri: string, platform: AppPlatform = 'ios'): TxJson {
+  // iOS sin campo: así se leen igual las insignias acuñadas antes de separar por plataforma
+  const body = platform === 'ios' ? { release, to } : { release, platform, to };
   return {
     TransactionType: 'NFTokenMint',
     Account: gallery,
     NFTokenTaxon: BADGE_TAXON,
     Flags: 0,
     URI: toHex(uri),
-    Memos: [{ Memo: { MemoData: toHex(`quorum.badge ${JSON.stringify({ release, to })}`) } }],
+    Memos: [{ Memo: { MemoData: toHex(`quorum.badge ${JSON.stringify(body)}`) } }],
   };
 }
 
@@ -46,6 +49,7 @@ export function buildBadgeOffer(gallery: string, nftId: string, to: string): TxJ
 export interface BadgeMint {
   nftId: string;
   release: string;
+  platform: AppPlatform;
   to: string;
   hash: string;
 }
@@ -63,7 +67,9 @@ export function readBadgeMints(gallery: string, txs: any[]): BadgeMint[] {
       if (!r) continue;
       try {
         const d = JSON.parse(r[1]);
-        if (typeof d.release === 'string' && typeof d.to === 'string') out.push({ nftId: meta.nftoken_id, release: d.release, to: d.to, hash: x.hash ?? tx.hash ?? '' });
+        const platform = normPlatform(d.platform);
+        if (typeof d.release === 'string' && typeof d.to === 'string' && platform)
+          out.push({ nftId: meta.nftoken_id, release: d.release, platform, to: d.to, hash: x.hash ?? tx.hash ?? '' });
       } catch {}
     }
   }
@@ -74,13 +80,15 @@ export type BadgeState = 'todo' | 'minted' | 'offered' | 'delivered';
 
 export interface BadgeRow {
   release: string;
+  platform: AppPlatform;
   to: string;
   state: BadgeState;
   nftId?: string;
 }
 
 /**
- * Una fila por cada validación correcta de una versión registrada, con su estado.
+ * Una fila por cada validación correcta de una versión registrada, con su estado. iOS y Android
+ * son registros distintos: quien valida las dos plataformas recibe una insignia por cada una.
  * `exclude`: cuentas que no reciben insignia (las de Minify).
  */
 export function badgeRows(
@@ -94,14 +102,15 @@ export function badgeRows(
   for (const r of log.releases) {
     const seen = new Set<string>();
     for (const a of log.attestations) {
-      if (a.release !== r.v || seen.has(a.account)) continue;
+      if (a.release !== r.v || a.platform !== r.platform || seen.has(a.account)) continue;
       seen.add(a.account);
       if (a.result !== 'pass' || !attestationMatches(r, a) || exclude.has(a.account)) continue;
-      const m = mints.find((x) => x.release === r.v && x.to === a.account);
-      if (!m) rows.push({ release: r.v, to: a.account, state: 'todo' });
-      else if (!owned.has(m.nftId)) rows.push({ release: r.v, to: a.account, state: 'delivered', nftId: m.nftId });
-      else if (offers.some((o) => o.nftId === m.nftId && o.to === a.account)) rows.push({ release: r.v, to: a.account, state: 'offered', nftId: m.nftId });
-      else rows.push({ release: r.v, to: a.account, state: 'minted', nftId: m.nftId });
+      const base = { release: r.v, platform: r.platform, to: a.account };
+      const m = mints.find((x) => x.release === r.v && x.platform === r.platform && x.to === a.account);
+      if (!m) rows.push({ ...base, state: 'todo' });
+      else if (!owned.has(m.nftId)) rows.push({ ...base, state: 'delivered', nftId: m.nftId });
+      else if (offers.some((o) => o.nftId === m.nftId && o.to === a.account)) rows.push({ ...base, state: 'offered', nftId: m.nftId });
+      else rows.push({ ...base, state: 'minted', nftId: m.nftId });
     }
   }
   return rows;

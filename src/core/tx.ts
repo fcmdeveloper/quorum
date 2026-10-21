@@ -168,7 +168,9 @@ export function buildReleaseRecord(account: string, r: ReleaseInput): TxJson {
   if (js && !/^[0-9a-f]{64}$/.test(js)) throw new Error(t('La huella del JavaScript debe tener 64 caracteres hexadecimales'));
   const body: Record<string, unknown> = { v };
   if (r.build !== undefined && Number.isFinite(r.build)) body.build = r.build;
-  body.platform = r.platform || 'ios';
+  const platform = (r.platform || 'ios').toLowerCase();
+  if (platform !== 'ios' && platform !== 'android') throw new Error(t('Plataforma inválida: ios o android'));
+  body.platform = platform;
   body.commit = commit;
   body.app = `sha256:${app}`;
   if (js) body.js = `sha256:${js}`;
@@ -446,6 +448,7 @@ export function describeTx(tx: TxJson, net?: any): { title: string; lines: [stri
       const rel = releaseOf(tx);
       if (rel) {
         title = t('Registrar versión {v}', { v: rel.v });
+        lines.push([t('Plataforma'), rel.platform === 'android' ? 'Android' : 'iOS']);
         if (rel.build !== undefined) lines.push(['Build', String(rel.build)]);
         lines.push(['Commit', rel.commit]);
         lines.push(['Huella del código', rel.app]);

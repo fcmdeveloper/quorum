@@ -9,10 +9,25 @@
  */
 import { getClient, NetworkId } from './network';
 
+/**
+ * Plataforma de un registro o una validación. iOS y Android comparten número de versión, pero cada
+ * una tiene su propio build y su propia huella: se registran y se validan por separado.
+ * Lo que no dice plataforma es de iOS (así se escribieron las versiones 1.0.0 a 1.0.2).
+ */
+export type AppPlatform = 'ios' | 'android';
+export const PLATFORMS: AppPlatform[] = ['ios', 'android'];
+/** "iOS" / "Android" / null si es otra cosa (una plataforma desconocida no se mezcla con ninguna). */
+export function normPlatform(x: unknown): AppPlatform | null {
+  const s = typeof x === 'string' ? x.trim().toLowerCase() : '';
+  if (!s) return 'ios';
+  return s === 'ios' || s === 'android' ? s : null;
+}
+export const platformLabel = (p: AppPlatform) => (p === 'android' ? 'Android' : 'iOS');
+
 export interface ReleaseRecord {
   v: string;
   build?: number;
-  platform?: string;
+  platform: AppPlatform;
   commit: string;
   app: string;
   js?: string;
@@ -25,6 +40,7 @@ export interface ReleaseRecord {
 export interface Attestation {
   account: string;
   release: string;
+  platform: AppPlatform;
   commit: string;
   app: string;
   result: 'pass' | 'fail';
@@ -43,6 +59,8 @@ export interface JoinRecord {
 /** Versión retirada por el Consejo (`quorum.revoke`): la app que la tenga instalada lo avisa. */
 export interface RevokeRecord {
   v: string;
+  /** Plataforma retirada; si falta, se retira la versión en todas. */
+  platform?: AppPlatform;
   /** Huella retirada; si falta, se retira cualquier build de esa versión. */
   app?: string;
   reason?: string;
@@ -96,11 +114,12 @@ export function readReleaseLog(registry: string, txs: any[]): ReleaseLog {
       const d = p.data;
       if (p.kind === 'release') {
         // solo cuenta si la emitió la propia cuenta de registro
-        if (tx.Account !== registry || !str(d.v) || !str(d.app) || !str(d.commit)) continue;
+        const platform = normPlatform(d.platform);
+        if (tx.Account !== registry || !str(d.v) || !str(d.app) || !str(d.commit) || !platform) continue;
         log.releases.push({
           v: str(d.v),
           build: typeof d.build === 'number' ? d.build : undefined,
-          platform: str(d.platform) || undefined,
+          platform,
           commit: str(d.commit).toLowerCase(),
           app: normHash(d.app),
           js: d.js ? normHash(d.js) : undefined,
@@ -112,10 +131,12 @@ export function readReleaseLog(registry: string, txs: any[]): ReleaseLog {
         // un pago a la cuenta de registro, desde otra cuenta
         if (tx.TransactionType !== 'Payment' || tx.Destination !== registry || tx.Account === registry) continue;
         const result = str(d.result).toLowerCase();
-        if (!str(d.release) || (result !== 'pass' && result !== 'fail')) continue;
+        const platform = normPlatform(d.platform);
+        if (!str(d.release) || (result !== 'pass' && result !== 'fail') || !platform) continue;
         log.attestations.push({
           account: tx.Account,
           release: str(d.release),
+          platform,
           commit: str(d.commit).toLowerCase(),
           app: normHash(d.app),
           result,
@@ -125,8 +146,10 @@ export function readReleaseLog(registry: string, txs: any[]): ReleaseLog {
         });
       } else if (p.kind === 'revoke') {
         // solo cuenta si la firmó el Consejo desde la propia cuenta de registro
-        if (tx.Account !== registry || !str(d.v)) continue;
-        log.revoked.push({ v: str(d.v), app: d.app ? normHash(d.app) : undefined, reason: str(d.reason) || undefined, hash, date });
+        // sin plataforma: retira la versión en todas (un revoke es una alerta: ante la duda, abarca más)
+        const platform = d.platform === undefined || d.platform === '' ? undefined : normPlatform(d.platform);
+        if (tx.Account !== registry || !str(d.v) || platform === null) continue;
+        log.revoked.push({ v: str(d.v), platform, app: d.app ? normHash(d.app) : undefined, reason: str(d.reason) || undefined, hash, date });
       } else if (p.kind === 'join') {
         if (tx.Destination !== registry || tx.Account === registry) continue;
         log.joins.push({ account: tx.Account, github: str(d.github) || undefined, hash, date });
@@ -137,11 +160,11 @@ export function readReleaseLog(registry: string, txs: any[]): ReleaseLog {
 }
 
 /**
- * Una validación es correcta si su commit y su huella (prefijos de al menos 7 y 8
- * caracteres) coinciden con el registro de esa versión.
+ * Una validación es correcta si es de la misma versión y plataforma, y su commit y su huella
+ * (prefijos de al menos 7 y 8 caracteres) coinciden con el registro.
  */
 export function attestationMatches(r: ReleaseRecord, a: Attestation): boolean {
-  if (a.release !== r.v) return false;
+  if (a.release !== r.v || a.platform !== r.platform) return false;
   if (a.commit.length < 7 || !r.commit.startsWith(a.commit)) return false;
   if (a.app.length < 8 || !r.app.startsWith(a.app)) return false;
   return true;
@@ -158,17 +181,22 @@ export interface ReleaseStatus {
   revoked?: RevokeRecord;
 }
 
-/** Estado de la app instalada frente al registro: la versión que coincide y sus validaciones. */
-export function releaseStatus(log: ReleaseLog, version: string, appHash: string): ReleaseStatus {
+/**
+ * Estado de la app instalada frente al registro: la versión que coincide y sus validaciones.
+ * Solo mira su propia plataforma: un build de Android con el mismo número de versión no es
+ * una alerta para iOS, ni sus validaciones cuentan para iOS (y al revés).
+ */
+export function releaseStatus(log: ReleaseLog, version: string, appHash: string, platform: AppPlatform = 'ios'): ReleaseStatus {
   const h = normHash(appHash);
-  const release = log.releases.find((r) => r.app === h);
-  const sameVersionOther = log.releases.filter((r) => r.v === version && r.app !== h);
-  // una validación por cuenta y versión: vale la más reciente (el ledger devuelve las nuevas primero)
+  const mine = log.releases.filter((r) => r.platform === platform);
+  const release = mine.find((r) => r.app === h);
+  const sameVersionOther = mine.filter((r) => r.v === version && r.app !== h);
+  // una validación por cuenta, versión y plataforma: vale la más reciente (el ledger devuelve las nuevas primero)
   const seen = new Set<string>();
   const pass: Attestation[] = [];
   const fail: Attestation[] = [];
   for (const a of log.attestations) {
-    if (a.release !== (release?.v ?? version)) continue;
+    if (a.release !== (release?.v ?? version) || a.platform !== platform) continue;
     const k = `${a.account}:${a.release}`;
     if (seen.has(k)) continue;
     seen.add(k);
@@ -176,7 +204,7 @@ export function releaseStatus(log: ReleaseLog, version: string, appHash: string)
     if (a.result === 'pass' && release && attestationMatches(release, a)) pass.push(a);
     else if (a.result === 'fail') fail.push(a);
   }
-  const revoked = log.revoked.find((r) => r.v === (release?.v ?? version) && (!r.app || h.startsWith(r.app) || r.app.startsWith(h)));
+  const revoked = log.revoked.find((r) => r.v === (release?.v ?? version) && (!r.platform || r.platform === platform) && (!r.app || h.startsWith(r.app) || r.app.startsWith(h)));
   return { release, sameVersionOther, pass, fail, revoked };
 }
 

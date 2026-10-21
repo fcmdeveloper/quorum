@@ -7,7 +7,7 @@ const REG = 'rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S8';
 const H = 'a'.repeat(64);
 const H2 = 'b'.repeat(64);
 const empty = (): ReleaseLog => ({ releases: [], attestations: [], joins: [], revoked: [] });
-const rel = (v: string, app: string) => ({ v, app, commit: 'c'.repeat(40), tag: `v${v}`, hash: 'X', date: undefined } as any);
+const rel = (v: string, app: string) => ({ v, app, platform: 'ios', commit: 'c'.repeat(40), tag: `v${v}`, hash: 'X', date: undefined } as any);
 
 test('unregistered vs mismatch vs ok', () => {
   assert.strictEqual(classifyRelease(releaseStatus(empty(), '1.0.1', H)), 'unregistered');
@@ -21,7 +21,7 @@ test('unregistered vs mismatch vs ok', () => {
 test('a fail attestation marks it disputed', () => {
   const log = empty();
   log.releases.push(rel('1.0.1', H));
-  log.attestations.push({ release: '1.0.1', commit: 'c'.repeat(40), app: H, result: 'fail', account: 'rX', hash: 'Y' } as any);
+  log.attestations.push({ release: '1.0.1', platform: 'ios', commit: 'c'.repeat(40), app: H, result: 'fail', account: 'rX', hash: 'Y' } as any);
   assert.strictEqual(classifyRelease(releaseStatus(log, '1.0.1', H)), 'disputed');
 });
 

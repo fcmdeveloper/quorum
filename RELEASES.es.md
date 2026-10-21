@@ -21,13 +21,15 @@ quorum.release {"v":"1.0.0","build":1,"platform":"ios","commit":"bdc12e1308fcd7c
 | Campo | Significado |
 |---|---|
 | `v` | Versión (`expo.version` en `app.json`) |
-| `build` | Número de build de iOS (`expo.ios.buildNumber`) |
-| `platform` | `ios` (Android más adelante) |
+| `build` | Número de build de esa plataforma (`expo.ios.buildNumber` o `expo.android.versionCode`) |
+| `platform` | `ios` o `android`. Si falta, es `ios` (así se escribieron la 1.0.0 a la 1.0.2) |
 | `commit` | Commit completo de la versión (también con el tag `v<versión>`) |
-| `app` | SHA-256 de `main.jsbundle` dentro de la app: el bytecode de Hermes que se distribuye |
+| `app` | SHA-256 del bytecode de Hermes que se distribuye: `main.jsbundle` en la app de iOS, `index.android.bundle` en el APK |
 | `js` | SHA-256 del bundle de JavaScript antes de compilar (para depurar) |
 
-Las dos huellas son las que muestra `scripts/verify-release.sh v<versión>`.
+Las dos huellas son las que muestra `scripts/verify-release.sh v<versión> <plataforma>`.
+
+**iOS y Android se registran por separado.** Comparten el número de versión, pero son builds distintos con huellas distintas: cada plataforma tiene su propio `quorum.release`. El registro de una plataforma nunca es una alerta para la otra, y las validaciones solo cuentan para la plataforma que indican.
 
 ### `quorum.attest`: el resultado de un validador
 
@@ -40,12 +42,13 @@ quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:42d96764","res
 | Campo | Significado |
 |---|---|
 | `release` | Versión revisada |
+| `platform` | `ios` o `android`: el build que reconstruiste y comparaste. Si falta, es `ios` |
 | `commit` | Commit reconstruido (al menos 7 caracteres) |
 | `app` | Huella del código obtenida (al menos 8 caracteres) |
 | `result` | `pass` o `fail` |
 | `note` | Opcional, motivo breve (recomendado en un `fail`) |
 
-Una validación es **correcta** cuando sus `commit` y `app` coinciden con el registro `quorum.release` de esa versión.
+Una validación es **correcta** cuando su versión y su plataforma son las de un registro `quorum.release` y sus `commit` y `app` coinciden con él. Validar las dos plataformas son dos validaciones.
 
 ### `quorum.join`: inscribirse como validador
 
@@ -68,6 +71,7 @@ quorum.revoke {"v":"1.0.1","reason":"motivo breve"}
 | Campo | Significado |
 |---|---|
 | `v` | Versión retirada |
+| `platform` | Opcional: `ios` o `android`. Sin él, se retira la versión en todas las plataformas |
 | `app` | Opcional: retira solo el build con esta huella (prefijo). Sin él, todos los builds de esa versión |
 | `reason` | Opcional, breve y público |
 

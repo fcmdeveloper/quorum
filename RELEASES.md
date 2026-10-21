@@ -21,13 +21,15 @@ quorum.release {"v":"1.0.0","build":1,"platform":"ios","commit":"bdc12e1308fcd7c
 | Field | Meaning |
 |---|---|
 | `v` | Version (`expo.version` in `app.json`) |
-| `build` | iOS build number (`expo.ios.buildNumber`) |
-| `platform` | `ios` (Android later) |
+| `build` | Build number of that platform (`expo.ios.buildNumber` or `expo.android.versionCode`) |
+| `platform` | `ios` or `android`. Missing means `ios` (that's how 1.0.0 to 1.0.2 were written) |
 | `commit` | Full git commit of the release (also tagged `v<version>`) |
-| `app` | SHA-256 of `main.jsbundle` inside the app: the Hermes bytecode that ships |
+| `app` | SHA-256 of the Hermes bytecode that ships: `main.jsbundle` in the iOS app, `index.android.bundle` in the APK |
 | `js` | SHA-256 of the JavaScript bundle before compiling (for debugging) |
 
-Both hashes are the ones printed by `scripts/verify-release.sh v<version>`.
+Both hashes are the ones printed by `scripts/verify-release.sh v<version> <platform>`.
+
+**iOS and Android are registered separately.** They share the version number but are different builds with different fingerprints, so each platform has its own `quorum.release`. A record for one platform is never a warning for the other, and attestations only count for the platform they name.
 
 ### `quorum.attest`: a validator's result
 
@@ -40,12 +42,13 @@ quorum.attest {"release":"1.0.0","commit":"bdc12e1","app":"sha256:42d96764","res
 | Field | Meaning |
 |---|---|
 | `release` | Version checked |
+| `platform` | `ios` or `android`: the build you rebuilt and compared. Missing means `ios` |
 | `commit` | Commit rebuilt (a prefix of at least 7 characters) |
 | `app` | App code hash obtained (a prefix of at least 8 hex characters) |
 | `result` | `pass` or `fail` |
 | `note` | Optional, short reason (recommended for `fail`) |
 
-An attestation counts as **correct** when its `commit` and `app` prefixes match the `quorum.release` record for that version.
+An attestation counts as **correct** when its version and platform are the same as a `quorum.release` record and its `commit` and `app` prefixes match it. Validating both platforms means two attestations.
 
 ### `quorum.join`: become a listed validator
 
@@ -68,6 +71,7 @@ quorum.revoke {"v":"1.0.1","reason":"short reason"}
 | Field | Meaning |
 |---|---|
 | `v` | Version withdrawn |
+| `platform` | Optional: `ios` or `android`. Without it, the version is withdrawn on every platform |
 | `app` | Optional: withdraw only the build with this app code hash (prefix). Without it, every build of that version |
 | `reason` | Optional, short and public |
 

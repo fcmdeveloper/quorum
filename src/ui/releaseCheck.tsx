@@ -10,7 +10,7 @@ import { Feather } from '@expo/vector-icons';
 import { t } from '../i18n';
 import { Txt } from './components';
 import { C, R, SP } from './theme';
-import { appCodeHash } from './appHash';
+import { appCodeHash, thisPlatform } from './appHash';
 import { QUORUM } from '../config';
 import { fetchReleaseLog, releaseStatus } from '../core/releases';
 import { classifyRelease, isStale, needsSignConfirm, ReleaseCheckState } from '../core/releaseCheck';
@@ -35,7 +35,7 @@ export async function checkRelease(force = false): Promise<void> {
         state = 'dev';
       } else {
         const version = Constants.expoConfig?.version ?? '';
-        const s = releaseStatus(await fetchReleaseLog('mainnet', QUORUM.releasesAddress), version, hash);
+        const s = releaseStatus(await fetchReleaseLog('mainnet', QUORUM.releasesAddress), version, hash, thisPlatform());
         state = classifyRelease(s);
         reason = s.revoked?.reason;
       }

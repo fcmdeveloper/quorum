@@ -46,13 +46,14 @@ The registry account is **Quorum Releases**: [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84S
 
 ```bash
 git fetch --tags
-scripts/verify-release.sh v1.0.1
+scripts/verify-release.sh v1.0.1 ios
 ```
 
-The script checks out that tag in a clean temporary folder, installs the exact dependencies (`npm ci`), bundles the app code with the same settings as the iOS release build, compiles it to Hermes bytecode and prints:
+Use `ios` or `android` for the build you're going to compare (without it, `ios`). Each platform has its own fingerprint and is validated separately. The script checks out that tag in a clean temporary folder, installs the exact dependencies (`npm ci`), bundles the app code with the same settings as that platform's release build, compiles it to Hermes bytecode and prints:
 
 ```
-Quorum 1.0.1 (2)
+Quorum 1.0.1 (2) iOS
+platform  ios
 commit    fd2e085c7fdb1f5d344f4a732d65d7948d86e1b8
 app code  sha256:1b0b6bbde3e456e87da73b732b52f31db6d6f40a4114d3eed0f5743b48d0f5e7
 js source sha256:c7bacc434d0a71ddd2aedc619bc6c397e405eb4da1a6427d87cd332ca48e1f15
@@ -106,6 +107,7 @@ quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1b0b6bbd","res
 ```
 
 - `commit` and `app`: the first characters are enough (7 for the commit, 8 for the hash).
+- For **Android**, add `"platform":"android"`: `quorum.attest {"release":"1.0.3","platform":"android","commit":"…","app":"sha256:…","result":"pass"}`. Without `platform`, it counts as iOS. If you validate both platforms, send one attestation for each.
 - If something didn't match or didn't work, record it as well. **A fail is as valuable as a pass:**
   ```
   quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
@@ -145,6 +147,7 @@ Every community validator with a **correct** attestation receives a **Quorum Val
 - **Minted on demand.** There's no pre-minted stock: one badge is minted for each correct attestation, so the total always equals the real number of validations.
 - **Delivered as a free offer.** The gallery mints the badge and offers it for 0 XRP to your address only. You accept it from your wallet (on the XRP Ledger nobody can send you an NFT without your consent). Then you can use it as an account image in Quorum.
 - **Non-transferable and without monetary value.** It can only go back to the gallery, never be sold. Quorum doesn't pay validators: it's a free, non-profit project.
+- **One badge per platform.** If you validate both the iOS and the Android build of a release, you receive two badges.
 - **Minify doesn't award itself.** The developer's own accounts never receive badges.
 
 ⚠️ If your account blocks incoming NFT offers (one of the protections Quorum offers for vaults), the offer can't reach you. Validate from a regular account, or, from Quorum 1.0.1, allow *NFT offers* in the vault's *Security › Protections* until you accept the badge, then block them again.

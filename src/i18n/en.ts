@@ -1367,4 +1367,13 @@ export const EN: Record<string, string> = {
   "{x} de prueba": "Test {x}",
   "Primero habilita {x}": "Enable {x} first",
   "El faucet solo puede enviarte {x} si esta cuenta lo tiene habilitado. Tócalo en la lista de tokens (Habilitar) y firma; después vuelve aquí.": "The faucet can only send you {x} if this account has it enabled. Tap Enable in the token list and sign; then come back here.",
+  'Plataforma inválida: ios o android': 'Invalid platform: ios or android',
+  'Plataforma': 'Platform',
+  'Registrar versión {v} para {p}': 'Register version {v} for {p}',
+  'Versión {v} · {p} · commit {c}': 'Version {v} · {p} · commit {c}',
+  'La versión {v} para {p} está registrada con otra huella. No uses esta app y avísanos.': "Version {v} for {p} is registered with a different fingerprint. Don't use this app and let us know.",
+  '1 validador confirmó esta versión en {p}': '1 validator confirmed this version on {p}',
+  '{n} validadores confirmaron esta versión en {p}': '{n} validators confirmed this version on {p}',
+  'Versión {v} para {p} (build {b})': 'Version {v} for {p} (build {b})',
+  'Versión {v} para {p}': 'Version {v} for {p}',
 };

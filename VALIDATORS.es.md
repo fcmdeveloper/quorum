@@ -46,13 +46,14 @@ La cuenta de registro es **Quorum Releases**: [`rHYkBqZLWMKURQcUHAu2EJDKdzsdqt84
 
 ```bash
 git fetch --tags
-scripts/verify-release.sh v1.0.1
+scripts/verify-release.sh v1.0.1 ios
 ```
 
-El script baja ese tag en una carpeta temporal limpia, instala las dependencias exactas (`npm ci`), empaqueta el código con la misma configuración del build de iOS, lo compila a bytecode de Hermes y muestra:
+Usa `ios` o `android` según el build que vas a comparar (sin indicarlo, `ios`). Cada plataforma tiene su propia huella y se valida por separado. El script baja ese tag en una carpeta temporal limpia, instala las dependencias exactas (`npm ci`), empaqueta el código con la misma configuración del build de esa plataforma, lo compila a bytecode de Hermes y muestra:
 
 ```
-Quorum 1.0.1 (2)
+Quorum 1.0.1 (2) iOS
+platform  ios
 commit    fd2e085c7fdb1f5d344f4a732d65d7948d86e1b8
 app code  sha256:1b0b6bbde3e456e87da73b732b52f31db6d6f40a4114d3eed0f5743b48d0f5e7
 js source sha256:c7bacc434d0a71ddd2aedc619bc6c397e405eb4da1a6427d87cd332ca48e1f15
@@ -106,6 +107,7 @@ quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1b0b6bbd","res
 ```
 
 - `commit` y `app`: bastan los primeros caracteres (7 del commit, 8 de la huella).
+- En **Android**, agrega `"platform":"android"`: `quorum.attest {"release":"1.0.3","platform":"android","commit":"…","app":"sha256:…","result":"pass"}`. Sin `platform`, cuenta como iOS. Si validas las dos plataformas, envía una validación por cada una.
 - Si algo no coincidió o no funcionó, regístralo igual. **Un fail vale tanto como un pass:**
   ```
   quorum.attest {"release":"1.0.1","commit":"fd2e085","app":"sha256:1a2b3c4d","result":"fail","note":"app code differs"}
@@ -145,6 +147,7 @@ Cada validador de la comunidad con una validación **correcta** recibe el NFT **
 - **Se acuñan a pedido.** No hay stock por adelantado: se acuña una insignia por cada validación correcta, así que el total siempre es el número real de validaciones.
 - **Se entregan como oferta gratis.** La galería acuña la insignia y la ofrece por 0 XRP solo a tu dirección. La aceptas desde tu billetera (en el XRP Ledger nadie puede enviarte un NFT sin tu consentimiento) y después puedes usarla como imagen de una cuenta en Quorum.
 - **No se pueden transferir y no tienen valor monetario.** Solo pueden volver a la galería, nunca venderse. Quorum no paga a los validadores: es un proyecto gratuito y sin fines de lucro.
+- **Una insignia por plataforma.** Si validas el build de iOS y el de Android de una versión, recibes dos insignias.
 - **Minify no se entrega insignias a sí mismo.** Las cuentas del desarrollador nunca reciben insignia.
 
 ⚠️ Si tu cuenta bloquea las ofertas de NFT entrantes (una de las protecciones que Quorum ofrece para las bóvedas), la oferta no te llega. Valida desde una cuenta normal o, desde Quorum 1.0.1, permite *Ofertas de NFT* en *Seguridad › Protecciones* de la bóveda hasta aceptar la insignia y vuelve a bloquearlas.

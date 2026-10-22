@@ -41,11 +41,25 @@
         "android.permission.NFC",
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_ADMIN",
-        "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.CAMERA",
         "android.permission.USE_BIOMETRIC"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "quorumxrpl.com", "path": "/p" },
+            { "scheme": "https", "host": "quorumxrpl.com", "pathPrefix": "/p/" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ],
       "adaptiveIcon": {
         "backgroundColor": "#000000",
@@ -70,6 +84,7 @@
         "react-native-ble-plx",
         {
           "isBackgroundEnabled": false,
+          "neverForLocation": true,
           "modes": [],
           "bluetoothAlwaysPermission": "Quorum usa Bluetooth para firmar con tu Ledger."
         }
@@ -120,6 +135,8 @@
       "./plugins/withSceneLifecycle",
       "./plugins/withReproducibleHermes",
       "./plugins/withSwift64InterfaceFix",
+      "./plugins/withAndroidSigning",
+      "./plugins/withAndroidMaterialTheme",
       [
         "expo-alternate-app-icons",
         [

@@ -1376,4 +1376,8 @@ export const EN: Record<string, string> = {
   '{n} validadores confirmaron esta versión en {p}': '{n} validators confirmed this version on {p}',
   'Versión {v} para {p} (build {b})': 'Version {v} for {p} (build {b})',
   'Versión {v} para {p}': 'Version {v} for {p}',
+  'Android pide el permiso de ubicación para buscar el Ledger por Bluetooth. Quorum no usa tu ubicación.': "Android asks for location permission to find the Ledger over Bluetooth. Quorum doesn't use your location.",
+  'Compartir: Quick Share, Archivos, Google Drive o correo. Copiar: lo pegas en el otro teléfono o en quorumxrpl.com/view.': 'Share: Quick Share, Files, Google Drive or email. Copy: paste it on the other phone or at quorumxrpl.com/view.',
+  'NFC está apagado o este teléfono no tiene NFC. Actívalo en Ajustes › Dispositivos conectados.': "NFC is off or this phone doesn't have NFC. Turn it on in Settings › Connected devices.",
+  'Acerca la tarjeta a la parte de atrás del teléfono…': 'Hold the card to the back of the phone…',
 };

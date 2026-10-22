@@ -6,9 +6,9 @@ plugins {
 group = 'expo.modules.tangemnfc'
 version = '1.0.0'
 
-// Versión del SDK Android de Tangem (JitPack). Si Tangem publica una nueva,
-// cámbiala aquí y revisa los imports de TangemNfcModule.kt.
-def tangemSdkVersion = project.findProperty('tangemSdkVersion') ?: '3.6.2'
+// Versión del SDK Android de Tangem (JitPack): la misma que usa Xaman en tangem-sdk-react-native.
+// Si se cambia, revisar los imports y el constructor de TangemSdk en TangemNfcModule.kt.
+def tangemSdkVersion = project.findProperty('tangemSdkVersion') ?: '3.9.2'
 
 repositories {
   mavenCentral()

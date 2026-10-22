@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   Platform,
@@ -152,9 +153,14 @@ export function Screen({
     ) : (
       <View style={{ height: insets.top }} />
     );
+  // iOS corre el contenido sobre el teclado (automaticallyAdjustKeyboardInsets). En Android, con
+  // pantalla de borde a borde, la ventana no se achica sola: se achica la zona que se desplaza.
+  const kav = Platform.OS === 'android' && scroll;
+  const Body: any = kav ? KeyboardAvoidingView : View;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {header}
+      <Body style={{ flex: 1 }} {...(kav ? { behavior: 'padding' } : {})}>
       {scroll ? (
         <ScrollView
           ref={scrollRef}
@@ -178,6 +184,7 @@ export function Screen({
       ) : (
         <View style={{ flex: 1, padding: padded ? SP.lg : 0 }}>{children}</View>
       )}
+      </Body>
     </View>
   );
 }
@@ -567,7 +574,8 @@ export function Empty({ icon, title, text, action }: { icon: IconName; title: st
 
 export function BusySheet({ visible, text }: { visible: boolean; text: string }) {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    // el botón atrás de Android no la cierra: la operación en curso sigue (firmar, leer la tarjeta)
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => {}}>
       <View style={st.sheetWrap}>
         <View style={st.sheet}>
           <XrpLoader size={64} delay={0} label={null} />

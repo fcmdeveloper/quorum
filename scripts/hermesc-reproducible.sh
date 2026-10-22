@@ -1,12 +1,13 @@
 #!/bin/bash
 # Reproducible Hermes compile for release builds.
 #
-# React Native's Xcode build calls hermesc with the absolute path of the JS bundle, and
+# React Native's Xcode and Gradle builds call hermesc with the absolute path of the JS bundle, and
 # Hermes stores that path in the bytecode, so the same code builds to a different file on
 # every machine. This wrapper compiles from the bundle's own folder with a relative name,
 # so anyone who rebuilds the same commit gets the same bytes (see VALIDATORS.md).
 #
-# Used automatically by plugins/withReproducibleHermes.js (HERMES_CLI_PATH).
+# Used automatically by plugins/withReproducibleHermes.js (HERMES_CLI_PATH on iOS,
+# hermesCommand in android/app/build.gradle).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -16,11 +17,11 @@ case "$(uname -s)" in
   *) echo "error: unsupported OS for hermesc" >&2; exit 1 ;;
 esac
 
-# Arguments as React Native passes them: [flags…] -out <output> <input>
+# Arguments as React Native passes them, in any order: flags, -out <output> and the input
+# (Xcode: [flags…] -out <output> <input>; Gradle: -w -emit-binary … -out <output> <input> -O …).
+# -w only silences warnings and doesn't change the bytes: it's dropped so both match the script.
 ARGS=("$@")
-INPUT="${ARGS[${#ARGS[@]}-1]}"
-unset 'ARGS[${#ARGS[@]}-1]'
-
+INPUT=""
 OUT=""
 WANT_MAP=false
 FLAGS=()
@@ -31,12 +32,18 @@ while [ $i -lt ${#ARGS[@]} ]; do
     i=$((i + 1)); OUT="${ARGS[$i]}"
   elif [ "$a" = "-output-source-map" ]; then
     WANT_MAP=true
+  elif [ "$a" = "-w" ]; then
+    :
+  elif [ "${a#-}" = "$a" ]; then
+    [ -z "$INPUT" ] || { echo "error: hermesc wrapper got two inputs: $INPUT, $a" >&2; exit 1; }
+    INPUT="$a"
   else
     FLAGS+=("$a")
   fi
   i=$((i + 1))
 done
 [ -n "$OUT" ] || { echo "error: hermesc wrapper needs -out" >&2; exit 1; }
+[ -n "$INPUT" ] || { echo "error: hermesc wrapper needs an input file" >&2; exit 1; }
 case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 
 cd "$(dirname "$INPUT")"

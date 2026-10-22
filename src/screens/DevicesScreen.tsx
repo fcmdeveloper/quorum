@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { t, locale } from '../i18n';
-import { Alert, Pressable, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { isValidClassicAddress } from 'ripple-address-codec';
 import { useApp } from '../state';
@@ -197,8 +197,10 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
               icon="credit-card"
               onPress={async () => {
                 if (!tangemNativeLoaded) return Alert.alert('Tangem', 'Este build no incluye el módulo NFC.');
-                if (!isNfcAvailable()) return Alert.alert('NFC', 'Este teléfono no tiene NFC disponible.');
-                setBusy('Acerca la tarjeta a la parte superior del teléfono…');
+                if (!isNfcAvailable())
+                  return Alert.alert('NFC', Platform.OS === 'android' ? 'NFC está apagado o este teléfono no tiene NFC. Actívalo en Ajustes › Dispositivos conectados.' : 'Este teléfono no tiene NFC disponible.');
+                // en Android la antena NFC suele estar en el centro de la parte de atrás
+                setBusy(Platform.OS === 'android' ? 'Acerca la tarjeta a la parte de atrás del teléfono…' : 'Acerca la tarjeta a la parte superior del teléfono…');
                 try {
                   const r = await scanTangem();
                   setCands(r.candidates);

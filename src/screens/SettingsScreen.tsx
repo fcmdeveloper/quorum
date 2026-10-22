@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { t } from '../i18n';
-import { Alert, Linking, Pressable, Switch, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, Switch, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { isValidClassicAddress } from 'ripple-address-codec';
@@ -251,7 +251,8 @@ export default function SettingsScreen() {
         </Card>
       </Section>
 
-      {tangemNativeLoaded && (
+      {/* en Android el código no se guarda (Tangem lo pide cada vez): no hay nada que olvidar */}
+      {tangemNativeLoaded && Platform.OS === 'ios' && (
         <Section title="Tarjetas Tangem">
           <Card>
             <Txt v="body">Código de la tarjeta con Face ID</Txt>

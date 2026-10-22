@@ -10,25 +10,28 @@ import { encode } from 'ripple-binary-codec';
 import { compressPublicKey, toCanonicalDer } from '../core/crypto';
 import { TxJson } from '../core/tx';
 import { LEDGER_XRP_PATH } from './types';
+import { t } from '../i18n';
 
 export interface LedgerFound {
   id: string;
   name: string;
 }
 
+/**
+ * Android 12 o más nuevo: permisos de Bluetooth "dispositivos cercanos" (Quorum declara que no usa
+ * Bluetooth para ubicarte, así que no pide ubicación). Android 8 a 11 exige ubicación para buscar
+ * por Bluetooth: solo ahí se pide.
+ */
 async function ensureBlePermissions() {
   if (Platform.OS !== 'android') return;
-  const perms = [
-    PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-    PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-  ].filter(Boolean);
-  const res = await PermissionsAndroid.requestMultiple(perms as any);
-  const denied = Object.entries(res).filter(([, v]) => v !== PermissionsAndroid.RESULTS.GRANTED);
-  if (denied.length && Platform.Version >= 31) {
-    const critical = denied.filter(([k]) => k.includes('BLUETOOTH'));
-    if (critical.length) throw new Error('Se necesitan permisos de Bluetooth para conectar el Ledger');
-  }
+  const modern = Number(Platform.Version) >= 31;
+  const perms = modern ? [PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN, PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] : [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
+  const res = await PermissionsAndroid.requestMultiple(perms.filter(Boolean) as any);
+  const denied = Object.values(res).some((v) => v !== PermissionsAndroid.RESULTS.GRANTED);
+  if (denied)
+    throw new Error(
+      modern ? t('Se necesitan permisos de Bluetooth para conectar el Ledger') : t('Android pide el permiso de ubicación para buscar el Ledger por Bluetooth. Quorum no usa tu ubicación.'),
+    );
 }
 
 /** Busca Ledgers cercanos durante `ms` milisegundos. */

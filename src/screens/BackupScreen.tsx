@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { t, locale } from '../i18n';
-import { Alert, Switch, View } from 'react-native';
+import { Alert, Platform, Switch, View } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -217,7 +217,9 @@ export default function BackupScreen() {
               <Button title="Compartir archivo" icon="share" onPress={shareExported} />
               <Button title="Copiar al portapapeles" kind="ghost" icon="copy" onPress={copyExported} />
               <Txt v="small" style={{ marginTop: 6 }}>
-                Compartir: AirDrop, Archivos, iCloud o correo. Copiar: lo pegas en el otro teléfono o en quorumxrpl.com/view (con el portapapeles compartido de Apple, se copia directo al Mac).
+                {Platform.OS === 'android'
+                  ? t('Compartir: Quick Share, Archivos, Google Drive o correo. Copiar: lo pegas en el otro teléfono o en quorumxrpl.com/view.')
+                  : t('Compartir: AirDrop, Archivos, iCloud o correo. Copiar: lo pegas en el otro teléfono o en quorumxrpl.com/view (con el portapapeles compartido de Apple, se copia directo al Mac).')}
               </Txt>
               <Button title="Hacer otro respaldo" kind="ghost" onPress={() => setExported(null)} />
             </View>

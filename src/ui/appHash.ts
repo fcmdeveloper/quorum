@@ -2,8 +2,8 @@
  * Huella (SHA-256) del código de esta app: el archivo main.jsbundle que va dentro de la app,
  * el mismo que reconstruye scripts/verify-release.sh. En un build de desarrollo no existe
  * (el código llega desde el computador) y se devuelve null.
- * Android todavía no calcula su huella (el paquete va dentro del APK con otro nombre): devuelve
- * null y la app se muestra como sin huella, nunca como una versión registrada.
+ * En Android el mismo bytecode va dentro del APK como `assets/index.android.bundle` (se lee con
+ * la ruta `asset:///`); `scripts/verify-release.sh <tag> android` lo reconstruye.
  */
 import { File, Paths } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
@@ -18,7 +18,7 @@ let cached: string | null | undefined;
 export async function appCodeHash(): Promise<string | null> {
   if (cached !== undefined) return cached;
   try {
-    const f = new File(Paths.bundle, 'main.jsbundle');
+    const f = Platform.OS === 'android' ? new File('asset:///index.android.bundle') : new File(Paths.bundle, 'main.jsbundle');
     if (!f.exists) return (cached = null);
     const buf = await f.arrayBuffer();
     const d = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, new Uint8Array(buf));

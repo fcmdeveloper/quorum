@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, Modal, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Animated, Modal, Platform, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -14,7 +14,20 @@ import { JetBrainsMono_400Regular, JetBrainsMono_500Medium } from '@expo-google-
 import { AppProvider, useApp } from './src/state';
 import { NavProvider, Route, SlideIn, Tab, useNav } from './src/nav';
 import { C, F, ThemeName, applyTheme, themeName } from './src/ui/theme';
-import { Lang, setLang, systemLang, t as tt } from './src/i18n';
+import { Lang, setDeviceWords, setLang, systemLang, t as tt } from './src/i18n';
+
+// En Android no hay Face ID (el desbloqueo del sistema se llama por la huella) ni App Store
+if (Platform.OS === 'android')
+  setDeviceWords({
+    es: [
+      { from: 'Face ID', exact: 'Huella', inline: 'la huella' },
+      { from: 'App Store', exact: 'Google Play', inline: 'Google Play' },
+    ],
+    en: [
+      { from: 'Face ID', exact: 'Fingerprint', inline: 'fingerprint' },
+      { from: 'App Store', exact: 'Google Play', inline: 'Google Play' },
+    ],
+  });
 import { patchAlert } from './src/i18n/alert';
 patchAlert();
 import { ToastHost, tap } from './src/ui/components';

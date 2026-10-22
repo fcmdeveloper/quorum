@@ -31,6 +31,7 @@ if (Platform.OS === 'android')
 import { patchAlert } from './src/i18n/alert';
 patchAlert();
 import { ToastHost, tap } from './src/ui/components';
+import { ActionSheetHost } from './src/ui/ActionSheet';
 import { OfflineBanner } from './src/ui/OfflineBanner';
 import { useIncomingProposalLinks } from './src/ui/incomingLinks';
 import { Glass, hasGlass, setNativeSelectors } from './src/ui/Glass';
@@ -341,6 +342,7 @@ function Shell() {
         <OfflineBanner onBackOnline={app.refreshAll} />
         <CelebrateHost />
         <ToastHost />
+        <ActionSheetHost />
       </View>
       {lockLayer}
     </View>

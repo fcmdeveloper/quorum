@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Reemplaza el layout del mismo nombre de Tangem SDK (los recursos de este módulo tienen
+  prioridad sobre los del SDK). Es el mismo, salvo el campo: CodeEditText en vez de
+  NoAutofillTextInputEditText (ver CodeEditText.kt). Mismos ids: el SDK los busca por id.
+-->
+<com.google.android.material.textfield.TextInputLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tilPinCode"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:boxBackgroundColor="@android:color/transparent">
+
+    <expo.modules.tangemnfc.CodeEditText
+        android:id="@+id/etPinCode"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:autofillHints="none"
+        android:background="@android:color/transparent"
+        android:importantForAutofill="no"
+        android:inputType="textPassword"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        android:privateImeOptions="disableAutofill"
+        android:singleLine="true" />
+
+</com.google.android.material.textfield.TextInputLayout>

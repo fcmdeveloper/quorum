@@ -2,6 +2,7 @@
  * Android: el tema de la app hereda de Material Components en vez de AppCompat. Las ventanas
  * de Tangem SDK (acercar la tarjeta, escribir el código) usan botones de Material, que fallan
  * con un tema solo AppCompat. Material Components incluye todo AppCompat: el resto no cambia.
+ * (El campo del código lo reemplaza el módulo tangem-nfc: ver CodeEditText.kt.)
  * Se aplica en cada `expo prebuild` (solo Android).
  */
 const { withAndroidStyles } = require('expo/config-plugins');

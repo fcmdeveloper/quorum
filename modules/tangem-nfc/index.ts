@@ -18,7 +18,7 @@ export function isNfcAvailable(): boolean {
   }
 }
 
-/** Olvida los códigos de tarjeta guardados con Face ID (solo iOS). */
+/** Olvida los códigos de tarjeta guardados con Face ID (iOS) o la huella (Android). */
 export function clearSavedTangemCodes(): boolean {
   try {
     return native?.clearSavedAccessCodes?.() ?? false;

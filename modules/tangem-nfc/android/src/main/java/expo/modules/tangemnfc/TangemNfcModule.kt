@@ -3,13 +3,21 @@ package expo.modules.tangemnfc
 import android.nfc.NfcAdapter
 import androidx.fragment.app.FragmentActivity
 import com.tangem.TangemSdk
+import com.tangem.common.CompletionResult
+import com.tangem.common.UserCodeType
+import com.tangem.common.authentication.keystore.KeystoreManager
+import com.tangem.common.core.UserCodeRequestPolicy
+import com.tangem.common.services.secure.AccessCodeRepository
 import com.tangem.common.card.EllipticCurve
 import com.tangem.common.core.Config
 import com.tangem.common.services.secure.SecureStorage
 import com.tangem.crypto.bip39.Wordlist
 import com.tangem.crypto.hdWallet.DerivationPath
+import com.tangem.operations.attestation.AttestationTask
 import com.tangem.sdk.DefaultSessionViewDelegate
 import com.tangem.sdk.extensions.getWordlist
+import com.tangem.sdk.extensions.initAuthenticationManager
+import com.tangem.sdk.extensions.initKeystoreManager
 import com.tangem.sdk.extensions.initNfcManager
 import com.tangem.sdk.nfc.AndroidNfcAvailabilityProvider
 import com.tangem.sdk.nfc.NfcManager
@@ -19,6 +27,7 @@ import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.lang.ref.WeakReference
+import kotlinx.coroutines.runBlocking
 
 /**
  * Puente mínimo hacia Tangem SDK (Android) por JSON-RPC.
@@ -29,8 +38,11 @@ import java.lang.ref.WeakReference
  * - al escanear deriva en la misma lectura la dirección XRP de la app Tangem (Wallet 2.0 /
  *   frase semilla, m/44'/144'/0'/0/0): llega en wallets[].derivedKeys;
  * - firmas secp256k1 canónicas (S bajo, lo exige el XRP Ledger): es el valor por defecto.
- * Diferencia con iOS (por ahora): el código de la tarjeta no se guarda con la huella; Tangem
- * lo pide en su propia ventana cada vez.
+ * - código de acceso: la primera vez se escribe y queda guardado en este teléfono, cifrado con una
+ *   llave del almacén de llaves de Android que solo se abre con la huella (o el desbloqueo
+ *   biométrico del teléfono). Las siguientes veces basta con la huella. Si el teléfono no tiene
+ *   biometría configurada, Tangem pide el código cada vez.
+ * Diferencia con iOS (por ahora): la autenticidad de la tarjeta se comprueba sin conexión (ver config()).
  *
  * Inicialización como en el módulo de Tangem que usa Xaman (tangem-sdk-react-native) y en
  * `TangemSdk.init` del propio SDK (versión fijada en android/build.gradle).
@@ -39,9 +51,17 @@ class TangemNfcModule : Module() {
   private var sdk: TangemSdk? = null
   private var nfcManager: NfcManager? = null
   private var forActivity: WeakReference<FragmentActivity>? = null
+  private var keystoreManager: KeystoreManager? = null
+  private var secureStorage: SecureStorage? = null
 
   private fun config(): Config {
     val config = Config()
+    // Autenticidad de la tarjeta: se comprueba en el teléfono, con la firma del fabricante que
+    // trae la propia tarjeta, sin consultar los servidores de Tangem (Quorum no usa servidores;
+    // además el SDK de Android no trae la dirección de ese servicio y fallaba con un aviso).
+    config.attestationMode = AttestationTask.Mode.Offline
+    // como en iOS (.alwaysWithBiometrics): el código queda guardado con la huella
+    config.userCodeRequestPolicy = UserCodeRequestPolicy.AlwaysWithBiometrics(UserCodeType.AccessCode)
     val xrp = DerivationPath(rawPath = "m/44'/144'/0'/0/0")
     config.defaultDerivationPaths = mutableMapOf(EllipticCurve.Secp256k1 to listOf(xrp))
     return config
@@ -54,6 +74,8 @@ class TangemNfcModule : Module() {
     val config = config()
     val secureStorage = SecureStorage.create(activity)
     val manager = TangemSdk.initNfcManager(activity) // sigue el ciclo de vida de la actividad
+    val authenticationManager = TangemSdk.initAuthenticationManager(activity)
+    val keystore = TangemSdk.initKeystoreManager(authenticationManager, secureStorage)
     val delegate = DefaultSessionViewDelegate(manager, activity)
     delegate.sdkConfig = config
     val created = TangemSdk(
@@ -63,7 +85,11 @@ class TangemNfcModule : Module() {
       secureStorage = secureStorage,
       wordlist = Wordlist.getWordlist(),
       config = config,
+      authenticationManager = authenticationManager,
+      keystoreManager = keystore,
     )
+    keystoreManager = keystore
+    this.secureStorage = secureStorage
     nfcManager = manager
     sdk = created
     forActivity = WeakReference(activity)
@@ -79,9 +105,18 @@ class TangemNfcModule : Module() {
       adapter != null && adapter.isEnabled
     }
 
-    /** Sin códigos guardados en Android (ver arriba): no hay nada que borrar. */
+    /** Borra los códigos de tarjetas Tangem guardados con la huella en este teléfono. */
     Function("clearSavedAccessCodes") {
-      true
+      val activity = appContext.currentActivity as? FragmentActivity ?: return@Function false
+      try {
+        ensureSdk(activity)
+        val repo = AccessCodeRepository(keystoreManager ?: return@Function false, secureStorage ?: return@Function false)
+        val had = runBlocking { repo.hasSavedUserCodes() }
+        runBlocking { repo.clear() } is CompletionResult.Success && had
+      } catch (e: Throwable) {
+        android.util.Log.e("QuorumTangem", "clearSavedAccessCodes", e)
+        false
+      }
     }
 
     /** request: JSON-RPC 2.0 como string. Devuelve la respuesta JSON-RPC como string. */
@@ -97,8 +132,11 @@ class TangemNfcModule : Module() {
           ensureSdk(activity).startSessionWithJsonRequest(request, cardId, initialMessage) { response ->
             activity.runOnUiThread { promise.resolve(response) }
           }
-        } catch (e: Exception) {
-          promise.reject(CodedException("TANGEM_ERROR", e.message ?: "Error de Tangem SDK", e))
+        } catch (e: Throwable) {
+          // la causa real suele venir anidada (p. ej. al dibujar una ventana): se muestra completa
+          android.util.Log.e("QuorumTangem", "runJsonRpc", e)
+          val chain = generateSequence(e) { it.cause }.take(6).joinToString(" ← ") { "${it.javaClass.simpleName}: ${it.message}" }
+          promise.reject(CodedException("TANGEM_ERROR", chain, e))
         }
       }
     }
@@ -107,6 +145,8 @@ class TangemNfcModule : Module() {
       sdk = null
       nfcManager = null
       forActivity = null
+      keystoreManager = null
+      secureStorage = null
     }
   }
 }

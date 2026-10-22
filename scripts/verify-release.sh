@@ -55,8 +55,16 @@ if [ "$PLATFORM" = "android" ]; then BUNDLE="index.android.bundle"; else BUNDLE=
 
 echo "› Bundling the app code (same settings as the $PLATFORM release build)"
 ENTRY="$(node -e "require('expo/scripts/resolveAppEntry')" "$WORK" "$PLATFORM" absolute | tail -n 1)"
+# Android's Gradle build also writes a source map, and that adds two comment lines at the end of the
+# bundle (sourceMappingURL and debugId) that end up in the bytecode: do the same so the bytes match.
+# The iOS release build doesn't, so iOS stays exactly as it was.
+EXTRA=()
+if [ "$PLATFORM" = "android" ]; then
+  mkdir -p "$OUT/map"
+  EXTRA=(--sourcemap-output "$OUT/map/$BUNDLE.packager.map")
+fi
 npx expo export:embed --entry-file "$ENTRY" --platform "$PLATFORM" --dev false --minify false --reset-cache \
-  --bundle-output "$OUT/js/$BUNDLE" --assets-dest "$OUT/app" >/dev/null
+  --bundle-output "$OUT/js/$BUNDLE" --assets-dest "$OUT/app" ${EXTRA[@]+"${EXTRA[@]}"} >/dev/null
 
 echo "› Compiling to Hermes bytecode"
 "$WORK/scripts/hermesc-reproducible.sh" -emit-binary -max-diagnostic-width=80 -O -out "$OUT/app/$BUNDLE" "$OUT/js/$BUNDLE"

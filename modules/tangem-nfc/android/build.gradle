@@ -6,9 +6,10 @@ plugins {
 group = 'expo.modules.tangemnfc'
 version = '1.0.0'
 
-// Versión del SDK Android de Tangem (JitPack): la misma que usa Xaman en tangem-sdk-react-native.
-// Si se cambia, revisar los imports y el constructor de TangemSdk en TangemNfcModule.kt.
-def tangemSdkVersion = project.findProperty('tangemSdkVersion') ?: '3.9.2'
+// SDK Android de Tangem desde JitPack, fijado a un commit del repositorio tangem/tangem-sdk-android
+// (Tangem ya no publica tags: JitPack lo compila desde ese commit). 66c17201bc = master del
+// 12 oct 2026, versión 3.9.2. Si se cambia, revisar el constructor de TangemSdk en TangemNfcModule.kt.
+def tangemSdkVersion = project.findProperty('tangemSdkVersion') ?: '66c17201bc'
 
 repositories {
   mavenCentral()
@@ -27,4 +28,7 @@ android {
 dependencies {
   implementation "com.github.tangem.tangem-sdk-android:android:${tangemSdkVersion}"
   implementation "com.github.tangem.tangem-sdk-android:core:${tangemSdkVersion}"
+  // Tangem SDK las usa por dentro, pero no las expone: el módulo las necesita para su actividad
+  implementation "androidx.activity:activity-ktx:1.10.1"
+  implementation "androidx.fragment:fragment-ktx:1.8.6"
 }

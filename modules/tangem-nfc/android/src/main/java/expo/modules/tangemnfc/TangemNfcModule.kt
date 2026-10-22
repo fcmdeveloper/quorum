@@ -32,8 +32,8 @@ import java.lang.ref.WeakReference
  * Diferencia con iOS (por ahora): el código de la tarjeta no se guarda con la huella; Tangem
  * lo pide en su propia ventana cada vez.
  *
- * Inicialización como en el módulo de Tangem que usa Xaman (tangem-sdk-react-native), con la
- * misma versión del SDK (ver android/build.gradle).
+ * Inicialización como en el módulo de Tangem que usa Xaman (tangem-sdk-react-native) y en
+ * `TangemSdk.init` del propio SDK (versión fijada en android/build.gradle).
  */
 class TangemNfcModule : Module() {
   private var sdk: TangemSdk? = null
@@ -61,7 +61,7 @@ class TangemNfcModule : Module() {
       viewDelegate = delegate,
       nfcAvailabilityProvider = AndroidNfcAvailabilityProvider(activity),
       secureStorage = secureStorage,
-      wordlist = Wordlist.getWordlist(activity),
+      wordlist = Wordlist.getWordlist(),
       config = config,
     )
     nfcManager = manager

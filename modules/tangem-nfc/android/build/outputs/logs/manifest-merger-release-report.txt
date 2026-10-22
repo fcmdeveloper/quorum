@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml:2:13-83
+INJECTED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml:2:13-83
+	package
+		INJECTED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml
+	xmlns:android
+		ADDED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml:2:23-81
+uses-sdk
+INJECTED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml reason: use-sdk injection requested
+INJECTED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml
+INJECTED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml
+	android:targetSdkVersion
+		INJECTED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml
+	android:minSdkVersion
+		INJECTED from /Users/fcorrea/Documents/quorum/modules/tangem-nfc/android/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest16353539361214690927.xml

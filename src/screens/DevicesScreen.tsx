@@ -302,6 +302,12 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
                   }
                 }}
               />
+              {ledgers.length > 0 && (
+                // separado del botón: la primera tarjeta quedaba pegada a "Buscar Ledger"
+                <Txt v="small" style={{ marginTop: SP.lg, marginBottom: SP.sm }}>
+                  Toca tu Ledger para confirmar la dirección en su pantalla.
+                </Txt>
+              )}
               {ledgers.map((d) => (
                 <Card
                   key={d.id}

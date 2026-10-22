@@ -70,5 +70,10 @@
     "android:device": "expo run:android --device",
     "ios:release": "expo run:ios --device --configuration Release --no-bundler"
   },
+  "overrides": {
+    "@ledgerhq/react-native-hw-transport-ble": {
+      "react-native-ble-plx": "$react-native-ble-plx"
+    }
+  },
   "private": true
 }

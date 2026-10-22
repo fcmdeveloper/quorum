@@ -1380,4 +1380,5 @@ export const EN: Record<string, string> = {
   'Compartir: Quick Share, Archivos, Google Drive o correo. Copiar: lo pegas en el otro teléfono o en quorumxrpl.com/view.': 'Share: Quick Share, Files, Google Drive or email. Copy: paste it on the other phone or at quorumxrpl.com/view.',
   'NFC está apagado o este teléfono no tiene NFC. Actívalo en Ajustes › Dispositivos conectados.': "NFC is off or this phone doesn't have NFC. Turn it on in Settings › Connected devices.",
   'Acerca la tarjeta a la parte de atrás del teléfono…': 'Hold the card to the back of the phone…',
+  'Toca tu Ledger para confirmar la dirección en su pantalla.': 'Tap your Ledger to confirm the address on its screen.',
 };

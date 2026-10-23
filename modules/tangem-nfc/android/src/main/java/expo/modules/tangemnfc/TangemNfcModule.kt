@@ -42,7 +42,7 @@ import kotlinx.coroutines.runBlocking
  *   llave del almacén de llaves de Android que solo se abre con la huella (o el desbloqueo
  *   biométrico del teléfono). Las siguientes veces basta con la huella. Si el teléfono no tiene
  *   biometría configurada, Tangem pide el código cada vez.
- * Diferencia con iOS (por ahora): la autenticidad de la tarjeta se comprueba sin conexión (ver config()).
+ * - autenticidad de la tarjeta: se confirma con Tangem una vez por tarjeta (ver config()).
  *
  * Inicialización como en el módulo de Tangem que usa Xaman (tangem-sdk-react-native) y en
  * `TangemSdk.init` del propio SDK (versión fijada en android/build.gradle).
@@ -56,10 +56,12 @@ class TangemNfcModule : Module() {
 
   private fun config(): Config {
     val config = Config()
-    // Autenticidad de la tarjeta: se comprueba en el teléfono, con la firma del fabricante que
-    // trae la propia tarjeta, sin consultar los servidores de Tangem (Quorum no usa servidores;
-    // además el SDK de Android no trae la dirección de ese servicio y fallaba con un aviso).
-    config.attestationMode = AttestationTask.Mode.Offline
+    // Autenticidad de la tarjeta, como en iOS: la tarjeta firma un desafío con su llave y, una vez
+    // por tarjeta en este teléfono, se confirma con Tangem que la fabricaron ellos (solo el ID y la
+    // llave de la tarjeta; nunca las llaves ni direcciones de las billeteras). Así se detecta una
+    // tarjeta falsificada. El SDK de Android no trae la dirección del servicio: es la misma de iOS.
+    config.attestationMode = AttestationTask.Mode.Normal
+    config.tangemApiBaseUrl = "https://api.tangem.org/"
     // como en iOS (.alwaysWithBiometrics): el código queda guardado con la huella
     config.userCodeRequestPolicy = UserCodeRequestPolicy.AlwaysWithBiometrics(UserCodeType.AccessCode)
     val xrp = DerivationPath(rawPath = "m/44'/144'/0'/0/0")

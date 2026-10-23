@@ -12,11 +12,13 @@ Sitio: https://quorumxrpl.com
 
 - **Bóvedas multifirma:** asistente para crearlas (firmantes con pesos, quórum, tickets para firmar en paralelo), panel de seguridad y destinos permitidos.
 - **Firmas entre teléfonos por QR o enlace:** la operación y sus firmas viajan en un código QR o en un enlace (WhatsApp, Telegram, correo); quien firma la devuelve con su firma y cada teléfono verifica todo.
+- **Varias cuentas por dispositivo:** hasta 20 cuentas de la app Tangem en la misma tarjeta y hasta 20 cuentas de Ledger Live en el mismo Ledger, cada una como firmante propio.
 - **Enviar y recibir** XRP y tokens, con contactos, escáner y aviso de direcciones parecidas (address poisoning).
 - **Pedir un pago** con enlace o QR, en XRP (escrito en XRP, USD o EUR) o en RLUSD/USDC: quien paga solo elige desde qué cuenta y firma.
 - **Patrimonio** en USD o EUR con el detalle de cada moneda, orden y visibilidad de cuentas en Inicio, actividad, NFTs, tokens, DEX y swaps.
 - **Protecciones** de la bóveda una por una (líneas de confianza, cheques, ofertas de NFT, canales de pago).
-- **NFT como imagen** de cada cuenta, que se puede fijar en el XRP Ledger para que se vea en otros teléfonos.
+- **NFT como imagen** de cada cuenta, que se puede fijar en el XRP Ledger para que se vea en otros teléfonos (si cambia en el ledger, se actualiza en todos).
+- **Versiones verificables** por separado en iOS y Android: cada plataforma tiene su huella y su registro en el XRP Ledger.
 - **Respaldo** exportable (cifrado con contraseña si quieres), bloqueo con Face ID o código propio de 4 dígitos, español e inglés, modo claro y oscuro.
 
 ## Compilar tu propia versión
@@ -75,7 +77,14 @@ La primera vez, abre `ios/` en Xcode, elige tu equipo de desarrollo en *Signing 
 
 ### Android
 
-El código incluye el módulo nativo de Tangem para Android, pero la versión para Android todavía no está probada. Se compila con `npx expo run:android --device`.
+Probada con Tangem, Ledger y Xaman. Necesitas Android Studio (con su SDK), **Java 17** en `JAVA_HOME` y un teléfono con depuración USB:
+
+```bash
+npx expo prebuild --platform android
+npx expo run:android --device --variant release --no-bundler
+```
+
+Si Gradle se queda sin memoria, agrega `org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g` a `~/.gradle/gradle.properties`. La versión para Google Play todavía no está publicada.
 
 ## Estructura
 
@@ -108,6 +117,8 @@ Validadores independientes hacen esta comprobación antes de cada publicación y
 
 Quorum está en beta y aún no tiene auditoría externa. Pruébalo primero en testnet o con montos chicos.
 
+Quorum solo se conecta a: nodos públicos del XRP Ledger, CoinGecko y Kraken (precio de XRP), gateways IPFS (imágenes de NFTs), Xaman (solo si firmas con Xaman) y Tangem, **solo al agregar o usar por primera vez una tarjeta en un teléfono**, para confirmar que es auténtica y no una copia. A Tangem se envía el ID de la tarjeta, nunca las llaves ni las direcciones de sus billeteras.
+
 Si encuentras una vulnerabilidad, escribe a contact@quorumxrpl.com con el asunto "Seguridad" antes de publicarla.
 
 ## Licencia
@@ -126,11 +137,13 @@ Quorum is a **coordinator**: it never sees or stores private keys. It builds eac
 
 - **Multisig vaults:** a wizard to create them (weighted signers, quorum, tickets to sign in parallel), a security panel and allowed destinations.
 - **Signing across phones by QR or link:** the operation and its signatures travel in a QR code or a link (WhatsApp, Telegram, email); whoever signs sends it back with their signature and every phone verifies everything.
+- **Several accounts per device:** up to 20 Tangem app accounts on the same card and up to 20 Ledger Live accounts on the same Ledger, each one a signer of its own.
 - **Send and receive** XRP and tokens, with contacts, a scanner and a lookalike-address warning (address poisoning).
 - **Request a payment** with a link or QR, in XRP (typed in XRP, USD or EUR) or in RLUSD/USDC: the payer just picks the account and signs.
 - **Net worth** in USD or EUR with each currency broken down, account order and visibility on Home, activity, NFTs, tokens, DEX and swaps.
 - **Protections** of the vault one by one (trust lines, checks, NFT offers, payment channels).
-- **NFT as the picture** of each account, which can be pinned on the XRP Ledger so other phones see it.
+- **NFT as the picture** of each account, which can be pinned on the XRP Ledger so other phones see it (when it changes on the ledger, every phone updates).
+- **Verifiable releases** on iOS and Android separately: each platform has its own fingerprint and record on the XRP Ledger.
 - **Exportable backup** (password-encrypted if you like), Face ID or a 4-digit Quorum code lock, Spanish and English, light and dark mode.
 
 ### Build your own version
@@ -159,7 +172,7 @@ npx expo run:ios --device --configuration Release
 
 The first time, open `ios/` in Xcode, pick your development team under *Signing & Capabilities* and check that **Near Field Communication Tag Reading** is there. `ios/` and `android/` are regenerated on every `prebuild`: native changes go in `app.json` and `plugins/`, not by hand.
 
-**Android:** the Tangem native module for Android is included, but the Android version hasn't been tested yet. Build it with `npx expo run:android --device`.
+**Android:** tested with Tangem, Ledger and Xaman. You need Android Studio (with its SDK), **Java 17** in `JAVA_HOME` and a phone with USB debugging; then `npx expo prebuild --platform android` and `npx expo run:android --device --variant release --no-bundler`. If Gradle runs out of memory, add `org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g` to `~/.gradle/gradle.properties`. The Google Play version isn't published yet.
 
 ### Verify a release
 
@@ -173,7 +186,11 @@ Independent validators run this check before every release and record their resu
 
 ### Security
 
-Quorum is in beta and hasn't been externally audited yet. Try it first on testnet or with small amounts. If you find a vulnerability, email contact@quorumxrpl.com with the subject "Security" before disclosing it.
+Quorum is in beta and hasn't been externally audited yet. Try it first on testnet or with small amounts.
+
+Quorum only connects to: public XRP Ledger nodes, CoinGecko and Kraken (XRP price), IPFS gateways (NFT images), Xaman (only if you sign with Xaman) and Tangem, **only when a card is added or first used on a phone**, to confirm it's genuine and not a copy. Tangem receives the card ID, never the keys or the addresses of its wallets.
+
+If you find a vulnerability, email contact@quorumxrpl.com with the subject "Security" before disclosing it.
 
 ### License
 

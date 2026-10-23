@@ -1397,4 +1397,6 @@ export const EN: Record<string, string> = {
   'La cuenta {n} de Ledger Live ({p}). Compara la dirección con la de esa cuenta.': "Ledger Live account {n} ({p}). Compare the address with that account's.",
   'Cuenta de Ledger Live': 'Ledger Live account',
   'Elegir otra cuenta': 'Choose another account',
+  'Tangem, solo al agregar o usar por primera vez una tarjeta en este teléfono: confirma con Tangem que la tarjeta es auténtica. Se envía el ID de la tarjeta, nunca las llaves ni las direcciones de sus billeteras.': 'Tangem, only when a card is added or first used on this phone: it confirms with Tangem that the card is genuine. The card ID is sent, never the keys or the addresses of its wallets.',
+  'Para confirmar que la tarjeta es auténtica (y no una copia), la primera vez el teléfono se lo consulta a Tangem con el ID de la tarjeta. Es la única conexión con Tangem; nunca se envían llaves ni direcciones.': "To confirm the card is genuine (and not a copy), the first time the phone checks with Tangem using the card ID. It's the only connection to Tangem; keys and addresses are never sent.",
 };

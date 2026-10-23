@@ -3,7 +3,7 @@
     "name": "Quorum",
     "slug": "quorum",
     "scheme": "quorum",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -33,10 +33,11 @@
           "TAG"
         ]
       },
-      "buildNumber": "3"
+      "buildNumber": "4"
     },
     "android": {
       "package": "cl.minify.quorum",
+      "versionCode": 4,
       "permissions": [
         "android.permission.NFC",
         "android.permission.BLUETOOTH",

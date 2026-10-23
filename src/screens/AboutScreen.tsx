@@ -43,6 +43,7 @@ const CONNECTIONS = [
   'CoinGecko y Kraken, solo para el precio de XRP y su historial.',
   'Gateways IPFS, para mostrar imágenes de NFTs.',
   'Xaman, únicamente si firmas con una cuenta Xaman (inicio de sesión dentro de Xaman, sin secretos en la app).',
+  'Tangem, solo al agregar o usar por primera vez una tarjeta en este teléfono: confirma con Tangem que la tarjeta es auténtica. Se envía el ID de la tarjeta, nunca las llaves ni las direcciones de sus billeteras.',
 ];
 
 export default function AboutScreen() {

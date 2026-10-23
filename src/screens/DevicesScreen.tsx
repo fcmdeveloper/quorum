@@ -221,6 +221,7 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
           <Notice kind="info">
             Funciona con tarjetas Xaman y Tangem. Si la tarjeta es de un set con respaldo, todas las tarjetas del set comparten la clave: cuentan como un solo firmante.
           </Notice>
+          <Notice kind="info">{t('Para confirmar que la tarjeta es auténtica (y no una copia), la primera vez el teléfono se lo consulta a Tangem con el ID de la tarjeta. Es la única conexión con Tangem; nunca se envían llaves ni direcciones.')}</Notice>
           {cands.length === 0 ? (
             <Button
               title="Escanear tarjeta"

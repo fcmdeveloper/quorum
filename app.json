@@ -156,7 +156,7 @@
             "name": "Light",
             "ios": "./assets/icons/light.png",
             "android": {
-              "foregroundImage": "./assets/icons/light.png",
+              "foregroundImage": "./assets/icons/android/light.png",
               "backgroundColor": "#EEF3EF"
             }
           },
@@ -164,7 +164,7 @@
             "name": "Gallery",
             "ios": "./assets/icons/gallery.png",
             "android": {
-              "foregroundImage": "./assets/icons/gallery.png",
+              "foregroundImage": "./assets/icons/android/gallery.png",
               "backgroundColor": "#051a1c"
             }
           },
@@ -172,7 +172,7 @@
             "name": "Ember",
             "ios": "./assets/icons/ember.png",
             "android": {
-              "foregroundImage": "./assets/icons/ember.png",
+              "foregroundImage": "./assets/icons/android/ember.png",
               "backgroundColor": "#1a0806"
             }
           },
@@ -180,7 +180,7 @@
             "name": "Ocean",
             "ios": "./assets/icons/ocean.png",
             "android": {
-              "foregroundImage": "./assets/icons/ocean.png",
+              "foregroundImage": "./assets/icons/android/ocean.png",
               "backgroundColor": "#04101f"
             }
           },
@@ -188,7 +188,7 @@
             "name": "Violet",
             "ios": "./assets/icons/violet.png",
             "android": {
-              "foregroundImage": "./assets/icons/violet.png",
+              "foregroundImage": "./assets/icons/android/violet.png",
               "backgroundColor": "#120a22"
             }
           },
@@ -196,7 +196,7 @@
             "name": "Solar",
             "ios": "./assets/icons/solar.png",
             "android": {
-              "foregroundImage": "./assets/icons/solar.png",
+              "foregroundImage": "./assets/icons/android/solar.png",
               "backgroundColor": "#151204"
             }
           },
@@ -204,7 +204,7 @@
             "name": "Rose",
             "ios": "./assets/icons/rose.png",
             "android": {
-              "foregroundImage": "./assets/icons/rose.png",
+              "foregroundImage": "./assets/icons/android/rose.png",
               "backgroundColor": "#1c0610"
             }
           },
@@ -212,7 +212,7 @@
             "name": "Ice",
             "ios": "./assets/icons/ice.png",
             "android": {
-              "foregroundImage": "./assets/icons/ice.png",
+              "foregroundImage": "./assets/icons/android/ice.png",
               "backgroundColor": "#0c1218"
             }
           },
@@ -220,7 +220,7 @@
             "name": "XrpMidnight",
             "ios": "./assets/icons/xrp-midnight.png",
             "android": {
-              "foregroundImage": "./assets/icons/xrp-midnight.png",
+              "foregroundImage": "./assets/icons/android/xrp-midnight.png",
               "backgroundColor": "#05070d"
             }
           },
@@ -228,7 +228,7 @@
             "name": "XrpAurora",
             "ios": "./assets/icons/xrp-aurora.png",
             "android": {
-              "foregroundImage": "./assets/icons/xrp-aurora.png",
+              "foregroundImage": "./assets/icons/android/xrp-aurora.png",
               "backgroundColor": "#06121a"
             }
           },
@@ -236,7 +236,7 @@
             "name": "XrpSunset",
             "ios": "./assets/icons/xrp-sunset.png",
             "android": {
-              "foregroundImage": "./assets/icons/xrp-sunset.png",
+              "foregroundImage": "./assets/icons/android/xrp-sunset.png",
               "backgroundColor": "#1a0816"
             }
           },
@@ -244,7 +244,7 @@
             "name": "XrpGold",
             "ios": "./assets/icons/xrp-gold.png",
             "android": {
-              "foregroundImage": "./assets/icons/xrp-gold.png",
+              "foregroundImage": "./assets/icons/android/xrp-gold.png",
               "backgroundColor": "#120c04"
             }
           },
@@ -252,7 +252,7 @@
             "name": "XrpElectric",
             "ios": "./assets/icons/xrp-electric.png",
             "android": {
-              "foregroundImage": "./assets/icons/xrp-electric.png",
+              "foregroundImage": "./assets/icons/android/xrp-electric.png",
               "backgroundColor": "#040624"
             }
           },
@@ -260,7 +260,7 @@
             "name": "XrpCrimson",
             "ios": "./assets/icons/xrp-crimson.png",
             "android": {
-              "foregroundImage": "./assets/icons/xrp-crimson.png",
+              "foregroundImage": "./assets/icons/android/xrp-crimson.png",
               "backgroundColor": "#160406"
             }
           }

@@ -55,10 +55,21 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "quorumxrpl.com", "path": "/p" },
-            { "scheme": "https", "host": "quorumxrpl.com", "pathPrefix": "/p/" }
+            {
+              "scheme": "https",
+              "host": "quorumxrpl.com",
+              "path": "/p"
+            },
+            {
+              "scheme": "https",
+              "host": "quorumxrpl.com",
+              "pathPrefix": "/p/"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "adaptiveIcon": {
@@ -137,6 +148,7 @@
       "./plugins/withSwift64InterfaceFix",
       "./plugins/withAndroidSigning",
       "./plugins/withAndroidMaterialTheme",
+      "./plugins/withAliasIntentFilters",
       [
         "expo-alternate-app-icons",
         [

@@ -6,10 +6,10 @@ import { isValidClassicAddress } from 'ripple-address-codec';
 import { useApp } from '../state';
 import { useNav } from '../nav';
 import { useAddressScanner } from '../ui/ScanView';
-import { Address, Badge, BusySheet, Button, Card, Empty, Field, ListItem, Notice, Screen, Section, Txt, success, toast } from '../ui/components';
+import { Address, Badge, BusySheet, Button, Card, Empty, Field, IconButton, ListItem, Notice, Screen, Section, Txt, success, toast } from '../ui/components';
 import { C, F, SP } from '../ui/theme';
-import { KIND_LABEL, LEDGER_XRP_PATH, SignerDevice, SignerKind } from '../signers/types';
-import { scanTangem, TangemCandidate } from '../signers/tangem';
+import { KIND_LABEL, LEDGER_XRP_PATH, MAX_TANGEM_ACCOUNTS, SignerDevice, SignerKind, XRP_PATH } from '../signers/types';
+import { deriveTangemAccount, scanTangem, TangemCandidate } from '../signers/tangem';
 import { scanLedgers, ledgerGetAddress, LedgerFound } from '../signers/ledger';
 import { isNfcAvailable, tangemNativeLoaded } from '../../modules/tangem-nfc';
 import { newId } from '../store';
@@ -166,9 +166,37 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [cands, setCands] = useState<TangemCandidate[]>([]);
   const [scanNotes, setScanNotes] = useState<string[]>([]);
+  // otra cuenta de la app Tangem (Multi-Accounts): número de la próxima a leer
+  const [acct, setAcct] = useState(2);
   const [ledgers, setLedgers] = useState<LedgerFound[]>([]);
   const [picked, setPicked] = useState<{ dev: LedgerFound; address: string; publicKey: string } | null>(null);
   const [addr, setAddr] = useState('');
+
+  /** Número de cuenta de la app Tangem según la ruta (m/44'/144'/N'/0/0 → N+1), o null. */
+  const accountOf = (c: TangemCandidate) => {
+    const m = /^m\/44'\/144'\/(\d+)'\/0\/0$/.exec(c.derivationPath ?? '');
+    return m ? Number(m[1]) + 1 : null;
+  };
+  const deviceLabel = (c: TangemCandidate, i: number) => {
+    const base = label.trim() || `Tangem ${count}`;
+    const n = accountOf(c);
+    if (n && n > 1) return `${base} · ${t('cuenta {n}', { n })}`;
+    return cands.length > 1 && i > 0 ? `${base} · ${i + 1}` : base;
+  };
+  const hd = cands.find((c) => c.derivationPath === XRP_PATH);
+  const readAccount = async () => {
+    if (!hd) return;
+    setBusy(t('Acerca la tarjeta para leer la cuenta {n}…', { n: acct }));
+    try {
+      const c = await deriveTangemAccount(hd.cardId, hd.walletPublicKey, acct);
+      setCands((cur) => (cur.some((x) => x.address === c.address) ? cur : [...cur, c]));
+      setAcct((n) => Math.min(MAX_TANGEM_ACCOUNTS, n + 1));
+    } catch (e: any) {
+      Alert.alert('Tangem', e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const save = async (d: Omit<SignerDevice, 'id' | 'createdAt'>, close = true) => {
     try {
@@ -241,7 +269,7 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
                           save(
                             {
                               kind: 'tangem',
-                              label: (cands.length > 1 && i > 0 ? `${label.trim()} · ${i + 1}` : label.trim()) || `Tangem ${count}`,
+                              label: deviceLabel(c, i),
                               address: c.address,
                               publicKey: c.publicKey,
                               tangem: { cardId: c.cardId, walletPublicKey: c.walletPublicKey, derivationPath: c.derivationPath },
@@ -254,6 +282,20 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
                   </Card>
                 );
               })}
+              {hd ? (
+                <Card style={{ marginTop: SP.md }}>
+                  <Txt v="h3">Otra cuenta de la app Tangem</Txt>
+                  <Txt v="small" style={{ marginTop: 4 }}>
+                    {t('En la app Tangem puedes tener hasta {m} cuentas en la misma tarjeta, cada una con su dirección XRP. Elige el número de la cuenta y compara la dirección antes de agregarla.', { m: MAX_TANGEM_ACCOUNTS })}
+                  </Txt>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.lg, marginTop: SP.md }}>
+                    <IconButton icon="minus" label={t('Cuenta anterior')} onPress={() => setAcct((n) => Math.max(2, n - 1))} />
+                    <Txt v="h2">{t('Cuenta {n}', { n: acct })}</Txt>
+                    <IconButton icon="plus" label={t('Cuenta siguiente')} onPress={() => setAcct((n) => Math.min(MAX_TANGEM_ACCOUNTS, n + 1))} />
+                  </View>
+                  <Button title={t('Leer la cuenta {n}', { n: acct })} icon="credit-card" kind="secondary" onPress={readAccount} style={{ marginTop: SP.md }} />
+                </Card>
+              ) : null}
               {scanNotes.map((n) => (
                 <Notice key={n} kind="info">
                   {n}

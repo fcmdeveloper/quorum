@@ -31,4 +31,7 @@ export const KIND_LABEL: Record<SignerKind, string> = {
 
 /** Ruta BIP44 de XRP que usan Ledger y la app Tangem */
 export const XRP_PATH = "m/44'/144'/0'/0/0";
+/** Cuentas de la app Tangem (Multi-Accounts): la cuenta N usa el índice de cuenta N-1, en la tercera posición. */
+export const MAX_TANGEM_ACCOUNTS = 20;
+export const xrpAccountPath = (account: number) => `m/44'/144'/${account - 1}'/0/0`;
 export const LEDGER_XRP_PATH = "44'/144'/0'/0/0";

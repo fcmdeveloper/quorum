@@ -5,7 +5,7 @@
 import { t } from '../i18n';
 import { tangemRpc } from '../../modules/tangem-nfc';
 import { addressFromPublicKey, bytesToHex, compressPublicKey, toCanonicalDer } from '../core/crypto';
-import { XRP_PATH } from './types';
+import { XRP_PATH, xrpAccountPath } from './types';
 
 export interface TangemCandidate {
   cardId: string;
@@ -97,6 +97,23 @@ export async function scanTangem(): Promise<TangemScan> {
     });
   }
   return { candidates: out.filter((c) => c.address), notes };
+}
+
+/**
+ * Otra cuenta de la app Tangem (Multi-Accounts, hasta 20 por billetera): deriva en la tarjeta la
+ * dirección XRP de la cuenta `account` (1 = la principal, la que ya da el escaneo).
+ * Hay que comparar la dirección con la de esa cuenta en la app Tangem antes de agregarla.
+ */
+export async function deriveTangemAccount(cardId: string, walletPublicKey: string, account: number): Promise<TangemCandidate> {
+  const path = xrpAccountPath(account);
+  const d: any = await tangemRpc(
+    'DERIVE_WALLET_PUBLIC_KEY',
+    { walletPublicKey, derivationPath: path },
+    { cardId, message: { header: 'Acerca la tarjeta Tangem', body: t('Leyendo la cuenta {n}', { n: account }) } },
+  );
+  if (!d?.publicKey) throw new Error(t('La tarjeta no devolvió la cuenta {n}', { n: account }));
+  const pk = compressPublicKey(d.publicKey);
+  return { cardId, walletPublicKey, derivationPath: path, publicKey: pk, address: addressFromPublicKey(pk), note: t('Cuenta {n} de la app Tangem ({x})', { n: account, x: path }) };
 }
 
 /** Firma un hash de 32 bytes con la tarjeta y devuelve DER canónico. */

@@ -8,7 +8,7 @@ import { useNav } from '../nav';
 import { useAddressScanner } from '../ui/ScanView';
 import { Address, Badge, BusySheet, Button, Card, Empty, Field, IconButton, ListItem, Notice, Screen, Section, Txt, success, toast } from '../ui/components';
 import { C, F, SP } from '../ui/theme';
-import { KIND_LABEL, LEDGER_XRP_PATH, MAX_TANGEM_ACCOUNTS, SignerDevice, SignerKind, XRP_PATH } from '../signers/types';
+import { KIND_LABEL, ledgerAccountPath, MAX_LEDGER_ACCOUNTS, MAX_TANGEM_ACCOUNTS, SignerDevice, SignerKind, XRP_PATH } from '../signers/types';
 import { deriveTangemAccount, scanTangem, TangemCandidate } from '../signers/tangem';
 import { scanLedgers, ledgerGetAddress, LedgerFound } from '../signers/ledger';
 import { isNfcAvailable, tangemNativeLoaded } from '../../modules/tangem-nfc';
@@ -169,7 +169,9 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
   // otra cuenta de la app Tangem (Multi-Accounts): número de la próxima a leer
   const [acct, setAcct] = useState(2);
   const [ledgers, setLedgers] = useState<LedgerFound[]>([]);
-  const [picked, setPicked] = useState<{ dev: LedgerFound; address: string; publicKey: string } | null>(null);
+  const [picked, setPicked] = useState<{ dev: LedgerFound; address: string; publicKey: string; account: number } | null>(null);
+  // cuenta de Ledger Live a leer (1 = la principal)
+  const [ledgerAcct, setLedgerAcct] = useState(1);
   const [addr, setAddr] = useState('');
 
   /** Número de cuenta de la app Tangem según la ruta (m/44'/144'/N'/0/0 → N+1), o null. */
@@ -345,10 +347,25 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
                 }}
               />
               {ledgers.length > 0 && (
-                // separado del botón: la primera tarjeta quedaba pegada a "Buscar Ledger"
-                <Txt v="small" style={{ marginTop: SP.lg, marginBottom: SP.sm }}>
-                  Toca tu Ledger para confirmar la dirección en su pantalla.
-                </Txt>
+                <>
+                  {/* separado del botón: la primera tarjeta quedaba pegada a "Buscar Ledger" */}
+                  <Card style={{ marginTop: SP.lg }}>
+                    <Txt v="label">Cuenta de Ledger Live</Txt>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SP.lg, marginTop: SP.sm }}>
+                      <IconButton icon="minus" label={t('Cuenta anterior')} onPress={() => setLedgerAcct((n) => Math.max(1, n - 1))} />
+                      <Txt v="h2">{t('Cuenta {n}', { n: ledgerAcct })}</Txt>
+                      <IconButton icon="plus" label={t('Cuenta siguiente')} onPress={() => setLedgerAcct((n) => Math.min(MAX_LEDGER_ACCOUNTS, n + 1))} />
+                    </View>
+                    <Txt v="small" style={{ marginTop: SP.sm, textAlign: 'center' }}>
+                      {ledgerAcct === 1
+                        ? t('La cuenta principal. Si en Ledger Live tienes más cuentas XRP, elige su número para agregar otra.')
+                        : t('La cuenta {n} de Ledger Live ({p}). Compara la dirección con la de esa cuenta.', { n: ledgerAcct, p: ledgerAccountPath(ledgerAcct) })}
+                    </Txt>
+                  </Card>
+                  <Txt v="small" style={{ marginTop: SP.md, marginBottom: SP.sm }}>
+                    Toca tu Ledger para confirmar la dirección en su pantalla.
+                  </Txt>
+                </>
               )}
               {ledgers.map((d) => (
                 <Card
@@ -356,8 +373,8 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
                   onPress={async () => {
                     setBusy('Confirma la dirección en la pantalla del Ledger…');
                     try {
-                      const r = await ledgerGetAddress(d.id, LEDGER_XRP_PATH, true);
-                      setPicked({ dev: d, ...r });
+                      const r = await ledgerGetAddress(d.id, ledgerAccountPath(ledgerAcct), true);
+                      setPicked({ dev: d, ...r, account: ledgerAcct });
                     } catch (e: any) {
                       Alert.alert('Ledger', e.message);
                     } finally {
@@ -371,7 +388,7 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
             </>
           ) : (
             <Card>
-              <Txt v="label">Dirección confirmada en el dispositivo</Txt>
+              <Txt v="label">{picked.account > 1 ? t('Cuenta {n} · dirección confirmada en el dispositivo', { n: picked.account }) : t('Dirección confirmada en el dispositivo')}</Txt>
               <View style={{ marginTop: 6 }}>
                 <Address value={picked.address} />
               </View>
@@ -381,13 +398,14 @@ export function AddDeviceScreen({ kind }: { kind: SignerKind }) {
                 onPress={() =>
                   save({
                     kind: 'ledger',
-                    label: label.trim(),
+                    label: picked.account > 1 ? `${label.trim() || `Ledger ${count}`} · ${t('cuenta {n}', { n: picked.account })}` : label.trim(),
                     address: picked.address,
                     publicKey: picked.publicKey,
-                    ledger: { path: LEDGER_XRP_PATH, deviceId: picked.dev.id, deviceName: picked.dev.name },
+                    ledger: { path: ledgerAccountPath(picked.account), deviceId: picked.dev.id, deviceName: picked.dev.name },
                   })
                 }
               />
+              <Button title="Elegir otra cuenta" kind="ghost" icon="arrow-left" onPress={() => setPicked(null)} />
             </Card>
           )}
         </>

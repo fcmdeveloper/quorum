@@ -1392,4 +1392,9 @@ export const EN: Record<string, string> = {
   'Leyendo la cuenta {n}': 'Reading account {n}',
   'cuenta {n}': 'account {n}',
   'Otra cuenta de la app Tangem': 'Another Tangem app account',
+  'Cuenta {n} · dirección confirmada en el dispositivo': 'Account {n} · address confirmed on the device',
+  'La cuenta principal. Si en Ledger Live tienes más cuentas XRP, elige su número para agregar otra.': 'The main account. If you have more XRP accounts in Ledger Live, pick its number to add another.',
+  'La cuenta {n} de Ledger Live ({p}). Compara la dirección con la de esa cuenta.': "Ledger Live account {n} ({p}). Compare the address with that account's.",
+  'Cuenta de Ledger Live': 'Ledger Live account',
+  'Elegir otra cuenta': 'Choose another account',
 };

@@ -92,7 +92,9 @@ export function useGalleryPrefetch() {
 /**
  * NFT fijado en el XRP Ledger (campo WalletLocator): se muestra en cualquier teléfono con Quorum,
  * también en cuentas de solo lectura. Una elección propia hecha en este teléfono (sin `pinned`)
- * no se reemplaza. Si el ledger ya no lo tiene fijado o dejó de ser válido, se quita.
+ * se mantiene mientras el ledger no cambie; si alguien fija otro NFT (o lo quita) desde otro
+ * teléfono, ese cambio manda (`pinSeen` recuerda el último que vio este teléfono).
+ * Si el ledger ya no lo tiene fijado o dejó de ser válido, se quita.
  */
 export function usePinnedNftSync() {
   const app = useApp();
@@ -107,12 +109,18 @@ export function usePinnedNftSync() {
         const st = app.stateOf(a);
         if (!st || !st.exists) continue;
         const wl = st.walletLocator ?? null;
-        if (a.nft && !a.nft.pinned) continue; // elección propia de este teléfono
+        const seen = wl ?? '';
+        // ¿cambió en el ledger desde la última vez? La primera vez (versiones anteriores no lo
+        // recordaban) manda el NFT fijado si es otro distinto al elegido aquí: es el más reciente.
+        const changed =
+          a.pinSeen === undefined ? !!wl && !!a.nft && !a.nft.pinned && a.nft.id.toUpperCase() !== wl.toUpperCase() : a.pinSeen !== seen;
+        if (a.pinSeen !== seen) await app.updateAccount(a.id, { pinSeen: seen });
+        if (a.nft && !a.nft.pinned && !changed) continue; // elección propia de este teléfono
         if (!wl) {
-          if (a.nft?.pinned) await app.updateAccount(a.id, { nft: undefined });
+          if (a.nft?.pinned || changed) await app.updateAccount(a.id, { nft: undefined });
           continue;
         }
-        if (a.nft?.pinned && a.nft.id === wl) continue;
+        if (a.nft?.pinned && a.nft.id.toUpperCase() === wl.toUpperCase()) continue;
         try {
           const r = await resolvePinnedNft(a.network, a.address, wl, QUORUM.nftGalleryAddress || undefined);
           if (!alive) return;

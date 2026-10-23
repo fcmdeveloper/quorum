@@ -35,3 +35,6 @@ export const XRP_PATH = "m/44'/144'/0'/0/0";
 export const MAX_TANGEM_ACCOUNTS = 20;
 export const xrpAccountPath = (account: number) => `m/44'/144'/${account - 1}'/0/0`;
 export const LEDGER_XRP_PATH = "44'/144'/0'/0/0";
+/** Cuentas de Ledger Live: la cuenta N usa el índice de cuenta N-1 (como Tangem). */
+export const MAX_LEDGER_ACCOUNTS = 20;
+export const ledgerAccountPath = (account: number) => `44'/144'/${account - 1}'/0/0`;

@@ -31,6 +31,11 @@ export interface Account {
    * `pinned`: viene del NFT fijado en el XRP Ledger (core/pin.ts) y se sigue al ledger.
    */
   nft?: { id: string; image: string; network: NetworkId; name?: string; gallery?: boolean; pinned?: boolean };
+  /**
+   * Último NFT fijado en el XRP Ledger (WalletLocator) que vio este teléfono ('' = ninguno).
+   * Si en el ledger cambia (alguien lo fijó desde otro teléfono), manda sobre la elección propia.
+   */
+  pinSeen?: string;
   /** true: no se suma al patrimonio total de Inicio ni al gráfico. */
   excluded?: boolean;
   /** true: oculta en Inicio (y por eso tampoco suma al patrimonio ni al gráfico). Se muestra en Orden y visibilidad. */

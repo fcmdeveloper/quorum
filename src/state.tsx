@@ -109,6 +109,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [devices, setDevices] = useState<SignerDevice[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  // la lista más reciente: varias updateAccount seguidas (p. ej. en un bucle) no se pisan entre sí
+  const aRef = useRef<Account[]>([]);
+  aRef.current = accounts;
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [xaman, setXamanState] = useState<XamanCreds | null>(null);
@@ -225,11 +228,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
   const updateAccount = useCallback(
     async (id: string, p: Partial<Account>) => {
-      const next = accounts.map((a) => (a.id === id ? { ...a, ...p } : a));
+      const next = aRef.current.map((a) => (a.id === id ? { ...a, ...p } : a));
+      aRef.current = next;
       setAccounts(next);
       await saveAccounts(next);
     },
-    [accounts],
+    [],
   );
   const removeAccount = useCallback(
     async (id: string) => {
